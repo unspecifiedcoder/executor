@@ -1,0 +1,19 @@
+{
+  "name": "demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed": "tsx seed.ts",
+    "e2e": "tsx run-e2e.ts"
+  },
+  "dependencies": {
+    "@executor/agent-client": "workspace:*",
+    "@executor/agent-debtor": "workspace:*",
+    "@executor/agent-trustee": "workspace:*",
+    "@executor/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}
