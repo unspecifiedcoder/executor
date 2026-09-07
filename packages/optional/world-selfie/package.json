@@ -1,0 +1,7 @@
+{
+  "name": "@executor/world-selfie",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Day 6 stretch: World Selfie Check as a sybil-resistance gate on claim filing."
+}
