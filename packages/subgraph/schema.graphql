@@ -1,0 +1,21 @@
+type Heartbeat @entity(immutable: true) {
+  id: Bytes!
+  timestamp: BigInt!
+}
+
+type AdministrationEvent @entity(immutable: true) {
+  id: Bytes!
+  timestamp: BigInt!
+}
+
+type LiquidationEvent @entity(immutable: true) {
+  id: Bytes!
+  reportHash: Bytes!
+  timestamp: BigInt!
+}
+
+type Succession @entity(immutable: true) {
+  id: Bytes!
+  previous: Bytes!
+  successor: Bytes!
+}
