@@ -4,14 +4,22 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "gateway": "tsx src/gateway.ts",
+    "pay": "tsx src/pay-for-research.ts",
     "dev": "tsx watch src/server-hedera.ts",
     "kill": "tsx src/kill.ts"
   },
   "dependencies": {
     "@executor/shared": "workspace:*",
+    "@hiero-ledger/sdk": "2.85.0",
+    "@x402/core": "~2.25.0",
+    "@x402/express": "~2.25.0",
+    "@x402/hedera": "~2.25.0",
+    "express": "^4.19.0",
     "viem": "^2.21.0"
   },
   "devDependencies": {
+    "@types/express": "^4.17.0",
     "tsx": "^4.19.0"
   }
 }
