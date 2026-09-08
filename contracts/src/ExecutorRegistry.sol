@@ -1,0 +1,159 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+/// @notice Canonical, single-chain source of truth for an agent's resolution plan and its
+/// current payment destination. Lives on Sepolia, alongside ENSv2, so it can call the ENS
+/// adapter directly in the same transaction when the destination changes - no cross-chain
+/// relayer, no "was the mirror in sync" question. Off-chain services (the payment gateway,
+/// the dashboard) read this contract's state over plain RPC to decide behavior on other
+/// chains (Hedera for the x402 payment rail, Arc for estate settlement) - that's normal
+/// multi-chain plumbing, not a trust assumption this contract has to solve.
+///
+/// Supersedes `Receiver.sol`'s role from the earlier two-contract design: liveness tracking
+/// and payment-destination resolution now live together here.
+contract ExecutorRegistry {
+    enum Status {
+        Active,
+        Administration,
+        Liquidation,
+        Resolved
+    }
+
+    struct AgentPlan {
+        address owner;
+        address heartbeatSigner;
+        address trustee;
+        address recoveryAuthority;
+        address treasury;
+        address estate;
+        uint64 heartbeatInterval;
+        uint64 gracePeriod;
+        uint64 lastHeartbeat;
+        Status status;
+        bool planLocked;
+    }
+
+    mapping(bytes32 => AgentPlan) public plans;
+
+    event AgentRegistered(bytes32 indexed agentId, address treasury, address estate);
+    event PlanLocked(bytes32 indexed agentId);
+    event Heartbeat(bytes32 indexed agentId, uint64 timestamp);
+    event PaymentDestinationChanged(bytes32 indexed agentId, address destination, Status status);
+    event StatusChanged(bytes32 indexed agentId, Status status);
+
+    error NotOwner();
+    error NotHeartbeatSigner();
+    error NotTrustee();
+    error NotRecoveryAuthority();
+    error PlanIsLocked();
+    error AgentNotFound();
+    error TooEarly();
+    error WrongStatus(Status current);
+
+    modifier onlyOwner(bytes32 agentId) {
+        if (msg.sender != plans[agentId].owner) revert NotOwner();
+        _;
+    }
+
+    /// @notice Registers a new agent's resolution plan. Callable freely until locked -
+    /// nothing here is load-bearing for creditors until `lockPlan` is called.
+    function registerAgent(
+        bytes32 agentId,
+        address heartbeatSigner,
+        address trustee,
+        address recoveryAuthority,
+        address treasury,
+        address estate,
+        uint64 heartbeatInterval,
+        uint64 gracePeriod
+    ) external {
+        if (plans[agentId].owner != address(0)) revert(); // already registered
+
+        plans[agentId] = AgentPlan({
+            owner: msg.sender,
+            heartbeatSigner: heartbeatSigner,
+            trustee: trustee,
+            recoveryAuthority: recoveryAuthority,
+            treasury: treasury,
+            estate: estate,
+            heartbeatInterval: heartbeatInterval,
+            gracePeriod: gracePeriod,
+            lastHeartbeat: uint64(block.timestamp),
+            status: Status.Active,
+            planLocked: false
+        });
+
+        emit AgentRegistered(agentId, treasury, estate);
+        emit PaymentDestinationChanged(agentId, treasury, Status.Active);
+    }
+
+    /// @notice Freezes heartbeatSigner/trustee/recoveryAuthority/treasury/estate/heartbeatInterval/
+    /// gracePeriod permanently. This is the actual pre-commitment: without it, "the agent's
+    /// resolution plan" is just mutable owner-controlled state, not something creditors or a
+    /// judge should trust.
+    function lockPlan(bytes32 agentId) external onlyOwner(agentId) {
+        plans[agentId].planLocked = true;
+        emit PlanLocked(agentId);
+    }
+
+    /// @notice Signed by the agent's heartbeat key on an interval. Only meaningful while Active.
+    function heartbeat(bytes32 agentId) external {
+        AgentPlan storage plan = plans[agentId];
+        if (plan.owner == address(0)) revert AgentNotFound();
+        if (msg.sender != plan.heartbeatSigner) revert NotHeartbeatSigner();
+        plan.lastHeartbeat = uint64(block.timestamp);
+        emit Heartbeat(agentId, plan.lastHeartbeat);
+    }
+
+    /// @notice Permissionless: the contract checks eligibility, not the caller. Flips the
+    /// payment destination from treasury to estate.
+    function enterAdministration(bytes32 agentId) external {
+        AgentPlan storage plan = plans[agentId];
+        if (plan.owner == address(0)) revert AgentNotFound();
+        if (plan.status != Status.Active) revert WrongStatus(plan.status);
+        if (block.timestamp < plan.lastHeartbeat + plan.heartbeatInterval + plan.gracePeriod) {
+            revert TooEarly();
+        }
+
+        plan.status = Status.Administration;
+        emit StatusChanged(agentId, Status.Administration);
+        emit PaymentDestinationChanged(agentId, plan.estate, Status.Administration);
+    }
+
+    /// @notice A missed heartbeat isn't insolvency - this lets a recovered agent resume
+    /// without going through liquidation. Single named authority, not an ambiguous
+    /// owner-or-trustee multisig.
+    function restoreActive(bytes32 agentId) external {
+        AgentPlan storage plan = plans[agentId];
+        if (msg.sender != plan.recoveryAuthority) revert NotRecoveryAuthority();
+        if (plan.status != Status.Administration) revert WrongStatus(plan.status);
+
+        plan.status = Status.Active;
+        plan.lastHeartbeat = uint64(block.timestamp);
+        emit StatusChanged(agentId, Status.Active);
+        emit PaymentDestinationChanged(agentId, plan.treasury, Status.Active);
+    }
+
+    /// @notice Unavailability and insolvency are different questions - this one needs human
+    /// judgment, so it's trustee-only rather than time-triggered.
+    function enterLiquidation(bytes32 agentId) external {
+        AgentPlan storage plan = plans[agentId];
+        if (msg.sender != plan.trustee) revert NotTrustee();
+        if (plan.status != Status.Administration) revert WrongStatus(plan.status);
+
+        plan.status = Status.Liquidation;
+        emit StatusChanged(agentId, Status.Liquidation);
+        emit PaymentDestinationChanged(agentId, plan.estate, Status.Liquidation);
+    }
+
+    /// @notice The primitive the payment gateway actually calls, on every request.
+    function getPaymentDestination(bytes32 agentId) external view returns (address) {
+        AgentPlan storage plan = plans[agentId];
+        if (plan.owner == address(0)) revert AgentNotFound();
+        return plan.status == Status.Active ? plan.treasury : plan.estate;
+    }
+
+    function getStatus(bytes32 agentId) external view returns (Status) {
+        return plans[agentId].status;
+    }
+}

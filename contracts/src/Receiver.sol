@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+/// @dev SUPERSEDED by `ExecutorRegistry.sol`. Splitting liveness (this contract) from
+/// payment-destination resolution turned out to need a cross-chain relayer to keep an ENS
+/// mirror in sync; ExecutorRegistry merges both concerns into one Sepolia contract instead.
+/// Left in place - never deployed - pending a full removal pass.
+///
 /// @notice Lives on Sepolia. Tracks an agent's liveness via signed heartbeats
 /// and flips the estate through the two-stage flow: Administration (liveness
 /// only) then Liquidation (requires a DON-signed solvency/claims report).
