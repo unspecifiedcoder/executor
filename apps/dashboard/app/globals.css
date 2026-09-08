@@ -1,0 +1,130 @@
+:root {
+  --bg: #0b0d10;
+  --panel: #14171c;
+  --border: #262b33;
+  --text: #e6e9ee;
+  --muted: #8a92a0;
+  --green: #3ecf8e;
+  --red: #ef5354;
+  --amber: #e6a23c;
+  --mono: "SF Mono", "JetBrains Mono", Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+h1 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 32px;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.panel h2 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 16px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row .label {
+  color: var(--muted);
+}
+
+.mono {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.dot.green {
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+}
+
+.dot.red {
+  background: var(--red);
+}
+
+.dot.amber {
+  background: var(--amber);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge.ok {
+  background: rgba(62, 207, 142, 0.15);
+  color: var(--green);
+}
+
+.badge.locked {
+  background: rgba(230, 162, 60, 0.15);
+  color: var(--amber);
+}
+
+a {
+  color: inherit;
+}
+
+.error {
+  color: var(--red);
+  font-size: 13px;
+}
