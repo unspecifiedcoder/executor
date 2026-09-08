@@ -2,11 +2,19 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { getNameState } from "../../lib/ens";
+import { getNameState, getAgentPlan, type AgentPlan } from "../../lib/ens";
 
 const DEMO_LABEL = "executor-hackathon-demo";
 
-type Phase = "active" | "confirm" | "unresponsive" | "administration";
+type Phase =
+  | "loading"
+  | "active"
+  | "confirm"
+  | "restoring"
+  | "counting-down"
+  | "flipping"
+  | "administration"
+  | "error";
 
 const ACTIONS = [
   "Operations frozen",
@@ -14,14 +22,22 @@ const ACTIONS = [
   "Revenue redirection pending — Estate not yet deployed",
 ];
 
+function etherscanTx(hash: string): string {
+  return `https://sepolia.etherscan.io/tx/${hash}`;
+}
+
 export default function VitalsPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [phase, setPhase] = useState<Phase>("active");
+  const [phase, setPhase] = useState<Phase>("loading");
   const [agentName, setAgentName] = useState<string>(DEMO_LABEL);
-  const [lastBeatAgo, setLastBeatAgo] = useState(0.2);
+  const [plan, setPlan] = useState<AgentPlan | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [restoreTx, setRestoreTx] = useState<string | null>(null);
+  const [adminTx, setAdminTx] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [visibleActions, setVisibleActions] = useState(0);
-  const stoppedAtRef = useRef<number | null>(null);
-  const phaseRef = useRef<Phase>("active");
+  const [flash, setFlash] = useState(false);
+  const phaseRef = useRef<Phase>("loading");
   phaseRef.current = phase;
 
   useEffect(() => {
@@ -30,7 +46,22 @@ export default function VitalsPage() {
       .catch(() => {});
   }, []);
 
-  // heartbeat canvas
+  // Read real on-chain plan state on load - this is what decides the
+  // starting phase, never a hardcoded default.
+  useEffect(() => {
+    getAgentPlan()
+      .then((p) => {
+        setPlan(p);
+        setPhase(p.status === "administration" ? "administration" : "active");
+        if (p.status === "administration") setVisibleActions(ACTIONS.length);
+      })
+      .catch((err) => {
+        setErrorMsg(err instanceof Error ? err.message : "Failed to read chain state");
+        setPhase("error");
+      });
+  }, []);
+
+  // heartbeat canvas - illustrative alive/flat indicator, not a literal feed
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -82,26 +113,20 @@ export default function VitalsPage() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // last-beat-ago clock
+  // real countdown to the on-chain eligibleAt timestamp
   useEffect(() => {
-    if (phase === "active" || phase === "confirm") {
-      stoppedAtRef.current = null;
-      const id = setInterval(() => setLastBeatAgo((v) => (v < 0.9 ? v + 0.1 : 0.1)), 100);
-      return () => clearInterval(id);
-    }
-    if (stoppedAtRef.current === null) stoppedAtRef.current = Date.now();
+    if (phase !== "counting-down" || !plan) return;
     const id = setInterval(() => {
-      setLastBeatAgo((Date.now() - (stoppedAtRef.current as number)) / 1000);
-    }, 200);
+      const left = plan.eligibleAt - Math.floor(Date.now() / 1000);
+      setSecondsLeft(Math.max(0, left));
+      if (left <= 0) {
+        clearInterval(id);
+        void flipToAdministration();
+      }
+    }, 250);
     return () => clearInterval(id);
-  }, [phase]);
-
-  // auto-advance to administration, then reveal the action checklist
-  useEffect(() => {
-    if (phase !== "unresponsive") return;
-    const id = setTimeout(() => setPhase("administration"), 2600);
-    return () => clearTimeout(id);
-  }, [phase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, plan]);
 
   useEffect(() => {
     if (phase !== "administration") return;
@@ -111,34 +136,88 @@ export default function VitalsPage() {
     });
   }, [phase]);
 
-  const isDown = phase === "unresponsive" || phase === "administration";
-  const statusLabel = phase === "administration" ? "administration" : isDown ? "unresponsive" : "active";
-  const statusClass = phase === "administration" ? "administration" : isDown ? "administration" : "active";
+  async function stopHeartbeat() {
+    setErrorMsg(null);
+    setPhase("restoring");
+    try {
+      const res = await fetch("/api/actions/restore-active", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "restoreActive failed");
+      setRestoreTx(data.txHash);
+
+      const freshPlan = await getAgentPlan();
+      setPlan(freshPlan);
+      setSecondsLeft(Math.max(0, freshPlan.eligibleAt - Math.floor(Date.now() / 1000)));
+      setPhase("counting-down");
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "restoreActive failed");
+      setPhase("error");
+    }
+  }
+
+  async function flipToAdministration() {
+    setPhase("flipping");
+    try {
+      const res = await fetch("/api/actions/enter-administration", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "enterAdministration failed");
+      setAdminTx(data.txHash);
+      setPhase("administration");
+      // The real moment: this is the actual on-chain state transition, not a
+      // simulated click - the one flash in the whole app, earned by a real tx.
+      setFlash(true);
+      setTimeout(() => setFlash(false), 700);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "enterAdministration failed");
+      setPhase("error");
+    }
+  }
+
+  function resetDemo() {
+    setRestoreTx(null);
+    setAdminTx(null);
+    setErrorMsg(null);
+    void stopHeartbeat(); // restoreActive() also serves as the reset action
+  }
+
+  const isDown = phase === "counting-down" || phase === "flipping" || phase === "administration";
+  const statusLabel =
+    phase === "administration"
+      ? "administration"
+      : phase === "flipping"
+        ? "flipping..."
+        : isDown
+          ? "unresponsive"
+          : phase === "loading"
+            ? "reading chain..."
+            : "active";
+  const statusClass = phase === "administration" || phase === "flipping" ? "administration" : isDown ? "administration" : "active";
 
   return (
     <main className="vitals">
-      <Link href="/" className="back">
+      {flash && <div className="flatline-flash" aria-hidden="true" />}
+
+      <Link href="/" className="back pressable">
         ← EXECUTOR
       </Link>
 
       <div className="center">
         <div className="agent-name mono">{agentName}</div>
 
-        <div className={`status big ${statusClass}`}>
+        <div key={statusLabel} className={`status big ${statusClass} status-crossfade`}>
           <span className="dot" />
           {statusLabel}
         </div>
 
         <canvas ref={canvasRef} className="waveform" />
 
-        <div className="metric">
-          <span className="metric-label">Last heartbeat</span>
-          <span className="metric-value mono">
-            {isDown ? `${lastBeatAgo.toFixed(1)}s ago` : `${lastBeatAgo.toFixed(1)}s ago`}
-          </span>
-        </div>
+        {phase === "counting-down" && (
+          <div className="countdown mono">
+            real heartbeat window lapses in <strong>{secondsLeft}s</strong>
+          </div>
+        )}
 
-        <hr className="hr" />
+        {errorMsg && <div className="error-banner mono">{errorMsg}</div>}
 
         <div className="row">
           <span className="label">Live revenue</span>
@@ -147,8 +226,31 @@ export default function VitalsPage() {
           </span>
         </div>
 
+        {restoreTx && (
+          <div className="row">
+            <span className="label">restoreActive() tx</span>
+            <span className="value">
+              <a href={etherscanTx(restoreTx)} target="_blank" rel="noreferrer">
+                {restoreTx.slice(0, 10)}… ↗
+              </a>{" "}
+              <span className="tag live">live</span>
+            </span>
+          </div>
+        )}
+        {adminTx && (
+          <div className="row">
+            <span className="label">enterAdministration() tx</span>
+            <span className="value">
+              <a href={etherscanTx(adminTx)} target="_blank" rel="noreferrer">
+                {adminTx.slice(0, 10)}… ↗
+              </a>{" "}
+              <span className="tag live">live</span>
+            </span>
+          </div>
+        )}
+
         {phase === "administration" && (
-          <div className="receivership">
+          <div className="receivership receivership-in">
             <hr className="hr" />
             <div className="receivership-header">
               <span className="status administration">
@@ -169,26 +271,39 @@ export default function VitalsPage() {
 
         <div className="action-zone">
           {phase === "active" && (
-            <button className="btn danger" onClick={() => setPhase("confirm")}>
+            <button className="btn danger pressable" onClick={() => setPhase("confirm")}>
               [ SIMULATE FAILURE ]
             </button>
           )}
           {phase === "confirm" && (
-            <div className="confirm-row">
-              <button className="btn" onClick={() => setPhase("active")}>
+            <div className="confirm-row confirm-row-in">
+              <button className="btn pressable" onClick={() => setPhase("active")}>
                 [ CANCEL ]
               </button>
-              <button className="btn danger" onClick={() => setPhase("unresponsive")}>
+              <button className="btn danger pressable" onClick={stopHeartbeat}>
                 [ STOP HEARTBEAT ]
               </button>
             </div>
           )}
-          {isDown && (
-            <button className="btn" onClick={() => setPhase("active")}>
+          {phase === "restoring" && <div className="pending mono">submitting restoreActive()…</div>}
+          {phase === "flipping" && <div className="pending mono">submitting enterAdministration()…</div>}
+          {phase === "administration" && (
+            <button className="btn pressable" onClick={resetDemo}>
               [ RESET DEMO ]
             </button>
           )}
+          {phase === "error" && (
+            <button className="btn pressable" onClick={resetDemo}>
+              [ RETRY ]
+            </button>
+          )}
         </div>
+
+        <p className="disclosure mono">
+          This is a shared, live demo agent on Sepolia testnet. Clicking these buttons submits real
+          transactions from a server-held operator key with worthless testnet funds - not a
+          simulation.
+        </p>
       </div>
 
       <style>{`
@@ -235,20 +350,27 @@ export default function VitalsPage() {
         .waveform {
           width: 100%;
           height: 90px;
-          margin-bottom: 24px;
+          margin-bottom: 16px;
         }
-        .metric {
-          display: flex;
-          justify-content: space-between;
-          width: 100%;
-          margin-bottom: 24px;
-        }
-        .metric-label {
+        .countdown {
+          font-size: 12px;
           color: var(--dim);
-          font-size: 13px;
+          margin-bottom: 16px;
         }
-        .metric-value {
-          font-size: 13px;
+        .countdown strong {
+          color: var(--administration);
+        }
+        .error-banner {
+          font-size: 12px;
+          color: var(--liquidation);
+          border: 1px solid var(--liquidation);
+          border-radius: 4px;
+          padding: 8px 12px;
+          margin-bottom: 16px;
+        }
+        .pending {
+          font-size: 12px;
+          color: var(--dim);
         }
         .vitals .hr {
           width: 100%;
@@ -277,17 +399,35 @@ export default function VitalsPage() {
           color: var(--faint);
           display: flex;
           gap: 10px;
-          transition: color 0.2s ease;
+          opacity: 0;
+          transform: translateY(6px);
+          transition: color 200ms var(--ease-settle), opacity 260ms var(--ease-settle),
+            transform 260ms var(--ease-settle);
         }
         .actions li.shown {
           color: var(--text);
+          opacity: 1;
+          transform: translateY(0);
         }
         .actions .check {
           width: 14px;
           color: var(--active);
+          display: inline-block;
+          transform: scale(0);
+          transition: transform 240ms var(--ease-pop);
+        }
+        .actions li.shown .check {
+          transform: scale(1);
         }
         .action-zone {
           margin-top: 40px;
+        }
+        .disclosure {
+          margin-top: 32px;
+          font-size: 10px;
+          line-height: 1.6;
+          color: var(--faint);
+          max-width: 360px;
         }
         .btn {
           background: transparent;
@@ -298,7 +438,6 @@ export default function VitalsPage() {
           letter-spacing: 0.05em;
           padding: 10px 16px;
           border-radius: 4px;
-          transition: border-color 0.15s ease, color 0.15s ease;
         }
         .btn:hover {
           border-color: var(--succession);
@@ -311,6 +450,51 @@ export default function VitalsPage() {
         .confirm-row {
           display: flex;
           gap: 12px;
+        }
+
+        @keyframes status-in {
+          from {
+            opacity: 0;
+            transform: translateY(-3px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .status-crossfade {
+          animation: status-in 220ms var(--ease-settle);
+        }
+
+        .confirm-row-in {
+          animation: row-in 220ms var(--ease-settle);
+        }
+        .receivership-in {
+          animation: row-in 320ms var(--ease-settle);
+        }
+
+        @keyframes flatline-pulse {
+          0% {
+            opacity: 0;
+          }
+          12% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+          }
+        }
+        .flatline-flash {
+          position: fixed;
+          inset: 0;
+          z-index: 2;
+          pointer-events: none;
+          background: radial-gradient(
+            circle at 50% 40%,
+            color-mix(in srgb, var(--administration) 22%, transparent),
+            transparent 70%
+          );
+          animation: flatline-pulse 700ms linear;
         }
       `}</style>
     </main>
