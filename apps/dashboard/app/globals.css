@@ -16,6 +16,31 @@
 
   --sans: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
   --mono: "IBM Plex Mono", "SF Mono", Consolas, monospace;
+
+  /* Motion vocabulary - three curves, each with one job.
+     - settle: something new arriving and coming to rest. Fast start, no
+       overshoot - this is a financial/legal tool, not a toy.
+     - press: a physical button push. Near-instant, ease-in only, because a
+       press has to feel like it happened before the eye catches it.
+     - pop: a small completion moment (a checkbox landing). The one place a
+       touch of spring overshoot is earned - checked-off feels good. */
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-press: cubic-bezier(0.4, 0, 1, 1);
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --mx: 50%;
+  --my: 50%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 * {
@@ -116,7 +141,10 @@ a:hover {
 }
 
 .tag.live {
-  color: var(--succession);
+  color: var(--bg);
+  background: var(--succession);
+  border-color: var(--succession);
+  font-weight: 700;
 }
 
 .tag.sim {
@@ -194,4 +222,89 @@ button:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--succession);
   outline-offset: 2px;
+}
+
+/* Physical press feedback - every clickable surface in the app routes
+   through .pressable so this is written once. Scale down fast on press
+   (ease-press: get out of the way immediately), settle back out slower
+   (ease-settle) so release doesn't feel like a snap-back. */
+.pressable {
+  transform: scale(1);
+  transition: transform 90ms var(--ease-press), border-color 180ms var(--ease-settle),
+    color 180ms var(--ease-settle);
+}
+
+.pressable:active {
+  transform: scale(0.96);
+  transition-duration: 60ms;
+}
+
+/* Ambient field: a near-invisible radial glow that drifts toward the cursor.
+   Deliberately smoothed (400ms) rather than 1:1 tracking - instant tracking
+   reads as a toy demo; a slight lag reads as ambiance. Opacity is kept low
+   enough that it's felt, not seen, on a control-room-dark background. */
+.ambient-field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    600px circle at var(--mx) var(--my),
+    color-mix(in srgb, var(--succession) 6%, transparent),
+    transparent 70%
+  );
+  transition: background-position 400ms var(--ease-settle);
+}
+
+.ambient-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image: linear-gradient(color-mix(in srgb, var(--border) 60%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--border) 60%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(800px circle at var(--mx) var(--my), black, transparent 75%);
+}
+
+main {
+  position: relative;
+  z-index: 1;
+}
+
+/* Row entrance: data populating a readout, not a UI flourish. Fast,
+   ease-out, no overshoot - staggered per-row via --i on each element. */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.row-animated {
+  animation: row-in 320ms var(--ease-settle) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+/* A live status pulses gently - it's the one piece of chrome allowed to
+   move at rest, because "active" should read as alive, not just labeled
+   active. Slow (2.2s) and low-amplitude so it never competes for attention. */
+@keyframes live-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 10px var(--active);
+  }
+  50% {
+    box-shadow: 0 0 16px 2px var(--active);
+  }
+}
+
+.status.active .dot,
+.lifecycle .node.current .ring {
+  animation: live-pulse 2.2s ease-in-out infinite;
 }
