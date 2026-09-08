@@ -116,10 +116,12 @@ export default function VitalsPage() {
   // real countdown to the on-chain eligibleAt timestamp
   useEffect(() => {
     if (phase !== "counting-down" || !plan) return;
+    let fired = false;
     const id = setInterval(() => {
       const left = plan.eligibleAt - Math.floor(Date.now() / 1000);
       setSecondsLeft(Math.max(0, left));
-      if (left <= 0) {
+      if (left <= 0 && !fired) {
+        fired = true;
         clearInterval(id);
         void flipToAdministration();
       }
@@ -143,8 +145,18 @@ export default function VitalsPage() {
       const res = await fetch("/api/actions/restore-active", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "restoreActive failed");
-      setRestoreTx(data.txHash);
 
+      if (data.alreadyInState) {
+        // Someone else's request (another tab, a stale reload) already moved
+        // this shared agent - resync to whatever's actually true on-chain
+        // instead of erroring over a race that isn't really a failure.
+        const freshPlan = await getAgentPlan();
+        setPlan(freshPlan);
+        setPhase(freshPlan.status === "administration" ? "administration" : "active");
+        return;
+      }
+
+      setRestoreTx(data.txHash);
       const freshPlan = await getAgentPlan();
       setPlan(freshPlan);
       setSecondsLeft(Math.max(0, freshPlan.eligibleAt - Math.floor(Date.now() / 1000)));
@@ -161,6 +173,14 @@ export default function VitalsPage() {
       const res = await fetch("/api/actions/enter-administration", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "enterAdministration failed");
+
+      if (data.alreadyInState) {
+        const freshPlan = await getAgentPlan();
+        setPlan(freshPlan);
+        setPhase(freshPlan.status === "administration" ? "administration" : "active");
+        return;
+      }
+
       setAdminTx(data.txHash);
       setPhase("administration");
       // The real moment: this is the actual on-chain state transition, not a
