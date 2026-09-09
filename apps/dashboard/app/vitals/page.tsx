@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { getNameState, getAgentPlan, type AgentPlan } from "../../lib/ens";
+import { getNameState, getAgentPlan, getPaymentDestination, type AgentPlan } from "../../lib/ens";
+import FlowPanel from "../components/FlowPanel";
 
 const DEMO_LABEL = "executor-hackathon-demo";
 
@@ -31,9 +31,11 @@ export default function VitalsPage() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [agentName, setAgentName] = useState<string>(DEMO_LABEL);
   const [plan, setPlan] = useState<AgentPlan | null>(null);
+  const [destination, setDestination] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [restoreTx, setRestoreTx] = useState<string | null>(null);
   const [adminTx, setAdminTx] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ label: string; state: "pending" | "confirmed"; hash?: string } | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [visibleActions, setVisibleActions] = useState(0);
   const [flash, setFlash] = useState(false);
@@ -46,12 +48,18 @@ export default function VitalsPage() {
       .catch(() => {});
   }, []);
 
+  async function refreshPlan() {
+    const [p, dest] = await Promise.all([getAgentPlan(), getPaymentDestination()]);
+    setPlan(p);
+    setDestination(dest);
+    return p;
+  }
+
   // Read real on-chain plan state on load - this is what decides the
   // starting phase, never a hardcoded default.
   useEffect(() => {
-    getAgentPlan()
+    refreshPlan()
       .then((p) => {
-        setPlan(p);
         setPhase(p.status === "administration" ? "administration" : "active");
         if (p.status === "administration") setVisibleActions(ACTIONS.length);
       })
@@ -59,6 +67,7 @@ export default function VitalsPage() {
         setErrorMsg(err instanceof Error ? err.message : "Failed to read chain state");
         setPhase("error");
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // heartbeat canvas - illustrative alive/flat indicator, not a literal feed
@@ -141,6 +150,7 @@ export default function VitalsPage() {
   async function stopHeartbeat() {
     setErrorMsg(null);
     setPhase("restoring");
+    setToast({ label: "restoreActive()", state: "pending" });
     try {
       const res = await fetch("/api/actions/restore-active", { method: "POST" });
       const data = await res.json();
@@ -150,46 +160,55 @@ export default function VitalsPage() {
         // Someone else's request (another tab, a stale reload) already moved
         // this shared agent - resync to whatever's actually true on-chain
         // instead of erroring over a race that isn't really a failure.
-        const freshPlan = await getAgentPlan();
-        setPlan(freshPlan);
+        const freshPlan = await refreshPlan();
         setPhase(freshPlan.status === "administration" ? "administration" : "active");
+        setToast(null);
         return;
       }
 
       setRestoreTx(data.txHash);
-      const freshPlan = await getAgentPlan();
-      setPlan(freshPlan);
+      setToast({ label: "restoreActive()", state: "confirmed", hash: data.txHash });
+      const freshPlan = await refreshPlan();
       setSecondsLeft(Math.max(0, freshPlan.eligibleAt - Math.floor(Date.now() / 1000)));
       setPhase("counting-down");
+      setTimeout(() => setToast(null), 4000);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "restoreActive failed");
       setPhase("error");
+      setToast(null);
     }
   }
 
   async function flipToAdministration() {
     setPhase("flipping");
+    setToast({ label: "enterAdministration()", state: "pending" });
     try {
       const res = await fetch("/api/actions/enter-administration", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "enterAdministration failed");
 
       if (data.alreadyInState) {
-        const freshPlan = await getAgentPlan();
-        setPlan(freshPlan);
+        const freshPlan = await refreshPlan();
         setPhase(freshPlan.status === "administration" ? "administration" : "active");
+        setToast(null);
         return;
       }
 
       setAdminTx(data.txHash);
+      setToast({ label: "enterAdministration()", state: "confirmed", hash: data.txHash });
+      // Re-read the real destination after confirmation - the panel's flip
+      // is a transition to real chain state, not a substitute for it.
+      await refreshPlan();
       setPhase("administration");
       // The real moment: this is the actual on-chain state transition, not a
       // simulated click - the one flash in the whole app, earned by a real tx.
       setFlash(true);
       setTimeout(() => setFlash(false), 700);
+      setTimeout(() => setToast(null), 5000);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "enterAdministration failed");
       setPhase("error");
+      setToast(null);
     }
   }
 
@@ -217,141 +236,169 @@ export default function VitalsPage() {
     <main className="vitals">
       {flash && <div className="flatline-flash" aria-hidden="true" />}
 
-      <Link href="/" className="back pressable">
-        ← EXECUTOR
-      </Link>
-
-      <div className="center">
-        <div className="agent-name mono">{agentName}</div>
-
-        <div key={statusLabel} className={`status big ${statusClass} status-crossfade`}>
-          <span className="dot" />
-          {statusLabel}
-        </div>
-
-        <canvas ref={canvasRef} className="waveform" />
-
-        {phase === "counting-down" && (
-          <div className="countdown mono">
-            real heartbeat window lapses in <strong>{secondsLeft}s</strong>
-          </div>
-        )}
-
-        {errorMsg && <div className="error-banner mono">{errorMsg}</div>}
-
-        <div className="row">
-          <span className="label">Live revenue</span>
-          <span className="value">
-            $12,481.23 <span className="tag sim">simulated</span>
+      {toast && (
+        <div className={`toast toast-${toast.state} mono`}>
+          <span className="toast-dot" />
+          <span>
+            {toast.label} {toast.state === "pending" ? "submitted → pending…" : "confirmed"}
           </span>
+          {toast.hash && (
+            <a href={etherscanTx(toast.hash)} target="_blank" rel="noreferrer">
+              ↗
+            </a>
+          )}
         </div>
+      )}
 
-        {restoreTx && (
-          <div className="row">
-            <span className="label">restoreActive() tx</span>
-            <span className="value">
-              <a href={etherscanTx(restoreTx)} target="_blank" rel="noreferrer">
-                {restoreTx.slice(0, 10)}… ↗
-              </a>{" "}
-              <span className="tag live">live</span>
-            </span>
-          </div>
-        )}
-        {adminTx && (
-          <div className="row">
-            <span className="label">enterAdministration() tx</span>
-            <span className="value">
-              <a href={etherscanTx(adminTx)} target="_blank" rel="noreferrer">
-                {adminTx.slice(0, 10)}… ↗
-              </a>{" "}
-              <span className="tag live">live</span>
-            </span>
-          </div>
-        )}
+      <div className="layout">
+        <div className="center">
+          <div className="agent-name mono">{agentName}</div>
 
-        {phase === "administration" && (
-          <div className="receivership receivership-in">
-            <hr className="hr" />
-            <div className="receivership-header">
-              <span className="status administration">
-                <span className="dot" />
-                receivership activated
+          <div key={statusLabel} className={`status big ${statusClass} status-crossfade`}>
+            <span className="dot" />
+            {statusLabel}
+          </div>
+
+          <canvas ref={canvasRef} className="waveform" />
+
+          {phase === "counting-down" && (
+            <div className="countdown mono">
+              real heartbeat window lapses in <strong>{secondsLeft}s</strong>
+            </div>
+          )}
+
+          {errorMsg && <div className="error-banner mono">{errorMsg}</div>}
+
+          {restoreTx && (
+            <div className="row">
+              <span className="label">restoreActive() tx</span>
+              <span className="value">
+                <a href={etherscanTx(restoreTx)} target="_blank" rel="noreferrer">
+                  {restoreTx.slice(0, 10)}… ↗
+                </a>{" "}
+                <span className="tag live">live</span>
               </span>
             </div>
-            <ul className="actions">
-              {ACTIONS.map((a, i) => (
-                <li key={a} className={i < visibleActions ? "shown" : ""}>
-                  <span className="check">{i < visibleActions ? "✓" : ""}</span>
-                  {a}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <div className="action-zone">
-          {phase === "active" && (
-            <button className="btn danger pressable" onClick={() => setPhase("confirm")}>
-              [ SIMULATE FAILURE ]
-            </button>
           )}
-          {phase === "confirm" && (
-            <div className="confirm-row confirm-row-in">
-              <button className="btn pressable" onClick={() => setPhase("active")}>
-                [ CANCEL ]
-              </button>
-              <button className="btn danger pressable" onClick={stopHeartbeat}>
-                [ STOP HEARTBEAT ]
-              </button>
+          {adminTx && (
+            <div className="row">
+              <span className="label">enterAdministration() tx</span>
+              <span className="value">
+                <a href={etherscanTx(adminTx)} target="_blank" rel="noreferrer">
+                  {adminTx.slice(0, 10)}… ↗
+                </a>{" "}
+                <span className="tag live">live</span>
+              </span>
             </div>
           )}
-          {phase === "restoring" && <div className="pending mono">submitting restoreActive()…</div>}
-          {phase === "flipping" && <div className="pending mono">submitting enterAdministration()…</div>}
+
           {phase === "administration" && (
-            <button className="btn pressable" onClick={resetDemo}>
-              [ RESET DEMO ]
-            </button>
+            <div className="receivership receivership-in">
+              <hr className="hr" />
+              <div className="receivership-header">
+                <span className="status administration">
+                  <span className="dot" />
+                  receivership activated
+                </span>
+              </div>
+              <ul className="actions">
+                {ACTIONS.map((a, i) => (
+                  <li key={a} className={i < visibleActions ? "shown" : ""}>
+                    <span className="check">{i < visibleActions ? "✓" : ""}</span>
+                    {a}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
-          {phase === "error" && (
-            <button className="btn pressable" onClick={resetDemo}>
-              [ RETRY ]
-            </button>
-          )}
+
+          <div className="action-zone">
+            {phase === "active" && (
+              <button className="btn danger pressable" onClick={() => setPhase("confirm")}>
+                [ SIMULATE FAILURE ]
+              </button>
+            )}
+            {phase === "confirm" && (
+              <div className="confirm-row confirm-row-in">
+                <button className="btn pressable" onClick={() => setPhase("active")}>
+                  [ CANCEL ]
+                </button>
+                <button className="btn danger pressable" onClick={stopHeartbeat}>
+                  [ STOP HEARTBEAT ]
+                </button>
+              </div>
+            )}
+            {phase === "restoring" && <div className="pending mono">submitting restoreActive()…</div>}
+            {phase === "flipping" && <div className="pending mono">submitting enterAdministration()…</div>}
+            {phase === "administration" && (
+              <button className="btn pressable" onClick={resetDemo}>
+                [ RESET DEMO ]
+              </button>
+            )}
+            {phase === "error" && (
+              <button className="btn pressable" onClick={resetDemo}>
+                [ RETRY ]
+              </button>
+            )}
+          </div>
+
+          <p className="disclosure mono">
+            This is a shared, live demo agent on Sepolia testnet. Clicking these buttons submits real
+            transactions from a server-held operator key with worthless testnet funds - not a
+            simulation.
+          </p>
         </div>
 
-        <p className="disclosure mono">
-          This is a shared, live demo agent on Sepolia testnet. Clicking these buttons submits real
-          transactions from a server-held operator key with worthless testnet funds - not a
-          simulation.
-        </p>
+        <div className="side">
+          {plan && destination ? (
+            <FlowPanel
+              treasury={plan.treasury}
+              estate={plan.estate}
+              destination={destination}
+              status={plan.status}
+              lastHeartbeat={plan.lastHeartbeat}
+              eligibleAt={plan.eligibleAt}
+              heartbeatInterval={plan.heartbeatInterval}
+              gracePeriod={plan.gracePeriod}
+              planLocked={plan.planLocked}
+            />
+          ) : (
+            <div className="panel-loading mono">reading chain…</div>
+          )}
+        </div>
       </div>
 
       <style>{`
         .vitals {
           min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
           padding: 32px 24px 64px;
         }
-        .back {
-          align-self: flex-start;
-          font-family: var(--mono);
-          font-size: 12px;
-          letter-spacing: 0.08em;
-          color: var(--faint);
-        }
-        .back:hover {
-          color: var(--succession);
+        .layout {
+          max-width: 900px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: 1fr 380px;
+          gap: 48px;
+          align-items: start;
         }
         .center {
           width: 100%;
-          max-width: 440px;
-          margin-top: 56px;
           display: flex;
           flex-direction: column;
           align-items: center;
           text-align: center;
+        }
+        .side {
+          position: sticky;
+          top: 80px;
+        }
+        .panel-loading {
+          border: 1px solid var(--border-strong);
+          border-radius: 8px;
+          padding: 40px;
+          text-align: center;
+          color: var(--faint);
+          font-size: 12px;
         }
         .agent-name {
           font-size: 14px;
@@ -397,6 +444,16 @@ export default function VitalsPage() {
         }
         .vitals .row {
           width: 100%;
+          display: flex;
+          justify-content: space-between;
+          padding: 8px 0;
+          font-size: 13px;
+        }
+        .vitals .row .label {
+          color: var(--dim);
+        }
+        .vitals .row .value {
+          font-family: var(--mono);
         }
         .receivership {
           width: 100%;
@@ -472,6 +529,34 @@ export default function VitalsPage() {
           gap: 12px;
         }
 
+        .toast {
+          position: fixed;
+          right: 24px;
+          bottom: 24px;
+          z-index: 5;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: var(--raised);
+          border: 1px solid var(--border-strong);
+          border-radius: 6px;
+          padding: 10px 14px;
+          font-size: 12px;
+          animation: row-in 220ms var(--ease-settle);
+        }
+        .toast a {
+          color: var(--succession);
+        }
+        .toast-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: var(--administration);
+        }
+        .toast-confirmed .toast-dot {
+          background: var(--active);
+        }
+
         @keyframes status-in {
           from {
             opacity: 0;
@@ -515,6 +600,16 @@ export default function VitalsPage() {
             transparent 70%
           );
           animation: flatline-pulse 700ms linear;
+        }
+
+        @media (max-width: 860px) {
+          .layout {
+            grid-template-columns: 1fr;
+          }
+          .side {
+            position: static;
+            order: -1;
+          }
         }
       `}</style>
     </main>
