@@ -6,15 +6,15 @@ import {
   getAgentStatus,
   getAgentPlan,
   getPaymentDestination,
+  getAgentEvents,
   EXECUTOR_REGISTRY,
+  AGENT_ID,
 } from "../lib/ens";
+import FlowPanel from "./components/FlowPanel";
+import EventTimeline from "./components/EventTimeline";
 
 const DEMO_LABEL = "executor-hackathon-demo";
 const OPERATOR = "0x72db032c0dfb6e7502e16a73fabdab31712dc706" as const;
-
-// Most recent real enterAdministration() tx from this demo agent's actual
-// on-chain history - a fast, click-to-verify proof point for a skimming judge.
-const LAST_KNOWN_TX = "0x5e120ca72909c3e02aa1377e7bd4bd329a068124626d42c668b89a8d6d84a251";
 
 function short(addr: string): string {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
@@ -23,105 +23,85 @@ function short(addr: string): string {
 export const revalidate = 30;
 
 export default async function OverviewPage() {
-  const [name, status, plan, destination] = await Promise.all([
+  const [name, status, plan, destination, events] = await Promise.all([
     getNameState(DEMO_LABEL).catch(() => null),
     getAgentStatus().catch(() => null),
     getAgentPlan().catch(() => null),
     getPaymentDestination().catch(() => null),
+    getAgentEvents().catch(() => []),
   ]);
   const locked = name ? !(await hasRole(name.tokenId, ROLE_SET_RESOLVER_ADMIN, OPERATOR)) : null;
   const statusClass = status ?? "active";
-  const toEstate = !!(plan && destination && destination.toLowerCase() === plan.estate.toLowerCase());
 
   return (
     <main className="overview">
       <header className="hero">
-        <div className="wordmark">
-          <span className="wordmark-mark" aria-hidden="true" />
-          EXECUTOR
-        </div>
+        <div className="hero-grid">
+          <div className="hero-copy">
+            <div className={`hero-status ${statusClass}`}>
+              <span className="hero-status-dot" />
+              <span className="hero-status-label">{status ?? "reading chain…"}</span>
+            </div>
 
-        <div className={`hero-status ${statusClass}`}>
-          <span className="hero-status-dot" />
-          <span className="hero-status-label">{status ?? "reading chain…"}</span>
-        </div>
+            <h1>
+              When an agent fails,
+              <br />
+              its obligations <em>don&rsquo;t.</em>
+            </h1>
+            <p className="sub">
+              A living will for autonomous agents. When the heartbeat stops, its payment
+              destination flips on-chain — no human in the loop, no missed payout. Watch it happen
+              on the panel to the right, using this agent&rsquo;s real state right now.
+            </p>
 
-        <h1>
-          When an agent fails,
-          <br />
-          its obligations <em>don&rsquo;t.</em>
-        </h1>
-        <p className="sub">
-          A living will for autonomous agents. When the heartbeat stops, its payment
-          destination flips on-chain — no human in the loop, no missed payout.
-        </p>
+            <div className="cta-row">
+              <Link href="/vitals" className="cta primary pressable">
+                WATCH THE FLIP →
+              </Link>
+              <Link href="/register" className="cta ghost pressable">
+                REGISTER YOUR OWN AGENT
+              </Link>
+            </div>
 
-        <div className="cta-row">
-          <Link href="/vitals" className="cta primary pressable">
-            WATCH THE FLIP →
-          </Link>
-          <Link href="/register" className="cta ghost pressable">
-            REGISTER YOUR OWN AGENT
-          </Link>
-        </div>
+            <div className="proof-strip mono">
+              <span className="proof-label">verified onchain</span>
+              <a
+                href={`https://sepolia.etherscan.io/address/${EXECUTOR_REGISTRY}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                ExecutorRegistry ↗
+              </a>
+              <span className="proof-sep">·</span>
+              <Link href={`/agent/${AGENT_ID}`}>agent proof page →</Link>
+            </div>
+          </div>
 
-        <div className="proof-strip mono">
-          <span className="proof-label">verified onchain</span>
-          <a
-            href={`https://sepolia.etherscan.io/address/${EXECUTOR_REGISTRY}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            ExecutorRegistry ↗
-          </a>
-          <span className="proof-sep">·</span>
-          <a href={`https://sepolia.etherscan.io/tx/${LAST_KNOWN_TX}`} target="_blank" rel="noreferrer">
-            last state transition ↗
-          </a>
+          <div className="hero-panel">
+            {plan && destination ? (
+              <FlowPanel
+                treasury={plan.treasury}
+                estate={plan.estate}
+                destination={destination}
+                status={plan.status}
+                lastHeartbeat={plan.lastHeartbeat}
+                eligibleAt={plan.eligibleAt}
+                heartbeatInterval={plan.heartbeatInterval}
+                gracePeriod={plan.gracePeriod}
+                planLocked={plan.planLocked}
+              />
+            ) : (
+              <div className="panel-loading mono">reading chain…</div>
+            )}
+          </div>
         </div>
       </header>
 
-      <section className="flow-section">
-        <div className="section-header">
-          <span className="eyebrow">The mechanism</span>
-          <span className="tag live">live</span>
-        </div>
-        <hr className="hr" />
-
-        <div className="flow">
-          <div className={`flow-box ${!toEstate ? "on" : ""}`}>
-            <span className="flow-box-label">Treasury</span>
-            <span className="flow-box-addr mono">{plan ? short(plan.treasury) : "—"}</span>
-            <span className="flow-box-tag">pays out while active</span>
-          </div>
-
-          <div className="flow-arrow" aria-hidden="true">
-            <svg viewBox="0 0 120 24" width="100%" height="24" preserveAspectRatio="none">
-              <line x1="2" y1="12" x2="108" y2="12" className="flow-line" />
-              <path d="M100 4 L114 12 L100 20" className="flow-head" fill="none" />
-            </svg>
-            <span className="flow-arrow-label mono">on heartbeat failure</span>
-          </div>
-
-          <div className={`flow-box ${toEstate ? "on" : ""}`}>
-            <span className="flow-box-label">Estate</span>
-            <span className="flow-box-addr mono">{plan ? short(plan.estate) : "—"}</span>
-            <span className="flow-box-tag">receives after grace period lapses</span>
-          </div>
-        </div>
-
-        <div className="flow-current mono">
-          getPaymentDestination() currently resolves to{" "}
-          <strong>{toEstate ? "the estate" : "the treasury"}</strong>
-          {destination ? ` — ${short(destination)}` : ""}
-        </div>
-      </section>
-
       <section className="system">
         <div className="section-header">
-          <span className="eyebrow">Live system</span>
+          <span className="eyebrow">On-chain history</span>
+          <span className="tag live">live</span>
         </div>
-
         <hr className="hr" />
 
         <div className="row row-animated" style={{ ["--i" as string]: 0 }}>
@@ -131,7 +111,6 @@ export default async function OverviewPage() {
           </span>
         </div>
         <hr className="hr" />
-
         <div className="row row-animated" style={{ ["--i" as string]: 1 }}>
           <span className="label">Owner</span>
           <span className="value">
@@ -139,7 +118,6 @@ export default async function OverviewPage() {
           </span>
         </div>
         <hr className="hr" />
-
         <div className="row row-animated" style={{ ["--i" as string]: 2 }}>
           <span className="label">Succession lock</span>
           <span className="value">
@@ -147,29 +125,9 @@ export default async function OverviewPage() {
             <span className="tag live">live</span>
           </span>
         </div>
-        <hr className="hr" />
 
-        <div className="row row-animated" style={{ ["--i" as string]: 3 }}>
-          <span className="label">Heartbeat</span>
-          <span className="value">
-            99.98% <span className="tag sim">simulated</span>
-          </span>
-        </div>
-        <hr className="hr" />
-
-        <div className="row row-animated" style={{ ["--i" as string]: 4 }}>
-          <span className="label">Revenue</span>
-          <span className="value">
-            $12,481.23 <span className="tag sim">simulated</span>
-          </span>
-        </div>
-        <hr className="hr" />
-
-        <div className="row row-animated" style={{ ["--i" as string]: 5 }}>
-          <span className="label">Obligations</span>
-          <span className="value">
-            3 active <span className="tag sim">simulated</span>
-          </span>
+        <div className="timeline-wrap">
+          <EventTimeline events={events} />
         </div>
       </section>
 
@@ -202,33 +160,20 @@ export default async function OverviewPage() {
 
       <style>{`
         .overview {
-          max-width: 760px;
+          max-width: 960px;
           margin: 0 auto;
-          padding: 64px 24px 72px;
+          padding: 48px 24px 72px;
         }
         .hero {
           margin-bottom: 64px;
         }
-        .wordmark {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-family: var(--mono);
-          font-size: 13px;
-          font-weight: 600;
-          letter-spacing: 0.32em;
-          color: var(--dim);
-          margin-bottom: 24px;
-        }
-        .wordmark-mark {
-          width: 8px;
-          height: 8px;
-          background: var(--succession);
-          box-shadow: 0 0 10px var(--succession);
+        .hero-grid {
+          display: grid;
+          grid-template-columns: 1fr 420px;
+          gap: 48px;
+          align-items: start;
         }
 
-        /* The status is the thesis of the whole product - it gets to be the
-           loudest thing on the page, not a small pill buried in a table. */
         .hero-status {
           display: inline-flex;
           align-items: center;
@@ -272,7 +217,7 @@ export default async function OverviewPage() {
 
         h1 {
           font-family: var(--sans);
-          font-size: 52px;
+          font-size: 46px;
           font-weight: 600;
           line-height: 1.12;
           letter-spacing: -0.02em;
@@ -287,7 +232,6 @@ export default async function OverviewPage() {
           font-size: 16px;
           line-height: 1.55;
           color: var(--dim);
-          max-width: 480px;
           margin: 0 0 32px;
         }
         .cta-row {
@@ -342,6 +286,19 @@ export default async function OverviewPage() {
           color: var(--border-strong);
         }
 
+        .hero-panel {
+          position: sticky;
+          top: 80px;
+        }
+        .panel-loading {
+          border: 1px solid var(--border-strong);
+          border-radius: 8px;
+          padding: 40px;
+          text-align: center;
+          color: var(--faint);
+          font-size: 12px;
+        }
+
         .section-header {
           display: flex;
           justify-content: space-between;
@@ -357,83 +314,13 @@ export default async function OverviewPage() {
           color: var(--faint);
         }
 
-        .flow-section {
+        .system {
           margin-bottom: 56px;
         }
-        .flow {
-          display: grid;
-          grid-template-columns: 1fr auto 1fr;
-          align-items: center;
-          gap: 16px;
-          padding: 32px 0 20px;
-        }
-        .flow-box {
-          border: 1px solid var(--border-strong);
-          border-radius: 6px;
-          padding: 20px 18px;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          transition: border-color 300ms var(--ease-settle), box-shadow 300ms var(--ease-settle),
-            background 300ms var(--ease-settle);
-        }
-        .flow-box-label {
-          font-family: var(--mono);
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: var(--faint);
-        }
-        .flow-box-addr {
-          font-size: 17px;
-          font-weight: 600;
-        }
-        .flow-box-tag {
-          font-size: 11px;
-          color: var(--faint);
-        }
-        .flow-box.on {
-          border-color: var(--active);
-          background: color-mix(in srgb, var(--active) 6%, transparent);
-          box-shadow: 0 0 0 1px color-mix(in srgb, var(--active) 40%, transparent);
-        }
-        .flow-box.on .flow-box-label {
-          color: var(--active);
-        }
-        .flow-arrow {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 6px;
-          padding: 0 4px;
-        }
-        .flow-line {
-          stroke: var(--border-strong);
-          stroke-width: 1.5;
-        }
-        .flow-head {
-          stroke: var(--border-strong);
-          stroke-width: 1.5;
-        }
-        .flow-arrow-label {
-          font-size: 9px;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          color: var(--faint);
-          white-space: nowrap;
-        }
-        .flow-current {
-          font-size: 12px;
-          color: var(--faint);
-        }
-        .flow-current strong {
-          color: var(--text);
+        .timeline-wrap {
+          margin-top: 8px;
         }
 
-        .system {
-          margin-bottom: 64px;
-        }
         .lifecycle-section {
           padding-top: 24px;
           border-top: 1px solid var(--border);
@@ -441,21 +328,18 @@ export default async function OverviewPage() {
         .lifecycle .connector {
           background: var(--border-strong);
         }
-        .lifecycle-administration .connector:first-of-type,
-        .lifecycle-liquidation .connector,
-        .lifecycle-resolved .connector {
-          background: color-mix(in srgb, var(--administration) 50%, var(--border-strong));
-        }
 
-        @media (max-width: 560px) {
-          h1 {
-            font-size: 36px;
-          }
-          .flow {
+        @media (max-width: 860px) {
+          .hero-grid {
             grid-template-columns: 1fr;
           }
-          .flow-arrow svg {
-            transform: rotate(90deg);
+          .hero-panel {
+            position: static;
+          }
+        }
+        @media (max-width: 560px) {
+          h1 {
+            font-size: 34px;
           }
         }
       `}</style>
