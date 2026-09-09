@@ -181,6 +181,13 @@ export const EXECUTOR_REGISTRY_ABI = [
     inputs: [{ name: "agentId", type: "bytes32" }],
     outputs: [],
   },
+  {
+    name: "getPaymentDestination",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "agentId", type: "bytes32" }],
+    outputs: [{ name: "", type: "address" }],
+  },
 ] as const;
 
 export async function getAgentStatus(agentId: Hex = AGENT_ID): Promise<AgentStatus> {
@@ -195,6 +202,8 @@ export async function getAgentStatus(agentId: Hex = AGENT_ID): Promise<AgentStat
 
 export interface AgentPlan {
   owner: Address;
+  treasury: Address;
+  estate: Address;
   status: AgentStatus;
   heartbeatInterval: number;
   gracePeriod: number;
@@ -215,6 +224,8 @@ export async function getAgentPlan(agentId: Hex = AGENT_ID): Promise<AgentPlan> 
   const lastHeartbeat = Number(plan[8]);
   return {
     owner: plan[0],
+    treasury: plan[4],
+    estate: plan[5],
     status: AGENT_STATUS_LABEL[plan[9]],
     heartbeatInterval,
     gracePeriod,
@@ -222,6 +233,15 @@ export async function getAgentPlan(agentId: Hex = AGENT_ID): Promise<AgentPlan> 
     eligibleAt: lastHeartbeat + heartbeatInterval + gracePeriod,
     planLocked: plan[10],
   };
+}
+
+export async function getPaymentDestination(agentId: Hex = AGENT_ID): Promise<Address> {
+  return client.readContract({
+    address: EXECUTOR_REGISTRY,
+    abi: EXECUTOR_REGISTRY_ABI,
+    functionName: "getPaymentDestination",
+    args: [agentId],
+  });
 }
 
 export { client as sepoliaPublicClient };

@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { getNameState, hasRole, ROLE_SET_RESOLVER_ADMIN, getAgentStatus, EXECUTOR_REGISTRY } from "../lib/ens";
+import {
+  getNameState,
+  hasRole,
+  ROLE_SET_RESOLVER_ADMIN,
+  getAgentStatus,
+  getAgentPlan,
+  getPaymentDestination,
+  EXECUTOR_REGISTRY,
+} from "../lib/ens";
 
 const DEMO_LABEL = "executor-hackathon-demo";
 const OPERATOR = "0x72db032c0dfb6e7502e16a73fabdab31712dc706" as const;
@@ -15,17 +23,23 @@ function short(addr: string): string {
 export const revalidate = 30;
 
 export default async function OverviewPage() {
-  const [name, status] = await Promise.all([
+  const [name, status, plan, destination] = await Promise.all([
     getNameState(DEMO_LABEL).catch(() => null),
     getAgentStatus().catch(() => null),
+    getAgentPlan().catch(() => null),
+    getPaymentDestination().catch(() => null),
   ]);
   const locked = name ? !(await hasRole(name.tokenId, ROLE_SET_RESOLVER_ADMIN, OPERATOR)) : null;
   const statusClass = status ?? "active";
+  const toEstate = !!(plan && destination && destination.toLowerCase() === plan.estate.toLowerCase());
 
   return (
     <main className="overview">
       <header className="hero">
-        <div className="wordmark">EXECUTOR</div>
+        <div className="wordmark">
+          <span className="wordmark-mark" aria-hidden="true" />
+          EXECUTOR
+        </div>
 
         <div className={`hero-status ${statusClass}`}>
           <span className="hero-status-dot" />
@@ -35,11 +49,16 @@ export default async function OverviewPage() {
         <h1>
           When an agent fails,
           <br />
-          its obligations don&rsquo;t.
+          its obligations <em>don&rsquo;t.</em>
         </h1>
+        <p className="sub">
+          A living will for autonomous agents. When the heartbeat stops, its payment
+          destination flips on-chain — no human in the loop, no missed payout.
+        </p>
+
         <div className="cta-row">
-          <Link href="/vitals" className="cta pressable">
-            VIEW LIVE AGENT →
+          <Link href="/vitals" className="cta primary pressable">
+            WATCH THE FLIP →
           </Link>
           <Link href="/register" className="cta ghost pressable">
             REGISTER YOUR OWN AGENT
@@ -62,8 +81,44 @@ export default async function OverviewPage() {
         </div>
       </header>
 
+      <section className="flow-section">
+        <div className="section-header">
+          <span className="eyebrow">The mechanism</span>
+          <span className="tag live">live</span>
+        </div>
+        <hr className="hr" />
+
+        <div className="flow">
+          <div className={`flow-box ${!toEstate ? "on" : ""}`}>
+            <span className="flow-box-label">Treasury</span>
+            <span className="flow-box-addr mono">{plan ? short(plan.treasury) : "—"}</span>
+            <span className="flow-box-tag">pays out while active</span>
+          </div>
+
+          <div className="flow-arrow" aria-hidden="true">
+            <svg viewBox="0 0 120 24" width="100%" height="24" preserveAspectRatio="none">
+              <line x1="2" y1="12" x2="108" y2="12" className="flow-line" />
+              <path d="M100 4 L114 12 L100 20" className="flow-head" fill="none" />
+            </svg>
+            <span className="flow-arrow-label mono">on heartbeat failure</span>
+          </div>
+
+          <div className={`flow-box ${toEstate ? "on" : ""}`}>
+            <span className="flow-box-label">Estate</span>
+            <span className="flow-box-addr mono">{plan ? short(plan.estate) : "—"}</span>
+            <span className="flow-box-tag">receives after grace period lapses</span>
+          </div>
+        </div>
+
+        <div className="flow-current mono">
+          getPaymentDestination() currently resolves to{" "}
+          <strong>{toEstate ? "the estate" : "the treasury"}</strong>
+          {destination ? ` — ${short(destination)}` : ""}
+        </div>
+      </section>
+
       <section className="system">
-        <div className="system-header">
+        <div className="section-header">
           <span className="eyebrow">Live system</span>
         </div>
 
@@ -119,7 +174,7 @@ export default async function OverviewPage() {
       </section>
 
       <section className="lifecycle-section">
-        <div className="lifecycle">
+        <div className={`lifecycle lifecycle-${statusClass}`}>
           <div
             className={`node ${statusClass === "active" ? "current" : ""}`}
             style={{ ["--active-color" as string]: "var(--active)" }}
@@ -147,20 +202,29 @@ export default async function OverviewPage() {
 
       <style>{`
         .overview {
-          max-width: 640px;
+          max-width: 760px;
           margin: 0 auto;
-          padding: 56px 24px 64px;
+          padding: 64px 24px 72px;
         }
         .hero {
-          margin-bottom: 56px;
+          margin-bottom: 64px;
         }
         .wordmark {
+          display: flex;
+          align-items: center;
+          gap: 10px;
           font-family: var(--mono);
           font-size: 13px;
           font-weight: 600;
           letter-spacing: 0.32em;
           color: var(--dim);
-          margin-bottom: 20px;
+          margin-bottom: 24px;
+        }
+        .wordmark-mark {
+          width: 8px;
+          height: 8px;
+          background: var(--succession);
+          box-shadow: 0 0 10px var(--succession);
         }
 
         /* The status is the thesis of the whole product - it gets to be the
@@ -169,7 +233,7 @@ export default async function OverviewPage() {
           display: inline-flex;
           align-items: center;
           gap: 10px;
-          margin-bottom: 20px;
+          margin-bottom: 24px;
           font-family: var(--mono);
         }
         .hero-status-dot {
@@ -208,17 +272,29 @@ export default async function OverviewPage() {
 
         h1 {
           font-family: var(--sans);
-          font-size: 34px;
+          font-size: 52px;
           font-weight: 600;
-          line-height: 1.25;
-          letter-spacing: -0.01em;
-          margin: 0 0 28px;
+          line-height: 1.12;
+          letter-spacing: -0.02em;
+          margin: 0 0 20px;
           text-wrap: balance;
+        }
+        h1 em {
+          font-style: normal;
+          color: var(--succession);
+        }
+        .sub {
+          font-size: 16px;
+          line-height: 1.55;
+          color: var(--dim);
+          max-width: 480px;
+          margin: 0 0 32px;
         }
         .cta-row {
           display: flex;
           flex-wrap: wrap;
           gap: 12px;
+          margin-bottom: 24px;
         }
         .cta {
           display: inline-block;
@@ -226,17 +302,21 @@ export default async function OverviewPage() {
           font-size: 13px;
           font-weight: 600;
           letter-spacing: 0.05em;
-          color: var(--text);
-          border: 1px solid var(--border-strong);
-          padding: 10px 18px;
+          padding: 12px 20px;
           border-radius: 4px;
         }
-        .cta:hover {
-          border-color: var(--succession);
-          color: var(--succession);
+        .cta.primary {
+          color: var(--bg);
+          background: var(--succession);
+          border: 1px solid var(--succession);
+        }
+        .cta.primary:hover {
+          color: var(--bg);
+          filter: brightness(1.1);
         }
         .cta.ghost {
           color: var(--faint);
+          border: 1px solid var(--border-strong);
           border-style: dashed;
         }
         .cta.ghost:hover {
@@ -244,7 +324,6 @@ export default async function OverviewPage() {
           border-color: var(--succession);
         }
         .proof-strip {
-          margin-top: 20px;
           font-size: 11px;
           color: var(--faint);
           display: flex;
@@ -262,10 +341,8 @@ export default async function OverviewPage() {
         .proof-sep {
           color: var(--border-strong);
         }
-        .system {
-          margin-bottom: 64px;
-        }
-        .system-header {
+
+        .section-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -279,9 +356,107 @@ export default async function OverviewPage() {
           text-transform: uppercase;
           color: var(--faint);
         }
+
+        .flow-section {
+          margin-bottom: 56px;
+        }
+        .flow {
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          align-items: center;
+          gap: 16px;
+          padding: 32px 0 20px;
+        }
+        .flow-box {
+          border: 1px solid var(--border-strong);
+          border-radius: 6px;
+          padding: 20px 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          transition: border-color 300ms var(--ease-settle), box-shadow 300ms var(--ease-settle),
+            background 300ms var(--ease-settle);
+        }
+        .flow-box-label {
+          font-family: var(--mono);
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: var(--faint);
+        }
+        .flow-box-addr {
+          font-size: 17px;
+          font-weight: 600;
+        }
+        .flow-box-tag {
+          font-size: 11px;
+          color: var(--faint);
+        }
+        .flow-box.on {
+          border-color: var(--active);
+          background: color-mix(in srgb, var(--active) 6%, transparent);
+          box-shadow: 0 0 0 1px color-mix(in srgb, var(--active) 40%, transparent);
+        }
+        .flow-box.on .flow-box-label {
+          color: var(--active);
+        }
+        .flow-arrow {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          padding: 0 4px;
+        }
+        .flow-line {
+          stroke: var(--border-strong);
+          stroke-width: 1.5;
+        }
+        .flow-head {
+          stroke: var(--border-strong);
+          stroke-width: 1.5;
+        }
+        .flow-arrow-label {
+          font-size: 9px;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: var(--faint);
+          white-space: nowrap;
+        }
+        .flow-current {
+          font-size: 12px;
+          color: var(--faint);
+        }
+        .flow-current strong {
+          color: var(--text);
+        }
+
+        .system {
+          margin-bottom: 64px;
+        }
         .lifecycle-section {
           padding-top: 24px;
           border-top: 1px solid var(--border);
+        }
+        .lifecycle .connector {
+          background: var(--border-strong);
+        }
+        .lifecycle-administration .connector:first-of-type,
+        .lifecycle-liquidation .connector,
+        .lifecycle-resolved .connector {
+          background: color-mix(in srgb, var(--administration) 50%, var(--border-strong));
+        }
+
+        @media (max-width: 560px) {
+          h1 {
+            font-size: 36px;
+          }
+          .flow {
+            grid-template-columns: 1fr;
+          }
+          .flow-arrow svg {
+            transform: rotate(90deg);
+          }
         }
       `}</style>
     </main>
