@@ -53,6 +53,8 @@ export default function FlowPanel({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   const toEstate = destination.toLowerCase() === estate.toLowerCase();
+  const isActive = status === "active" || status === "resolved";
+  const highlightColor = isActive ? "var(--active)" : "var(--administration)";
 
   useEffect(() => {
     const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
@@ -91,8 +93,11 @@ export default function FlowPanel({
       ctx!.lineTo(width, height / 2);
       ctx!.stroke();
 
-      const activeColor = getComputedStyle(document.documentElement).getPropertyValue("--active").trim() || "#34d399";
-      ctx!.fillStyle = activeColor;
+      const dotColor =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue(isActive ? "--active" : "--administration")
+          .trim() || "#9cff57";
+      ctx!.fillStyle = dotColor;
       for (let i = 0; i < positions.length; i++) {
         if (!reduced) {
           positions[i] += (dir * dt) / 2600;
@@ -112,15 +117,14 @@ export default function FlowPanel({
     }
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [toEstate]);
+  }, [toEstate, isActive]);
 
-  const isActive = status === "active" || status === "resolved";
   const heartbeatAgo = now - lastHeartbeat;
   const countdown = eligibleAt - now;
 
   return (
     <div className="flow-panel">
-      <div className="flow">
+      <div className="flow" style={{ ["--highlight" as string]: highlightColor }}>
         <div className={`flow-box ${!toEstate ? "on" : ""}`}>
           <span className="flow-box-label">Treasury</span>
           <span className="flow-box-addr mono">{short(treasury)}</span>
@@ -210,12 +214,12 @@ export default function FlowPanel({
           line-height: 1.4;
         }
         .flow-box.on {
-          border-color: var(--active);
-          background: color-mix(in srgb, var(--active) 6%, transparent);
-          box-shadow: 0 0 0 1px color-mix(in srgb, var(--active) 40%, transparent);
+          border-color: var(--highlight, var(--active));
+          background: color-mix(in srgb, var(--highlight, var(--active)) 6%, transparent);
+          box-shadow: 0 0 0 1px color-mix(in srgb, var(--highlight, var(--active)) 40%, transparent);
         }
         .flow-box.on .flow-box-label {
-          color: var(--active);
+          color: var(--highlight, var(--active));
         }
         .flow-canvas {
           width: 100%;

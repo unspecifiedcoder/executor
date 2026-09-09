@@ -99,14 +99,15 @@ export default function VitalsPage() {
         else if (beatPos === 7) y = -5;
         else y = (Math.random() - 0.5) * 2;
       } else {
-        y = (Math.random() - 0.5) * 0.5;
+        y = 0;
       }
       samples.push(y);
       samples.shift();
 
       ctx!.clearRect(0, 0, width, height);
-      ctx!.strokeStyle = alive ? "#34d399" : "#f0a93e";
+      ctx!.strokeStyle = alive ? "#9cff57" : "#ffbd59";
       ctx!.lineWidth = 1.5;
+      ctx!.setLineDash(alive ? [] : [6, 6]);
       ctx!.beginPath();
       const mid = height / 2;
       samples.forEach((s, i) => {
@@ -115,6 +116,7 @@ export default function VitalsPage() {
         else ctx!.lineTo(i, yy);
       });
       ctx!.stroke();
+      ctx!.setLineDash([]);
 
       raf = requestAnimationFrame(draw);
     }
@@ -147,6 +149,43 @@ export default function VitalsPage() {
     });
   }, [phase]);
 
+  /**
+   * The confirm button's real handler. restoreActive() can only ever succeed
+   * when the on-chain status is already "administration" - calling it from
+   * the agent's normal resting state (Active) always reverts server-side
+   * with AlreadyInStateError and does nothing, which was a real dead-end:
+   * clicking SIMULATE FAILURE on a freshly-registered or previously-reset
+   * agent silently no-op'd. Instead, read the real plan and act on the real
+   * eligibleAt directly - if the heartbeat is already stale enough to
+   * qualify (a demo agent that's sat idle, as this one usually has), fire
+   * enterAdministration() immediately; otherwise start a real countdown to
+   * the real deadline. No restoreActive() call in this path at all.
+   */
+  async function armFailureSequence() {
+    setErrorMsg(null);
+    setPhase("restoring");
+    try {
+      const freshPlan = await refreshPlan();
+      if (freshPlan.status !== "active") {
+        setPhase(freshPlan.status === "administration" ? "administration" : "active");
+        return;
+      }
+      const now = Math.floor(Date.now() / 1000);
+      if (now >= freshPlan.eligibleAt) {
+        await flipToAdministration();
+        return;
+      }
+      setSecondsLeft(freshPlan.eligibleAt - now);
+      setPhase("counting-down");
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to read chain state");
+      setPhase("error");
+    }
+  }
+
+  /** Only valid from Administration - flips back to Active with a fresh
+   * lastHeartbeat, which is what makes the demo repeatable. Reused directly
+   * by resetDemo(). */
   async function stopHeartbeat() {
     setErrorMsg(null);
     setPhase("restoring");
@@ -157,9 +196,6 @@ export default function VitalsPage() {
       if (!res.ok) throw new Error(data.error || "restoreActive failed");
 
       if (data.alreadyInState) {
-        // Someone else's request (another tab, a stale reload) already moved
-        // this shared agent - resync to whatever's actually true on-chain
-        // instead of erroring over a race that isn't really a failure.
         const freshPlan = await refreshPlan();
         setPhase(freshPlan.status === "administration" ? "administration" : "active");
         setToast(null);
@@ -168,9 +204,8 @@ export default function VitalsPage() {
 
       setRestoreTx(data.txHash);
       setToast({ label: "restoreActive()", state: "confirmed", hash: data.txHash });
-      const freshPlan = await refreshPlan();
-      setSecondsLeft(Math.max(0, freshPlan.eligibleAt - Math.floor(Date.now() / 1000)));
-      setPhase("counting-down");
+      await refreshPlan();
+      setPhase("active");
       setTimeout(() => setToast(null), 4000);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "restoreActive failed");
@@ -250,6 +285,13 @@ export default function VitalsPage() {
         </div>
       )}
 
+      {phase === "administration" && (
+        <div className="admin-banner mono">
+          <strong>⚠ RECEIVERSHIP ACTIVATED</strong>
+          <span>The agent went unresponsive. ExecutorRegistry now controls the payment route.</span>
+        </div>
+      )}
+
       <div className="layout">
         <div className="center">
           <div className="agent-name mono">{agentName}</div>
@@ -323,7 +365,7 @@ export default function VitalsPage() {
                 <button className="btn pressable" onClick={() => setPhase("active")}>
                   [ CANCEL ]
                 </button>
-                <button className="btn danger pressable" onClick={stopHeartbeat}>
+                <button className="btn danger pressable" onClick={armFailureSequence}>
                   [ STOP HEARTBEAT ]
                 </button>
               </div>
@@ -372,6 +414,27 @@ export default function VitalsPage() {
         .vitals {
           min-height: 100vh;
           padding: 32px 24px 64px;
+        }
+        .admin-banner {
+          max-width: 900px;
+          margin: 0 auto 24px;
+          padding: 16px 20px;
+          border: 1px solid color-mix(in srgb, var(--administration) 35%, transparent);
+          background: color-mix(in srgb, var(--administration) 8%, transparent);
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          flex-wrap: wrap;
+          animation: row-in 400ms var(--ease-settle);
+        }
+        .admin-banner strong {
+          color: var(--administration);
+          font-size: 12px;
+          letter-spacing: 0.04em;
+        }
+        .admin-banner span {
+          color: var(--dim);
+          font-size: 12px;
         }
         .layout {
           max-width: 900px;
