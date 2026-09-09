@@ -278,18 +278,217 @@ contract ExecutorRegistryTest is Test {
         registry.lockPlan(AGENT);
     }
 
-    /// @dev Documents what `planLocked` is and is not. There is no setter for any
-    /// plan field and `registerAgent` reverts on a duplicate id, so the plan is
-    /// already immutable before the flag is set: `planLocked` is a published
-    /// declaration that the owner has finished configuring, not an enforcement
-    /// mechanism. The state machine keeps working either way.
-    function test_lockPlan_doesNotChangeBehavior() public {
+    /// @dev The lock is load-bearing, not a published intention: `updatePlan`
+    /// is a real setter for every field a creditor cares about, and locking is
+    /// what takes it away. This is the property the flag exists to provide.
+    function test_lockPlan_makesUpdatePlanRevert() public {
+        vm.prank(owner);
+        registry.lockPlan(AGENT);
+
+        vm.prank(owner);
+        vm.expectRevert(ExecutorRegistry.PlanIsLocked.selector);
+        registry.updatePlan(
+            AGENT,
+            heartbeatSigner,
+            trustee,
+            recoveryAuthority,
+            makeAddr("attackerTreasury"),
+            estate,
+            INTERVAL,
+            GRACE
+        );
+    }
+
+    /// @dev And the lock does not disturb the state machine it protects.
+    function test_lockPlan_doesNotChangeLifecycleBehavior() public {
         vm.prank(owner);
         registry.lockPlan(AGENT);
 
         vm.warp(uint256(_lastHeartbeat()) + INTERVAL + GRACE);
         registry.enterAdministration(AGENT);
         assertEq(registry.getPaymentDestination(AGENT), estate);
+    }
+
+    // --- updatePlan ---------------------------------------------------------
+
+    /// @dev The amend path exists because an Estate's address is not known
+    /// until it is deployed, which is after the agent is registered. If it did
+    /// not change what `getPaymentDestination` returns, it would be cosmetic.
+    function test_updatePlan_changesPaymentDestination() public {
+        address newTreasury = makeAddr("newTreasury");
+        address newEstate = makeAddr("newEstate");
+
+        vm.prank(owner);
+        registry.updatePlan(
+            AGENT,
+            heartbeatSigner,
+            trustee,
+            recoveryAuthority,
+            newTreasury,
+            newEstate,
+            INTERVAL,
+            GRACE
+        );
+
+        assertEq(registry.getPaymentDestination(AGENT), newTreasury, "Active -> new treasury");
+
+        _enterAdministration();
+        assertEq(registry.getPaymentDestination(AGENT), newEstate, "Administration -> new estate");
+    }
+
+    function test_updatePlan_rewritesEveryField() public {
+        address newSigner = makeAddr("newSigner");
+        address newTrustee = makeAddr("newTrustee");
+        address newRecovery = makeAddr("newRecovery");
+
+        vm.prank(owner);
+        registry.updatePlan(AGENT, newSigner, newTrustee, newRecovery, treasury, estate, 120, 60);
+
+        (
+            ,
+            address signer,
+            address planTrustee,
+            address recovery,,,
+            uint64 interval,
+            uint64 grace,,,
+        ) = registry.plans(AGENT);
+        assertEq(signer, newSigner);
+        assertEq(planTrustee, newTrustee);
+        assertEq(recovery, newRecovery);
+        assertEq(interval, 120);
+        assertEq(grace, 60);
+
+        // The new signer is the one that can heartbeat; the old one cannot.
+        vm.prank(heartbeatSigner);
+        vm.expectRevert(ExecutorRegistry.NotHeartbeatSigner.selector);
+        registry.heartbeat(AGENT);
+
+        vm.prank(newSigner);
+        registry.heartbeat(AGENT);
+    }
+
+    function test_updatePlan_revertsForNonOwner() public {
+        vm.prank(trustee); // not even the trustee may amend the plan
+        vm.expectRevert(ExecutorRegistry.NotOwner.selector);
+        registry.updatePlan(
+            AGENT,
+            heartbeatSigner,
+            trustee,
+            recoveryAuthority,
+            makeAddr("attackerTreasury"),
+            estate,
+            INTERVAL,
+            GRACE
+        );
+    }
+
+    function test_updatePlan_emitsPlanUpdatedAndDestinationEvents() public {
+        address newTreasury = makeAddr("newTreasury");
+        address newEstate = makeAddr("newEstate");
+
+        vm.expectEmit(true, false, false, true);
+        emit ExecutorRegistry.PlanUpdated(AGENT, newTreasury, newEstate);
+        vm.expectEmit(true, false, false, true);
+        emit ExecutorRegistry.PaymentDestinationChanged(
+            AGENT, newTreasury, ExecutorRegistry.Status.Active
+        );
+
+        vm.prank(owner);
+        registry.updatePlan(
+            AGENT,
+            heartbeatSigner,
+            trustee,
+            recoveryAuthority,
+            newTreasury,
+            newEstate,
+            INTERVAL,
+            GRACE
+        );
+    }
+
+    // --- resolve ------------------------------------------------------------
+
+    function test_resolve_movesLiquidationToResolved() public {
+        _enterLiquidation();
+        vm.prank(trustee);
+        registry.resolve(AGENT);
+        assertEq(uint8(_status()), uint8(ExecutorRegistry.Status.Resolved));
+    }
+
+    /// @dev Once wound up, revenue still belongs to the estate - there is no
+    /// treasury operator left to receive it.
+    function test_resolve_leavesPaymentDestinationAtTheEstate() public {
+        _enterLiquidation();
+        vm.prank(trustee);
+        registry.resolve(AGENT);
+        assertEq(registry.getPaymentDestination(AGENT), estate);
+    }
+
+    function test_resolve_revertsForNonTrustee() public {
+        _enterLiquidation();
+        vm.prank(owner);
+        vm.expectRevert(ExecutorRegistry.NotTrustee.selector);
+        registry.resolve(AGENT);
+    }
+
+    function test_resolve_revertsWhileActive() public {
+        vm.prank(trustee);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ExecutorRegistry.WrongStatus.selector, ExecutorRegistry.Status.Active
+            )
+        );
+        registry.resolve(AGENT);
+    }
+
+    /// @dev Administration is recoverable, so it must not be closable. Skipping
+    /// liquidation would wind an agent up that could still come back.
+    function test_resolve_revertsFromAdministration() public {
+        _enterAdministration();
+        vm.prank(trustee);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ExecutorRegistry.WrongStatus.selector, ExecutorRegistry.Status.Administration
+            )
+        );
+        registry.resolve(AGENT);
+    }
+
+    /// @dev Resolved is terminal: neither recovery nor a second wind-up.
+    function test_resolve_isTerminal() public {
+        _enterLiquidation();
+        vm.prank(trustee);
+        registry.resolve(AGENT);
+
+        vm.prank(trustee);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ExecutorRegistry.WrongStatus.selector, ExecutorRegistry.Status.Resolved
+            )
+        );
+        registry.resolve(AGENT);
+
+        vm.prank(recoveryAuthority);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ExecutorRegistry.WrongStatus.selector, ExecutorRegistry.Status.Resolved
+            )
+        );
+        registry.restoreActive(AGENT);
+    }
+
+    function test_resolve_emitsStatusAndDestinationEvents() public {
+        _enterLiquidation();
+
+        vm.expectEmit(true, false, false, true);
+        emit ExecutorRegistry.StatusChanged(AGENT, ExecutorRegistry.Status.Resolved);
+        vm.expectEmit(true, false, false, true);
+        emit ExecutorRegistry.PaymentDestinationChanged(
+            AGENT, estate, ExecutorRegistry.Status.Resolved
+        );
+
+        vm.prank(trustee);
+        registry.resolve(AGENT);
     }
 
     // --- events -------------------------------------------------------------
@@ -312,5 +511,11 @@ contract ExecutorRegistryTest is Test {
     function _enterAdministration() internal {
         vm.warp(uint256(_lastHeartbeat()) + INTERVAL + GRACE);
         registry.enterAdministration(AGENT);
+    }
+
+    function _enterLiquidation() internal {
+        _enterAdministration();
+        vm.prank(trustee);
+        registry.enterLiquidation(AGENT);
     }
 }

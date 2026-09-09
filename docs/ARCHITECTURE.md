@@ -42,9 +42,15 @@ writes to it through two API routes.
 | Sepolia | `ExecutorRegistry` `0x99AB…2521` | Liveness clock, status machine, payment-destination resolution |
 | Sepolia | ENSv2 `PermissionedRegistry` `0x67b7…4b43` | Identity: `executor-hackathon-demo.eth`, resolver-admin role revoked |
 | Hedera testnet | (no contract) | Settlement rail. Payments are native HBAR to plain accounts |
+| local anvil only | `Estate` | Creditor claims and the distribution waterfall. **No public deployment** |
 
 There is no second chain holding funds and no cross-chain messaging. The
-registry is the only contract this project deployed.
+registry is the only contract this project deployed to a public network — and
+the Sepolia address runs an *earlier build* of it than `contracts/src/` holds:
+`updatePlan` and `resolve` do not exist on that bytecode, and both selectors
+revert with empty data against it. `Estate` exists in source, is covered by 34
+unit tests, and runs end to end in `scripts/e2e-local.sh` against a local chain.
+It has no address anyone can read.
 
 ## Why one contract instead of two
 
@@ -68,18 +74,36 @@ plumbing, not a trust assumption the contract has to solve.
 - `restoreActive(agentId)` — the named `recoveryAuthority` only. A missed
   heartbeat is unavailability, not insolvency.
 - `enterLiquidation(agentId)` — the `trustee` only. Insolvency needs judgment,
-  so it is not time-triggered. **Nothing downstream consumes this status** —
-  the gateway treats Liquidation and Administration identically.
-- `lockPlan(agentId)` — the owner only. Sets a flag; see below.
+  so it is not time-triggered. The x402 gateway does not distinguish it from
+  Administration (both route to the estate); the thing that does consume it is
+  `Estate.executePlan`, which refuses to distribute in Administration.
+- `resolve(agentId)` — the `trustee` only, and only from Liquidation. Terminal.
+  Payment destination stays the estate afterwards, because late revenue belongs
+  to the estate and there is no treasury operator left.
+- `updatePlan(agentId, …)` — the owner only, and only before `lockPlan`.
+- `lockPlan(agentId)` — the owner only. Makes `updatePlan` revert; see below.
+- `Estate.registerClaim` / `approvePlan` / `sweepSurplus` — the estate's
+  `trustee` only. `Estate.executePlan` is permissionless: once the plan is
+  approved and the registry says the agent is past recovery, execution is
+  mechanical and must not depend on the trustee staying online.
+- `Estate.claimPayout()` — the creditor themselves, for a payout the token
+  refused to accept at distribution time.
 
-## Two things that are weaker than they look
+## `planLocked`, and what it actually stops
 
-**`planLocked` does not enforce anything.** No plan field has a setter, and
-`registerAgent` reverts on a duplicate id, so every field except `lastHeartbeat`
-and `status` is already immutable from registration. The flag is a published
-declaration that the owner has finished configuring, not a freeze.
-`test_lockPlan_doesNotChangeBehavior` asserts the behavior is identical either
-way.
+`ExecutorRegistry.updatePlan` is a real setter for the treasury, the estate, the
+trustee, the recovery authority, the heartbeat signer, the interval and the
+grace period. It exists because an `Estate` address is not known until it is
+deployed, which is after the agent is registered. `lockPlan` is what takes that
+power away: afterwards `updatePlan` reverts `PlanIsLocked`, permanently.
+`test_lockPlan_makesUpdatePlanRevert` asserts it, and `scripts/e2e-local.sh`
+asserts it on-chain against the 4-byte error selector.
+
+One caveat, in the wrong direction: the Sepolia deployment predates
+`updatePlan`. On `0x99AB…2521` the flag is set to true with nothing for it to
+stop. The enforcement is real in the source and unverifiable at that address.
+
+## Things that are weaker than they look
 
 **The ENS role revocation is bounded.** Revoking the operator's
 `ROLE_SET_RESOLVER_ADMIN` means it can no longer grant the resolver role to
@@ -99,6 +123,25 @@ neither token ownership nor an ERC-1155 transfer restores it. But:
 `contracts/test/LivingWill.t.sol` asserts all of these, including the two
 limits, against a mock modelling ENSv2's real `EnhancedAccessControl` rules.
 
+**The estate trusts its trustee to be honest about the claims.** `registerClaim`
+is trustee-only and adjudicates nothing: a contract cannot decide whether a debt
+is real. What the contract *does* enforce is that the claim set cannot change
+after approval — `currentPlanHash()` commits to every claim's id, creditor,
+allowed amount and priority class, and `executePlan` re-derives it and reverts
+on drift — and that a partly-paid claim reports its true remaining balance. A
+dishonest trustee is out of scope; a trustee whose key is stolen between
+approval and execution is not.
+
+**The waterfall settles exactly one ERC-20.** Non-USDC estate assets are not
+valued or sold first. `packages/optional/liquidation` was reserved for that and
+is a stub.
+
+**`Estate.MAX_CLAIMS` is 200.** `executePlan` walks the claim array several
+times per priority class, so an unbounded array is a gas-limit brick waiting to
+happen. Measured at 9.4M gas for 200 claims across all three classes with a real
+transfer each. Bigger estates split across several `Estate` contracts, which the
+registry supports by pointing `estate` at whichever one holds the funds.
+
 ## The superseded design
 
 The original plan, referenced by `ExecutorRegistry.sol`'s header comment and by
@@ -112,11 +155,23 @@ the files still in `contracts/src/` and `packages/`:
 > priority class. A subgraph indexes both contracts. CCTP v2 sweeps funds from
 > Sepolia to Arc.
 
-**None of it was built.** `Receiver.sol` and `Estate.sol` compile and have unit
-tests but were never deployed. `packages/cre-workflow`, `packages/subgraph`,
-`packages/sweep`, `packages/bazantic`, `packages/agent-trustee` and
-`packages/optional/*` are stubs. `contracts/src/adapters/EnsAdapter.sol` targets
-an ENSv2 interface (`authorizeAddrRoles`, `revokeAdminRole`) that does not exist
-in ENSv2 at all.
+**Most of it was not built, and one clause of it was.** Taking them apart:
+
+- **Built, local only.** `Estate.sol`'s claims registry and payout waterfall —
+  `registerClaim`, a trustee-approved plan hash covering the exact claim terms,
+  `executePlan` paying by priority class with pro-rata splitting inside a class,
+  pull-payment escrow for refused transfers, and repeatable rounds for late
+  funds. 34 unit tests, plus `scripts/e2e-local.sh` end to end on anvil. Not on
+  Arc, not on any testnet, no address to read. The trustee here is an EOA
+  calling `approvePlan`, not the agent described above.
+- **Not built.** The Chainlink CRE TEE workflow, the DON-signed solvency report,
+  the trustee *agent*, the subgraph, and the CCTP v2 sweep.
+  `packages/cre-workflow`, `packages/subgraph`, `packages/sweep`,
+  `packages/bazantic`, `packages/agent-trustee` and `packages/optional/*` are
+  stubs — `console.log`s and `throw new Error("not implemented")`.
+- **Superseded.** `Receiver.sol` compiles and has unit tests but was never
+  deployed; `ExecutorRegistry.sol` took over its role.
+  `contracts/src/adapters/EnsAdapter.sol` targets an ENSv2 interface
+  (`authorizeAddrRoles`, `revokeAdminRole`) that does not exist in ENSv2 at all.
 
 The description above is recorded as history, not as a roadmap or a claim.

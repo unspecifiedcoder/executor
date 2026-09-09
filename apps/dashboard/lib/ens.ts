@@ -249,10 +249,16 @@ export const EXECUTOR_REGISTRY_ABI = [
  * cast code against the address, since the deploy tx wasn't recorded. */
 export const EXECUTOR_REGISTRY_DEPLOY_BLOCK = 11661800n;
 
-/** publicnode caps eth_getLogs at 50,000 blocks per request. We stay under it
- * with margin rather than scanning from the deploy block forever - once the
- * chain is more than 50k blocks past deployment an unwindowed scan starts
- * failing outright, and the history panel would silently go empty. */
+/** publicnode caps eth_getLogs at 50,000 blocks per request, so this is the
+ * size of one *chunk*, not the size of the history we are willing to show.
+ *
+ * An earlier version used it as a sliding window ending at the chain head. That
+ * meant the deploy block fell out of range roughly 45,000 blocks (~6 days on
+ * Sepolia) after deployment, and from then on the history panel would render
+ * empty with no error - the worst possible failure for a panel labelled `live`.
+ * The scan now always starts at the deploy block and walks forward in chunks,
+ * so this number can only change how many requests are made, never which events
+ * are found. */
 export const MAX_LOG_RANGE = 45000n;
 
 /** topic0 of every event ExecutorRegistry emits. Passing these as the first
@@ -282,21 +288,26 @@ export interface AgentEvent {
  */
 export async function getAgentEvents(agentId: Hex = AGENT_ID): Promise<AgentEvent[]> {
   const latest = await client.getBlockNumber();
-  const windowStart = latest > MAX_LOG_RANGE ? latest - MAX_LOG_RANGE : 0n;
-  const fromBlock =
-    windowStart > EXECUTOR_REGISTRY_DEPLOY_BLOCK ? windowStart : EXECUTOR_REGISTRY_DEPLOY_BLOCK;
 
-  const rawLogs = await client.request({
-    method: "eth_getLogs",
-    params: [
-      {
-        address: EXECUTOR_REGISTRY,
-        fromBlock: numberToHex(fromBlock),
-        toBlock: numberToHex(latest),
-        topics: [EXECUTOR_EVENT_TOPICS, agentId],
-      },
-    ],
-  });
+  // Always anchored at the deploy block - no event this contract has ever
+  // emitted can fall outside the scan. Chunked only to respect the RPC's
+  // per-request block-range cap.
+  const rawLogs: unknown[] = [];
+  for (let from = EXECUTOR_REGISTRY_DEPLOY_BLOCK; from <= latest; from += MAX_LOG_RANGE) {
+    const to = from + MAX_LOG_RANGE - 1n;
+    const chunk = await client.request({
+      method: "eth_getLogs",
+      params: [
+        {
+          address: EXECUTOR_REGISTRY,
+          fromBlock: numberToHex(from),
+          toBlock: numberToHex(to > latest ? latest : to),
+          topics: [EXECUTOR_EVENT_TOPICS, agentId],
+        },
+      ],
+    });
+    rawLogs.push(...(chunk as unknown[]));
+  }
 
   const logs = parseEventLogs({
     abi: EXECUTOR_REGISTRY_ABI,
