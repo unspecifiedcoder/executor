@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getAgentStatus, EXECUTOR_REGISTRY, AGENT_ID } from "../../lib/ens";
 
 export function Nav() {
   const [status, setStatus] = useState<string | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     getAgentStatus()
@@ -13,17 +15,21 @@ export function Nav() {
       .catch(() => {});
   }, []);
 
+  // /preview mounts its own isolated chrome - don't double it up.
+  if (pathname?.startsWith("/preview")) return null;
+
   return (
     <nav className="site-nav">
       <div className="site-nav-inner">
         <Link href="/" className="nav-mark pressable">
+          <span className="nav-mark-box">E</span>
           EXECUTOR
         </Link>
         <div className="nav-links">
-          <Link href="/" className="nav-link">
+          <Link href="/" className={`nav-link ${pathname === "/" ? "active" : ""}`}>
             Overview
           </Link>
-          <Link href="/vitals" className="nav-link">
+          <Link href="/vitals" className={`nav-link ${pathname === "/vitals" ? "active" : ""}`}>
             Live agent
           </Link>
           <Link href={`/agent/${AGENT_ID}`} className="nav-link">
@@ -57,15 +63,28 @@ export function Nav() {
           gap: 24px;
         }
         .nav-mark {
+          display: flex;
+          align-items: center;
+          gap: 10px;
           font-family: var(--mono);
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.24em;
+          font-size: 13px;
+          font-weight: 800;
+          letter-spacing: 0.18em;
           color: var(--text);
+        }
+        .nav-mark-box {
+          width: 22px;
+          height: 22px;
+          display: grid;
+          place-items: center;
+          border: 1px solid var(--border-strong);
+          background: color-mix(in srgb, var(--active) 8%, transparent);
+          color: var(--active);
+          font-size: 10px;
         }
         .nav-links {
           display: flex;
-          gap: 18px;
+          gap: 4px;
           flex: 1;
         }
         .nav-link {
@@ -73,9 +92,16 @@ export function Nav() {
           font-size: 12px;
           color: var(--faint);
           letter-spacing: 0.02em;
+          padding: 7px 11px;
+          border-radius: 4px;
         }
         .nav-link:hover {
-          color: var(--succession);
+          color: var(--text);
+          background: color-mix(in srgb, var(--text) 5%, transparent);
+        }
+        .nav-link.active {
+          color: var(--text);
+          background: color-mix(in srgb, var(--text) 6%, transparent);
         }
         .nav-status {
           display: flex;
@@ -117,6 +143,9 @@ export function Nav() {
 }
 
 export function Footer() {
+  const pathname = usePathname();
+  if (pathname?.startsWith("/preview")) return null;
+
   return (
     <footer className="site-footer">
       <div className="site-footer-inner mono">

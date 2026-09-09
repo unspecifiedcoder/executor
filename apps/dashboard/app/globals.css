@@ -1,21 +1,27 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap");
 
 :root {
-  --bg: #08090b;
-  --raised: #0f1013;
-  --border: #1e2024;
-  --border-strong: #2c2f34;
-  --text: #ededef;
-  --dim: #8b8d93;
-  --faint: #55575c;
+  /* Terminal-dark palette, ported from the ETHOnline UI pass: a punchier
+     acid-green "alive" signal reads better on a black ground than the old
+     mint, and Inter/DM Mono earns the bigger hero scale below. Variable
+     names are unchanged so every component that already reads them
+     (FlowPanel, EventTimeline, SiteChrome, the .tag/.status system)
+     re-themes for free. */
+  --bg: #070807;
+  --raised: #0f1210;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #f2f4ef;
+  --dim: #8d948d;
+  --faint: #565d56;
 
-  --active: #34d399;
-  --administration: #f0a93e;
-  --liquidation: #f0524a;
-  --succession: #4c8dff;
+  --active: #9cff57;
+  --administration: #ffbd59;
+  --liquidation: #ff625c;
+  --succession: #77aaff;
 
-  --sans: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
-  --mono: "IBM Plex Mono", "SF Mono", Consolas, monospace;
+  --sans: "Inter", -apple-system, "Segoe UI", sans-serif;
+  --mono: "DM Mono", "SF Mono", Consolas, monospace;
 
   /* Motion vocabulary - three curves, each with one job.
      - settle: something new arriving and coming to rest. Fast start, no
@@ -54,10 +60,16 @@ body {
 }
 
 body {
-  background: var(--bg);
+  background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(156, 255, 87, 0.05), transparent 65%), var(--bg);
   color: var(--text);
   font-family: var(--sans);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--active);
+  color: #071000;
 }
 
 a {

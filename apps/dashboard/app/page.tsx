@@ -217,16 +217,16 @@ export default async function OverviewPage() {
 
         h1 {
           font-family: var(--sans);
-          font-size: 46px;
-          font-weight: 600;
-          line-height: 1.12;
-          letter-spacing: -0.02em;
-          margin: 0 0 20px;
+          font-size: clamp(40px, 6vw, 84px);
+          font-weight: 800;
+          line-height: 0.98;
+          letter-spacing: -0.03em;
+          margin: 0 0 24px;
           text-wrap: balance;
         }
         h1 em {
           font-style: normal;
-          color: var(--succession);
+          color: var(--active);
         }
         .sub {
           font-size: 16px;
