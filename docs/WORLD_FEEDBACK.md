@@ -1,11 +1,9 @@
-# World feedback (Selfie Check)
+# World (Selfie Check) feedback — withdrawn
 
-Required write-up for the Selfie Check prize. Fill in during/after
-integration in `packages/optional/world-selfie/`.
+This project is not filing for the World track. The integration this write-up
+was reserved for (`packages/optional/world-selfie/`, gating creditor claim
+filing on a World ID proof) was never built, and the project has no creditor
+claim filing at all.
 
-- What we built: gate claim filing on a World ID selfie proof, so one
-  creditor can't file duplicate claims against the same estate under
-  multiple addresses.
-- What worked well: _fill in after Day 6 integration._
-- Friction points / SDK feedback: _fill in after Day 6 integration._
-- Would we ship this in production: _fill in._
+Rather than submit a feedback form about an integration we did not do, the
+claim is withdrawn. See `docs/PRIZES.md` for the three tracks we do file for.

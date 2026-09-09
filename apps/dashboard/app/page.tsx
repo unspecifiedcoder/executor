@@ -20,18 +20,42 @@ function short(addr: string): string {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
+export const metadata = {
+  // `app/page.tsx` shares a segment with the root layout, so the layout's
+  // `%s — Executor` template does not apply here. Spelled out instead.
+  title: "Overview — Executor",
+  description: "One contract, one x402 gateway, one ENSv2 name - and what each of them proves.",
+};
+
 export const revalidate = 30;
+
+/** An RPC failure and an empty result are different facts, and a panel labelled
+ * `live` has to be able to tell them apart. Everything read here is wrapped so a
+ * failure carries its reason into the UI instead of collapsing into `null`/`[]`. */
+type Read<T> = { ok: true; value: T } | { ok: false; error: string };
+
+async function read<T>(promise: Promise<T>): Promise<Read<T>> {
+  try {
+    return { ok: true, value: await promise };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
 
 export default async function OverviewPage() {
   const [name, status, plan, destination, events] = await Promise.all([
-    getNameState(DEMO_LABEL).catch(() => null),
-    getAgentStatus().catch(() => null),
-    getAgentPlan().catch(() => null),
-    getPaymentDestination().catch(() => null),
-    getAgentEvents().catch(() => []),
+    read(getNameState(DEMO_LABEL)),
+    read(getAgentStatus()),
+    read(getAgentPlan()),
+    read(getPaymentDestination()),
+    read(getAgentEvents()),
   ]);
-  const locked = name ? !(await hasRole(name.tokenId, ROLE_SET_RESOLVER_ADMIN, OPERATOR)) : null;
-  const statusClass = status ?? "active";
+  const locked: Read<boolean> = name.ok
+    ? await read(
+        hasRole(name.value.tokenId, ROLE_SET_RESOLVER_ADMIN, OPERATOR).then((held) => !held),
+      )
+    : { ok: false, error: name.error };
+  const statusClass = status.ok ? status.value : "active";
 
   return (
     <main className="overview">
@@ -40,7 +64,9 @@ export default async function OverviewPage() {
           <div className="hero-copy">
             <div className={`hero-status ${statusClass}`}>
               <span className="hero-status-dot" />
-              <span className="hero-status-label">{status ?? "reading chain…"}</span>
+              <span className="hero-status-label">
+                {status.ok ? status.value : "chain unreachable"}
+              </span>
             </div>
 
             <h1>
@@ -78,20 +104,28 @@ export default async function OverviewPage() {
           </div>
 
           <div className="hero-panel">
-            {plan && destination ? (
+            {plan.ok && destination.ok ? (
               <FlowPanel
-                treasury={plan.treasury}
-                estate={plan.estate}
-                destination={destination}
-                status={plan.status}
-                lastHeartbeat={plan.lastHeartbeat}
-                eligibleAt={plan.eligibleAt}
-                heartbeatInterval={plan.heartbeatInterval}
-                gracePeriod={plan.gracePeriod}
-                planLocked={plan.planLocked}
+                treasury={plan.value.treasury}
+                estate={plan.value.estate}
+                destination={destination.value}
+                status={plan.value.status}
+                lastHeartbeat={plan.value.lastHeartbeat}
+                eligibleAt={plan.value.eligibleAt}
+                heartbeatInterval={plan.value.heartbeatInterval}
+                gracePeriod={plan.value.gracePeriod}
+                planLocked={plan.value.planLocked}
               />
             ) : (
-              <div className="panel-loading mono">reading chain…</div>
+              <div className="panel-error mono">
+                <strong>Could not read the registry.</strong>
+                <span>
+                  {!plan.ok ? plan.error : !destination.ok ? destination.error : "unknown error"}
+                </span>
+                <span className="panel-error-note">
+                  This panel is a live Sepolia read — it is showing an error, not a state.
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -107,27 +141,56 @@ export default async function OverviewPage() {
         <div className="row row-animated" style={{ ["--i" as string]: 0 }}>
           <span className="label">Agent</span>
           <span className="value">
-            {name ? `${name.label}.eth` : DEMO_LABEL} <span className="tag live">live</span>
+            {name.ok ? (
+              <>
+                {`${name.value.label}.eth`} <span className="tag live">live</span>
+              </>
+            ) : (
+              <span className="tag error">read failed</span>
+            )}
           </span>
         </div>
         <hr className="hr" />
         <div className="row row-animated" style={{ ["--i" as string]: 1 }}>
           <span className="label">Owner</span>
           <span className="value">
-            {name ? short(name.owner) : "—"} <span className="tag live">live</span>
+            {name.ok ? (
+              <>
+                {short(name.value.owner)} <span className="tag live">live</span>
+              </>
+            ) : (
+              <span className="tag error">read failed</span>
+            )}
           </span>
         </div>
         <hr className="hr" />
         <div className="row row-animated" style={{ ["--i" as string]: 2 }}>
           <span className="label">Succession lock</span>
           <span className="value">
-            {locked === null ? "—" : locked ? "engaged" : "not engaged"}{" "}
-            <span className="tag live">live</span>
+            {locked.ok ? (
+              <>
+                {locked.value ? "engaged" : "not engaged"} <span className="tag live">live</span>
+              </>
+            ) : (
+              <span className="tag error">read failed</span>
+            )}
           </span>
         </div>
 
+        {!name.ok && <p className="read-error mono">ENS registry read failed: {name.error}</p>}
+
         <div className="timeline-wrap">
-          <EventTimeline events={events} />
+          {events.ok ? (
+            <EventTimeline events={events.value} />
+          ) : (
+            <div className="panel-error mono">
+              <strong>Could not load on-chain history.</strong>
+              <span>{events.error}</span>
+              <span className="panel-error-note">
+                This is an RPC failure, not an empty history.
+              </span>
+            </div>
+          )}
         </div>
       </section>
 
@@ -297,6 +360,36 @@ export default async function OverviewPage() {
           text-align: center;
           color: var(--faint);
           font-size: 12px;
+        }
+        .panel-error {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          border: 1px solid var(--liquidation);
+          border-radius: 8px;
+          padding: 20px;
+          font-size: 11px;
+          line-height: 1.5;
+          color: var(--dim);
+          background: color-mix(in srgb, var(--liquidation) 7%, transparent);
+          overflow-wrap: anywhere;
+        }
+        .panel-error strong {
+          color: var(--liquidation);
+          font-size: 12px;
+        }
+        .panel-error-note {
+          color: var(--faint);
+        }
+        .read-error {
+          font-size: 11px;
+          color: var(--liquidation);
+          margin: 12px 0 0;
+          overflow-wrap: anywhere;
+        }
+        .tag.error {
+          color: var(--liquidation);
+          border-color: var(--liquidation);
         }
 
         .section-header {

@@ -6,7 +6,7 @@
   "scripts": {
     "gateway": "tsx src/gateway.ts",
     "pay": "tsx src/pay-for-research.ts",
-    "dev": "tsx watch src/server-hedera.ts",
+    "dev": "tsx watch src/gateway.ts",
     "kill": "tsx src/kill.ts"
   },
   "dependencies": {

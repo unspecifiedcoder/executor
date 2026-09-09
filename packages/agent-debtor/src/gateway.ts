@@ -16,13 +16,51 @@ import { sepolia } from "viem/chains";
 const REGISTRY_ADDRESS = "0x99ab8c07c0082cbdd0306b30bc52ea15e6db2521" as const;
 const AGENT_ID = "0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255" as const;
 
-// Known Sepolia EVM address -> Hedera account ID mapping for this demo's
-// treasury/estate accounts (both created via the Hedera portal faucet and
-// confirmed via mirror node before this gateway ever runs).
-const HEDERA_ACCOUNT_BY_EVM_ADDRESS: Record<string, string> = {
-  "0x7ea7f6e97e24f1ad03db0bd544a0aef4a1f07330": "0.0.10423643", // treasury
-  "0xde3207f493fe4600deec424e0875ec943d712337": "0.0.10423647", // estate
-};
+const MIRROR_NODE_URL = "https://testnet.mirrornode.hedera.com";
+
+/**
+ * Resolves an EVM address to its Hedera account ID via the mirror node REST API.
+ *
+ * This is a general lookup rather than a table of this demo's two accounts, so
+ * any agent whose treasury/estate addresses correspond to Hedera testnet
+ * accounts works through this gateway unmodified. An address with no Hedera
+ * account returns 404, which is surfaced as an explicit error - the gateway
+ * refuses to quote a price it cannot route, instead of falling back to some
+ * default destination.
+ */
+const hederaAccountCache = new Map<string, string>();
+
+async function hederaAccountForEvmAddress(evmAddress: string): Promise<string> {
+  const key = evmAddress.toLowerCase();
+  const cached = hederaAccountCache.get(key);
+  if (cached) return cached;
+
+  const response = await fetch(`${MIRROR_NODE_URL}/api/v1/accounts/${key}`);
+
+  if (response.status === 404) {
+    throw new Error(
+      `No Hedera testnet account exists for EVM address ${evmAddress} ` +
+        `(mirror node /api/v1/accounts/${key} returned 404). The payment destination ` +
+        `must be an address that maps to a Hedera account.`,
+    );
+  }
+  if (!response.ok) {
+    throw new Error(
+      `Hedera mirror node lookup for ${evmAddress} failed: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const body = (await response.json()) as { account?: string; deleted?: boolean };
+  if (!body.account) {
+    throw new Error(`Hedera mirror node returned no account id for ${evmAddress}`);
+  }
+  if (body.deleted) {
+    throw new Error(`Hedera account ${body.account} for ${evmAddress} has been deleted`);
+  }
+
+  hederaAccountCache.set(key, body.account);
+  return body.account;
+}
 
 const REGISTRY_ABI = [
   {
@@ -47,10 +85,7 @@ async function resolveHederaPayTo(): Promise<string> {
     args: [AGENT_ID],
   })) as Address;
 
-  const hederaAccount = HEDERA_ACCOUNT_BY_EVM_ADDRESS[destination.toLowerCase()];
-  if (!hederaAccount) {
-    throw new Error(`No known Hedera account for Sepolia destination ${destination}`);
-  }
+  const hederaAccount = await hederaAccountForEvmAddress(destination);
   console.log(`[gateway] getPaymentDestination() -> ${destination} -> ${hederaAccount}`);
   return hederaAccount;
 }
@@ -84,7 +119,11 @@ app.use(
           // amount is given directly in tinybars: 1,000,000 tinybars = 0.01 HBAR.
           price: { asset: "0.0.0", amount: "1000000" },
         },
-        description: "Atlas research service - payTo resolves from ExecutorRegistry on every request",
+        // Deliberately not dressed up as an inference/research product: the
+        // response is a fixed string. What is being demonstrated is where the
+        // payment lands, not what is being sold.
+        description:
+          "Demo resource (fixed response) - payTo resolves from ExecutorRegistry on every request",
       },
     },
     resourceServer,

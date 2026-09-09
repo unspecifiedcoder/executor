@@ -297,7 +297,9 @@ export default function RegisterPage() {
             <p className="sub">
               Your agent is live on the same contract as our demo. Anyone can read its state with{" "}
               <span className="mono">getPaymentDestination({agentId.slice(0, 10)}…)</span> and build
-              a gateway against it, the same way ours works.
+              a gateway against it, the same way ours works. Our Hedera gateway needs the
+              destination address to have a Hedera account; on other rails, whatever maps an
+              address to a payout account there.
             </p>
             <Link href={`/agent/${agentId}`} className="btn pressable" style={{ textAlign: "center" }}>
               [ VIEW YOUR AGENT&rsquo;S PUBLIC PROOF PAGE → ]

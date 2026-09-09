@@ -1,39 +1,36 @@
 set dotenv-load := true
 
-# install all workspace deps + forge deps
+# Recipes for the parts of this repo that actually run. The earlier justfile
+# also had `deploy-arc`, `register-agent`, `e2e`, `demo` and `simulate`; the
+# scripts behind them were never finished, so they have been removed rather
+# than left to fail.
+
 install:
     pnpm install
     cd contracts && forge install
 
-# run the full local dev stack (contracts on anvil forks + agents + dashboard)
-dev:
-    pnpm dev
-
-# unit tests: forge + vitest across the workspace
+# 41 tests: ExecutorRegistry (25) + ENSv2 role semantics (9) + legacy undeployed
+# contracts (7).
 test:
     cd contracts && forge test -vvv
-    pnpm test
 
-# end-to-end demo: birth -> paid requests -> kill -> flip -> claims -> plan -> payout -> succession
-e2e:
-    pnpm --filter demo exec tsx run-e2e.ts
+typecheck:
+    pnpm -C apps/dashboard exec tsc --noEmit
 
-# scripted 10-second demo run for judging
-demo:
-    pnpm --filter demo exec tsx run-e2e.ts --scripted
+build:
+    pnpm -C apps/dashboard build
 
-# deploy Receiver + ENS setup to Sepolia
-deploy-sepolia:
-    cd contracts && forge script script/DeploySepolia.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast
+# The dashboard. Reads Sepolia over a public RPC; no keys needed to browse it.
+dev:
+    pnpm -C apps/dashboard dev
 
-# deploy Estate to Arc testnet
-deploy-arc:
-    cd contracts && forge script script/DeployArc.s.sol --rpc-url $ARC_TESTNET_RPC_URL --broadcast
+# The x402 resource server on :3200.
+gateway:
+    pnpm --filter @executor/agent-debtor gateway
 
-# run the "living will" registration script against a deployed Receiver
-register-agent:
-    cd contracts && forge script script/RegisterAgent.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast
+# One real paid request against the gateway. Needs HEDERA_PRIVATE_KEY.
+pay:
+    pnpm --filter @executor/agent-debtor pay
 
 fmt:
     cd contracts && forge fmt
-    pnpm -r lint --fix

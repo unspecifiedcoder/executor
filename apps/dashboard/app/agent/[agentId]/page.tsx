@@ -1,12 +1,44 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isAddress, isHex, zeroAddress, type Hex } from "viem";
 import { getAgentPlan, getPaymentDestination, getAgentEvents, EXECUTOR_REGISTRY } from "../../../lib/ens";
 import FlowPanel from "../../components/FlowPanel";
 import EventTimeline from "../../components/EventTimeline";
+import SyncingBar from "../../components/SyncingBar";
 import HeartbeatButton from "./HeartbeatButton";
+import { Suspense } from "react";
+
+/** Rendered inside a `<Suspense>` so an RPC failure here shows as an error state
+ * rather than as an empty timeline. */
+async function AgentHistory({ id }: { id: Hex }) {
+  try {
+    const events = await getAgentEvents(id);
+    return <EventTimeline events={events} />;
+  } catch (err) {
+    return (
+      <div className="agent-read-error mono">
+        <strong>Could not load on-chain history.</strong>
+        <span>{err instanceof Error ? err.message : String(err)}</span>
+        <span>This is an RPC failure, not an empty history.</span>
+      </div>
+    );
+  }
+}
 
 export const revalidate = 15;
+
+export function generateMetadata({ params }: { params: { agentId: string } }): Metadata {
+  const { agentId } = params;
+  const label =
+    isHex(agentId) && agentId.length === 66
+      ? `${agentId.slice(0, 10)}…${agentId.slice(-6)}`
+      : "Unknown agent";
+  return {
+    title: `Agent ${label}`,
+    description: "Live registry read of one agent's resolution plan and on-chain history.",
+  };
+}
 
 function short(addr: string): string {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
@@ -17,13 +49,15 @@ export default async function AgentPage({ params }: { params: { agentId: string 
   if (!isHex(agentId) || agentId.length !== 66) notFound();
 
   const id = agentId as Hex;
-  const [plan, destination, events] = await Promise.all([
-    getAgentPlan(id).catch(() => null),
-    getPaymentDestination(id).catch(() => null),
-    getAgentEvents(id).catch(() => []),
-  ]);
 
-  if (!plan || plan.owner === zeroAddress) notFound();
+  // `getAgentPlan` is awaited on its own and deliberately NOT caught: an
+  // unregistered agent comes back as a zero-address owner, so a thrown error
+  // here means the RPC failed. Swallowing it would render "no such agent" for
+  // what is really an outage.
+  const plan = await getAgentPlan(id);
+  if (plan.owner === zeroAddress) notFound();
+
+  const destination = await getPaymentDestination(id).catch(() => null);
 
   return (
     <main className="agent-page">
@@ -38,9 +72,10 @@ export default async function AgentPage({ params }: { params: { agentId: string 
         </h1>
         <p className="sub">
           Any agent registered on this ExecutorRegistry gets this page for free — a public, live
-          read of its plan and history. Anyone can build a payment gateway against{" "}
+          read of its plan and history. A payment gateway can read{" "}
           <span className="mono">getPaymentDestination({id.slice(0, 8)}…)</span> the same way our
-          demo does.
+          demo does; our gateway then resolves that address to a Hedera account through the mirror
+          node, which works for any destination that has one.
         </p>
       </div>
 
@@ -88,7 +123,12 @@ export default async function AgentPage({ params }: { params: { agentId: string 
           <span className="tag live">live</span>
         </div>
         <hr className="hr" />
-        <EventTimeline events={events} />
+        {/* Streamed separately: the log scan is the slowest read on the page, and
+            keeping it out of the initial await is what lets `notFound()` above
+            settle a real 404 status before anything is flushed. */}
+        <Suspense fallback={<SyncingBar label="READING ON-CHAIN HISTORY" />}>
+          <AgentHistory id={id} />
+        </Suspense>
       </section>
 
       <p className="registry-note mono">
@@ -111,6 +151,23 @@ export default async function AgentPage({ params }: { params: { agentId: string 
         }
         .back:hover {
           color: var(--succession);
+        }
+        .agent-read-error {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          border: 1px solid var(--liquidation);
+          border-radius: 8px;
+          padding: 20px;
+          font-size: 11px;
+          line-height: 1.5;
+          color: var(--dim);
+          background: color-mix(in srgb, var(--liquidation) 7%, transparent);
+          overflow-wrap: anywhere;
+        }
+        .agent-read-error strong {
+          color: var(--liquidation);
+          font-size: 12px;
         }
         .header {
           margin: 32px 0 28px;

@@ -15,7 +15,9 @@ contract EstateTest is Test {
 
     function test_registerClaim_revertsForNonTrustee() public {
         vm.expectRevert(Estate.NotTrustee.selector);
-        estate.registerClaim(bytes32(uint256(1)), makeAddr("creditor"), 100, Estate.PriorityClass.Unsecured);
+        estate.registerClaim(
+            bytes32(uint256(1)), makeAddr("creditor"), 100, Estate.PriorityClass.Unsecured
+        );
     }
 
     function test_registerClaim_storesClaim() public {

@@ -1,4 +1,13 @@
-import { createPublicClient, http, type Address, type Hex } from "viem";
+import {
+  createPublicClient,
+  http,
+  numberToHex,
+  parseEventLogs,
+  toEventSelector,
+  type Address,
+  type Hex,
+  type Log,
+} from "viem";
 import { sepolia } from "viem/chains";
 
 /**
@@ -237,9 +246,24 @@ export const EXECUTOR_REGISTRY_ABI = [
 ] as const;
 
 /** Block ExecutorRegistry was deployed at on Sepolia - found by bisecting
- * cast code against the address, since the deploy tx wasn't recorded. Bounds
- * getLogs() scans so a public RPC's block-range cap never gets hit. */
+ * cast code against the address, since the deploy tx wasn't recorded. */
 export const EXECUTOR_REGISTRY_DEPLOY_BLOCK = 11661800n;
+
+/** publicnode caps eth_getLogs at 50,000 blocks per request. We stay under it
+ * with margin rather than scanning from the deploy block forever - once the
+ * chain is more than 50k blocks past deployment an unwindowed scan starts
+ * failing outright, and the history panel would silently go empty. */
+export const MAX_LOG_RANGE = 45000n;
+
+/** topic0 of every event ExecutorRegistry emits. Passing these as the first
+ * topic slot (an OR-match) plus the agentId as the second means the RPC does
+ * the filtering, instead of us downloading every agent's logs and filtering in
+ * JS. Every event on this contract has `agentId` as its only indexed
+ * parameter, which is what makes the single combined query possible. */
+const EXECUTOR_EVENT_TOPICS: Hex[] = EXECUTOR_REGISTRY_ABI.filter(
+  (item): item is Extract<(typeof EXECUTOR_REGISTRY_ABI)[number], { type: "event" }> =>
+    item.type === "event",
+).map((event) => toEventSelector(event));
 
 export interface AgentEvent {
   name: string;
@@ -249,14 +273,35 @@ export interface AgentEvent {
   args: Record<string, unknown>;
 }
 
+/**
+ * Reads this agent's on-chain history.
+ *
+ * Throws on RPC failure rather than returning `[]` - callers must render the
+ * difference, because "the RPC is down" and "this agent has no history" look
+ * identical otherwise and the panel is labelled `live`.
+ */
 export async function getAgentEvents(agentId: Hex = AGENT_ID): Promise<AgentEvent[]> {
-  const allLogs = await client.getLogs({
-    address: EXECUTOR_REGISTRY,
-    events: EXECUTOR_REGISTRY_ABI.filter((item) => item.type === "event"),
-    fromBlock: EXECUTOR_REGISTRY_DEPLOY_BLOCK,
-    toBlock: "latest",
+  const latest = await client.getBlockNumber();
+  const windowStart = latest > MAX_LOG_RANGE ? latest - MAX_LOG_RANGE : 0n;
+  const fromBlock =
+    windowStart > EXECUTOR_REGISTRY_DEPLOY_BLOCK ? windowStart : EXECUTOR_REGISTRY_DEPLOY_BLOCK;
+
+  const rawLogs = await client.request({
+    method: "eth_getLogs",
+    params: [
+      {
+        address: EXECUTOR_REGISTRY,
+        fromBlock: numberToHex(fromBlock),
+        toBlock: numberToHex(latest),
+        topics: [EXECUTOR_EVENT_TOPICS, agentId],
+      },
+    ],
   });
-  const logs = allLogs.filter((log) => (log.args as { agentId?: Hex }).agentId === agentId);
+
+  const logs = parseEventLogs({
+    abi: EXECUTOR_REGISTRY_ABI,
+    logs: rawLogs as unknown as Log[],
+  });
 
   const uniqueBlocks = Array.from(new Set(logs.map((l) => l.blockNumber)));
   const timestamps = new Map<bigint, number>(

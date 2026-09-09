@@ -41,9 +41,12 @@ contract Estate {
 
     /// @notice Populated from the CRE workflow's verified claims output -
     /// never from raw creditor-submitted evidence directly.
-    function registerClaim(bytes32 claimId, address creditor, uint256 allowedAmount, PriorityClass class)
-        external
-    {
+    function registerClaim(
+        bytes32 claimId,
+        address creditor,
+        uint256 allowedAmount,
+        PriorityClass class
+    ) external {
         if (msg.sender != trustee) revert NotTrustee();
         claims[claimId] = Claim(creditor, allowedAmount, class, false);
         claimIds.push(claimId);

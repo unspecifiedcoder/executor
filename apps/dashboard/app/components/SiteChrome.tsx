@@ -15,9 +15,6 @@ export function Nav() {
       .catch(() => {});
   }, []);
 
-  // /preview mounts its own isolated chrome - don't double it up.
-  if (pathname?.startsWith("/preview")) return null;
-
   return (
     <nav className="site-nav">
       <div className="site-nav-inner">
@@ -132,9 +129,27 @@ export function Nav() {
           color: var(--faint);
         }
 
+        /* The nav used to be display:none below 640px, which left a phone with no
+           route to /vitals, /register or the agent page. Instead the bar wraps to a
+           second line and the links stay reachable. */
         @media (max-width: 640px) {
+          .site-nav-inner {
+            flex-wrap: wrap;
+            gap: 10px 14px;
+            padding: 12px 16px;
+          }
           .nav-links {
-            display: none;
+            order: 3;
+            flex-basis: 100%;
+            flex-wrap: wrap;
+            gap: 2px;
+            margin: 0 -6px;
+          }
+          .nav-link {
+            padding: 7px 6px;
+          }
+          .nav-status {
+            margin-left: auto;
           }
         }
       `}</style>
@@ -143,9 +158,6 @@ export function Nav() {
 }
 
 export function Footer() {
-  const pathname = usePathname();
-  if (pathname?.startsWith("/preview")) return null;
-
   return (
     <footer className="site-footer">
       <div className="site-footer-inner mono">

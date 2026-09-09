@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+# Nothing here needs a network RPC: `forge test` runs against local state, and
+# the dashboard build must not depend on a live chain read succeeding.
+jobs:
+  contracts:
+    name: forge test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - run: forge --version
+      - run: forge fmt --check
+      - run: forge build --sizes
+      - run: forge test -vvv
+
+  dashboard:
+    name: tsc + next build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # The workspace contains stub packages that are not part of the build;
+      # install everything so workspace links resolve, then build only the app.
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm -C apps/dashboard exec tsc --noEmit
+
+      - name: Build
+        run: pnpm -C apps/dashboard build
