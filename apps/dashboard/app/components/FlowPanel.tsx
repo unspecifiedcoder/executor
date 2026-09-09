@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { FLIP_EVENT, type FlipEventDetail } from "./FlipBurst";
 
 interface FlowPanelProps {
   treasury: string;
@@ -51,6 +52,9 @@ export default function FlowPanel({
   planLocked,
 }: FlowPanelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const treasuryBoxRef = useRef<HTMLDivElement>(null);
+  const estateBoxRef = useRef<HTMLDivElement>(null);
+  const prevToEstate = useRef<boolean | null>(null);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   const toEstate = destination.toLowerCase() === estate.toLowerCase();
   const isActive = status === "active" || status === "resolved";
@@ -60,6 +64,28 @@ export default function FlowPanel({
     const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Fire the full-screen burst only on a genuine change in the real
+  // getPaymentDestination() result - never on first mount (that's just
+  // reading whatever the chain already says), and never faked from a click.
+  useEffect(() => {
+    if (prevToEstate.current === null) {
+      prevToEstate.current = toEstate;
+      return;
+    }
+    if (prevToEstate.current === toEstate) return;
+    prevToEstate.current = toEstate;
+
+    const fromEl = toEstate ? treasuryBoxRef.current : estateBoxRef.current;
+    const toEl = toEstate ? estateBoxRef.current : treasuryBoxRef.current;
+    if (!fromEl || !toEl) return;
+
+    window.dispatchEvent(
+      new CustomEvent<FlipEventDetail>(FLIP_EVENT, {
+        detail: { fromRect: fromEl.getBoundingClientRect(), toRect: toEl.getBoundingClientRect(), toEstate },
+      }),
+    );
+  }, [toEstate]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -125,7 +151,7 @@ export default function FlowPanel({
   return (
     <div className="flow-panel">
       <div className="flow" style={{ ["--highlight" as string]: highlightColor }}>
-        <div className={`flow-box ${!toEstate ? "on" : ""}`}>
+        <div ref={treasuryBoxRef} className={`flow-box ${!toEstate ? "on" : ""}`}>
           <span className="flow-box-label">Treasury</span>
           <span className="flow-box-addr mono">{short(treasury)}</span>
           <span className="flow-box-tag">pays out while active</span>
@@ -133,7 +159,7 @@ export default function FlowPanel({
 
         <canvas ref={canvasRef} className="flow-canvas" aria-hidden="true" />
 
-        <div className={`flow-box ${toEstate ? "on" : ""}`}>
+        <div ref={estateBoxRef} className={`flow-box ${toEstate ? "on" : ""}`}>
           <span className="flow-box-label">Estate</span>
           <span className="flow-box-addr mono">{short(estate)}</span>
           <span className="flow-box-tag">receives after grace period lapses</span>
