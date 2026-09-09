@@ -21,3 +21,4 @@ packages/cre-workflow/.cre/
 
 *.log
 .DS_Store
+apps/dashboard/tsconfig.tsbuildinfo

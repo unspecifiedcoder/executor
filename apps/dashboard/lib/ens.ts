@@ -188,7 +188,95 @@ export const EXECUTOR_REGISTRY_ABI = [
     inputs: [{ name: "agentId", type: "bytes32" }],
     outputs: [{ name: "", type: "address" }],
   },
+  {
+    name: "heartbeat",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "agentId", type: "bytes32" }],
+    outputs: [],
+  },
+  {
+    type: "event",
+    name: "AgentRegistered",
+    inputs: [
+      { name: "agentId", type: "bytes32", indexed: true },
+      { name: "treasury", type: "address", indexed: false },
+      { name: "estate", type: "address", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "PlanLocked",
+    inputs: [{ name: "agentId", type: "bytes32", indexed: true }],
+  },
+  {
+    type: "event",
+    name: "Heartbeat",
+    inputs: [
+      { name: "agentId", type: "bytes32", indexed: true },
+      { name: "timestamp", type: "uint64", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "PaymentDestinationChanged",
+    inputs: [
+      { name: "agentId", type: "bytes32", indexed: true },
+      { name: "destination", type: "address", indexed: false },
+      { name: "status", type: "uint8", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "StatusChanged",
+    inputs: [
+      { name: "agentId", type: "bytes32", indexed: true },
+      { name: "status", type: "uint8", indexed: false },
+    ],
+  },
 ] as const;
+
+/** Block ExecutorRegistry was deployed at on Sepolia - found by bisecting
+ * cast code against the address, since the deploy tx wasn't recorded. Bounds
+ * getLogs() scans so a public RPC's block-range cap never gets hit. */
+export const EXECUTOR_REGISTRY_DEPLOY_BLOCK = 11661800n;
+
+export interface AgentEvent {
+  name: string;
+  blockNumber: bigint;
+  transactionHash: Hex;
+  timestamp: number;
+  args: Record<string, unknown>;
+}
+
+export async function getAgentEvents(agentId: Hex = AGENT_ID): Promise<AgentEvent[]> {
+  const allLogs = await client.getLogs({
+    address: EXECUTOR_REGISTRY,
+    events: EXECUTOR_REGISTRY_ABI.filter((item) => item.type === "event"),
+    fromBlock: EXECUTOR_REGISTRY_DEPLOY_BLOCK,
+    toBlock: "latest",
+  });
+  const logs = allLogs.filter((log) => (log.args as { agentId?: Hex }).agentId === agentId);
+
+  const uniqueBlocks = Array.from(new Set(logs.map((l) => l.blockNumber)));
+  const timestamps = new Map<bigint, number>(
+    await Promise.all(
+      uniqueBlocks.map(
+        async (bn) => [bn, Number((await client.getBlock({ blockNumber: bn })).timestamp)] as const,
+      ),
+    ),
+  );
+
+  return logs
+    .map((log) => ({
+      name: log.eventName as string,
+      blockNumber: log.blockNumber,
+      transactionHash: log.transactionHash as Hex,
+      timestamp: timestamps.get(log.blockNumber) ?? 0,
+      args: log.args as Record<string, unknown>,
+    }))
+    .sort((a, b) => (a.blockNumber > b.blockNumber ? -1 : a.blockNumber < b.blockNumber ? 1 : 0));
+}
 
 export async function getAgentStatus(agentId: Hex = AGENT_ID): Promise<AgentStatus> {
   const status = await client.readContract({
@@ -202,6 +290,7 @@ export async function getAgentStatus(agentId: Hex = AGENT_ID): Promise<AgentStat
 
 export interface AgentPlan {
   owner: Address;
+  heartbeatSigner: Address;
   treasury: Address;
   estate: Address;
   status: AgentStatus;
@@ -224,6 +313,7 @@ export async function getAgentPlan(agentId: Hex = AGENT_ID): Promise<AgentPlan> 
   const lastHeartbeat = Number(plan[8]);
   return {
     owner: plan[0],
+    heartbeatSigner: plan[1],
     treasury: plan[4],
     estate: plan[5],
     status: AGENT_STATUS_LABEL[plan[9]],
