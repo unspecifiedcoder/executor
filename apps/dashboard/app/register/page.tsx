@@ -299,6 +299,9 @@ export default function RegisterPage() {
               <span className="mono">getPaymentDestination({agentId.slice(0, 10)}…)</span> and build
               a gateway against it, the same way ours works.
             </p>
+            <Link href={`/agent/${agentId}`} className="btn pressable" style={{ textAlign: "center" }}>
+              [ VIEW YOUR AGENT&rsquo;S PUBLIC PROOF PAGE → ]
+            </Link>
           </div>
         )}
       </div>
