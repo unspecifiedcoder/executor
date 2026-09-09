@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getNameState, getAgentPlan, getPaymentDestination, type AgentPlan } from "../../lib/ens";
 import FlowPanel from "../components/FlowPanel";
+import BootSequence from "./BootSequence";
 
 const DEMO_LABEL = "executor-hackathon-demo";
 
@@ -269,6 +270,7 @@ export default function VitalsPage() {
 
   return (
     <main className="vitals">
+      <BootSequence done={phase !== "loading"} />
       {flash && <div className="flatline-flash" aria-hidden="true" />}
 
       {toast && (
@@ -412,6 +414,7 @@ export default function VitalsPage() {
 
       <style>{`
         .vitals {
+          position: relative;
           min-height: 100vh;
           padding: 32px 24px 64px;
         }
