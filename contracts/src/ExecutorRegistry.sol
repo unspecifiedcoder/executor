@@ -36,6 +36,7 @@ contract ExecutorRegistry {
     mapping(bytes32 => AgentPlan) public plans;
 
     event AgentRegistered(bytes32 indexed agentId, address treasury, address estate);
+    event PlanUpdated(bytes32 indexed agentId, address treasury, address estate);
     event PlanLocked(bytes32 indexed agentId);
     event Heartbeat(bytes32 indexed agentId, uint64 timestamp);
     event PaymentDestinationChanged(bytes32 indexed agentId, address destination, Status status);
@@ -47,6 +48,7 @@ contract ExecutorRegistry {
     error NotRecoveryAuthority();
     error PlanIsLocked();
     error AgentNotFound();
+    error AgentAlreadyRegistered();
     error TooEarly();
     error WrongStatus(Status current);
 
@@ -67,7 +69,7 @@ contract ExecutorRegistry {
         uint64 heartbeatInterval,
         uint64 gracePeriod
     ) external {
-        if (plans[agentId].owner != address(0)) revert(); // already registered
+        if (plans[agentId].owner != address(0)) revert AgentAlreadyRegistered();
 
         plans[agentId] = AgentPlan({
             owner: msg.sender,
@@ -87,10 +89,41 @@ contract ExecutorRegistry {
         emit PaymentDestinationChanged(agentId, treasury, Status.Active);
     }
 
+    /// @notice Amends an unlocked plan. This function is what gives `lockPlan`
+    /// its meaning: before locking, an owner can still move the treasury, the
+    /// estate, or the timing; after locking, every one of those is frozen and
+    /// this call reverts. Without an amend path, `planLocked` would be a flag
+    /// nothing reads and "pre-committed" would be an accident of the contract
+    /// having no setters, not a property anyone chose.
+    function updatePlan(
+        bytes32 agentId,
+        address heartbeatSigner,
+        address trustee,
+        address recoveryAuthority,
+        address treasury,
+        address estate,
+        uint64 heartbeatInterval,
+        uint64 gracePeriod
+    ) external onlyOwner(agentId) {
+        AgentPlan storage plan = plans[agentId];
+        if (plan.planLocked) revert PlanIsLocked();
+
+        plan.heartbeatSigner = heartbeatSigner;
+        plan.trustee = trustee;
+        plan.recoveryAuthority = recoveryAuthority;
+        plan.treasury = treasury;
+        plan.estate = estate;
+        plan.heartbeatInterval = heartbeatInterval;
+        plan.gracePeriod = gracePeriod;
+
+        emit PlanUpdated(agentId, treasury, estate);
+        emit PaymentDestinationChanged(agentId, getPaymentDestination(agentId), plan.status);
+    }
+
     /// @notice Freezes heartbeatSigner/trustee/recoveryAuthority/treasury/estate/heartbeatInterval/
-    /// gracePeriod permanently. This is the actual pre-commitment: without it, "the agent's
-    /// resolution plan" is just mutable owner-controlled state, not something creditors or a
-    /// judge should trust.
+    /// gracePeriod permanently by making `updatePlan` revert. This is the actual pre-commitment:
+    /// without it, the plan stays owner-mutable, which is not something creditors or a trustee
+    /// should have to trust. One-way by construction - there is no unlock.
     function lockPlan(bytes32 agentId) external onlyOwner(agentId) {
         plans[agentId].planLocked = true;
         emit PlanLocked(agentId);
@@ -146,8 +179,27 @@ contract ExecutorRegistry {
         emit PaymentDestinationChanged(agentId, plan.estate, Status.Liquidation);
     }
 
+    /// @notice Closes the estate out once its creditors have been paid, moving the
+    /// agent to its terminal state. Trustee-only and reachable only from Liquidation,
+    /// which is the same authority and the same one-way path that opened it.
+    ///
+    /// Until this existed, `Status.Resolved` was declared by the enum, rendered by the
+    /// dashboard as the final lifecycle stage, and assignable by nothing - a stage the
+    /// protocol could never actually reach.
+    function resolve(bytes32 agentId) external {
+        AgentPlan storage plan = plans[agentId];
+        if (msg.sender != plan.trustee) revert NotTrustee();
+        if (plan.status != Status.Liquidation) revert WrongStatus(plan.status);
+
+        plan.status = Status.Resolved;
+        emit StatusChanged(agentId, Status.Resolved);
+        // Destination stays the estate: the agent is wound up, and anything that
+        // arrives late belongs to the estate, not to a treasury nobody operates.
+        emit PaymentDestinationChanged(agentId, plan.estate, Status.Resolved);
+    }
+
     /// @notice The primitive the payment gateway actually calls, on every request.
-    function getPaymentDestination(bytes32 agentId) external view returns (address) {
+    function getPaymentDestination(bytes32 agentId) public view returns (address) {
         AgentPlan storage plan = plans[agentId];
         if (plan.owner == address(0)) revert AgentNotFound();
         return plan.status == Status.Active ? plan.treasury : plan.estate;

@@ -80,13 +80,12 @@ contract ExecutorRegistryTest is Test {
         assertFalse(planLocked);
     }
 
-    /// @dev Registration is first-come-first-served and permanent. Because there
-    /// is no update path, this revert is the only thing making every other field
-    /// on the plan immutable.
+    /// @dev Registration is first-come-first-served and permanent: an agentId is
+    /// claimed by whoever registers it, and a second registration cannot
+    /// overwrite the first one's treasury out from under it.
     function test_registerAgent_revertsOnDuplicate() public {
         vm.prank(makeAddr("squatter"));
-        // `registerAgent` uses a bare `revert()`, so the revert data is empty.
-        vm.expectRevert(bytes(""));
+        vm.expectRevert(ExecutorRegistry.AgentAlreadyRegistered.selector);
         registry.registerAgent(
             AGENT,
             makeAddr("otherSigner"),
