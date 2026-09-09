@@ -1,4 +1,4 @@
-import { createPublicClient, http, type Address } from "viem";
+import { createPublicClient, http, type Address, type Hex } from "viem";
 import { sepolia } from "viem/chains";
 
 /**
@@ -158,19 +158,43 @@ export const EXECUTOR_REGISTRY_ABI = [
     inputs: [{ name: "agentId", type: "bytes32" }],
     outputs: [],
   },
+  {
+    name: "registerAgent",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "agentId", type: "bytes32" },
+      { name: "heartbeatSigner", type: "address" },
+      { name: "trustee", type: "address" },
+      { name: "recoveryAuthority", type: "address" },
+      { name: "treasury", type: "address" },
+      { name: "estate", type: "address" },
+      { name: "heartbeatInterval", type: "uint64" },
+      { name: "gracePeriod", type: "uint64" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "lockPlan",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "agentId", type: "bytes32" }],
+    outputs: [],
+  },
 ] as const;
 
-export async function getAgentStatus(): Promise<AgentStatus> {
+export async function getAgentStatus(agentId: Hex = AGENT_ID): Promise<AgentStatus> {
   const status = await client.readContract({
     address: EXECUTOR_REGISTRY,
     abi: EXECUTOR_REGISTRY_ABI,
     functionName: "getStatus",
-    args: [AGENT_ID],
+    args: [agentId],
   });
   return AGENT_STATUS_LABEL[status];
 }
 
 export interface AgentPlan {
+  owner: Address;
   status: AgentStatus;
   heartbeatInterval: number;
   gracePeriod: number;
@@ -179,17 +203,18 @@ export interface AgentPlan {
   planLocked: boolean;
 }
 
-export async function getAgentPlan(): Promise<AgentPlan> {
+export async function getAgentPlan(agentId: Hex = AGENT_ID): Promise<AgentPlan> {
   const plan = await client.readContract({
     address: EXECUTOR_REGISTRY,
     abi: EXECUTOR_REGISTRY_ABI,
     functionName: "plans",
-    args: [AGENT_ID],
+    args: [agentId],
   });
   const heartbeatInterval = Number(plan[6]);
   const gracePeriod = Number(plan[7]);
   const lastHeartbeat = Number(plan[8]);
   return {
+    owner: plan[0],
     status: AGENT_STATUS_LABEL[plan[9]],
     heartbeatInterval,
     gracePeriod,

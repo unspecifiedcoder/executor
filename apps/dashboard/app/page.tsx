@@ -37,9 +37,14 @@ export default async function OverviewPage() {
           <br />
           its obligations don&rsquo;t.
         </h1>
-        <Link href="/vitals" className="cta pressable">
-          VIEW LIVE AGENT →
-        </Link>
+        <div className="cta-row">
+          <Link href="/vitals" className="cta pressable">
+            VIEW LIVE AGENT →
+          </Link>
+          <Link href="/register" className="cta ghost pressable">
+            REGISTER YOUR OWN AGENT
+          </Link>
+        </div>
 
         <div className="proof-strip mono">
           <span className="proof-label">verified onchain</span>
@@ -210,6 +215,11 @@ export default async function OverviewPage() {
           margin: 0 0 28px;
           text-wrap: balance;
         }
+        .cta-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
         .cta {
           display: inline-block;
           font-family: var(--mono);
@@ -224,6 +234,14 @@ export default async function OverviewPage() {
         .cta:hover {
           border-color: var(--succession);
           color: var(--succession);
+        }
+        .cta.ghost {
+          color: var(--faint);
+          border-style: dashed;
+        }
+        .cta.ghost:hover {
+          color: var(--succession);
+          border-color: var(--succession);
         }
         .proof-strip {
           margin-top: 20px;
