@@ -92,10 +92,14 @@ export function handleHeartbeat(event: HeartbeatEvent): void {
   beat.blockTimestamp = event.block.timestamp;
   beat.txHash = event.transaction.hash;
 
-  // The gap is the whole signal. A list of heartbeats proves transactions were
-  // sent; a *steady* gap is what distinguishes an agent that was genuinely
-  // running from one whose history was manufactured in a burst. Computing it
-  // here means a consumer never has to fetch the whole series and diff it.
+  // Computed here so a consumer never has to fetch the whole series and diff
+  // it - the gap is the unit the protocol's own deadline is expressed in.
+  //
+  // Deliberately NOT a liveness proof. A steady cadence is trivial to
+  // manufacture: anyone holding the signer key can beat on a timer, and this
+  // index cannot tell that apart from an agent that genuinely ran. What it
+  // gives is observability - what the cadence *was*, and where it broke - which
+  // is a different and much more defensible claim than authenticity.
   let previous = agent.lastHeartbeat;
   if (previous !== null) {
     beat.gapFromPrevious = event.params.timestamp.minus(previous as BigInt);

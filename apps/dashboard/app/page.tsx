@@ -6,10 +6,11 @@ import {
   getAgentStatus,
   getAgentPlan,
   getPaymentDestination,
-  getAgentEvents,
   EXECUTOR_REGISTRY,
   AGENT_ID,
 } from "../lib/ens";
+import type { AgentEvent } from "../lib/ens";
+import { getAgentHistory, getIndexMeta } from "../lib/subgraph";
 import FlowPanel from "./components/FlowPanel";
 import EventTimeline from "./components/EventTimeline";
 
@@ -43,13 +44,22 @@ async function read<T>(promise: Promise<T>): Promise<Read<T>> {
 }
 
 export default async function OverviewPage() {
-  const [name, status, plan, destination, events] = await Promise.all([
+  // History and liveness statistics come from the subgraph, not from a chunked
+  // eth_getLogs scan. Current state (status, plan, destination) still comes
+  // straight from the contract: those are single cheap reads where the chain is
+  // authoritative and an index would only add staleness.
+  const [name, status, plan, destination, history, indexMeta] = await Promise.all([
     read(getNameState(DEMO_LABEL)),
     read(getAgentStatus()),
     read(getAgentPlan()),
     read(getPaymentDestination()),
-    read(getAgentEvents()),
+    read(getAgentHistory(AGENT_ID)),
+    read(getIndexMeta()),
   ]);
+  const events: Read<AgentEvent[]> = history.ok
+    ? { ok: true, value: history.value.events }
+    : { ok: false, error: history.error };
+  const vitals = history.ok ? history.value.vitals : null;
   const locked: Read<boolean> = name.ok
     ? await read(
         hasRole(name.value.tokenId, ROLE_SET_RESOLVER_ADMIN, OPERATOR).then((held) => !held),
@@ -179,6 +189,50 @@ export default async function OverviewPage() {
 
         {!name.ok && <p className="read-error mono">ENS registry read failed: {name.error}</p>}
 
+        {vitals && (
+          <div className="vitals-strip">
+            <div className="vitals-head">
+              <span className="label">Liveness history</span>
+              <span className="vitals-source mono">
+                indexed by The Graph
+                {indexMeta.ok ? ` · block ${indexMeta.value.block.toLocaleString()}` : ""}
+              </span>
+            </div>
+            <div className="vitals-row">
+              <div className="vital">
+                <span className="vital-label">Heartbeats</span>
+                <span className="vital-value mono">{vitals.heartbeatCount}</span>
+              </div>
+              <div className="vital">
+                <span className="vital-label">Median gap</span>
+                <span className="vital-value mono">
+                  {vitals.medianGapSeconds === null ? "—" : `${vitals.medianGapSeconds}s`}
+                </span>
+              </div>
+              <div className="vital">
+                <span className="vital-label">Longest gap</span>
+                <span className="vital-value mono">
+                  {vitals.longestGapSeconds === null ? "—" : `${vitals.longestGapSeconds}s`}
+                </span>
+              </div>
+              <div className="vital">
+                <span className="vital-label">Deadline</span>
+                <span className="vital-value mono">
+                  {plan.ok
+                    ? `${Number(plan.value.heartbeatInterval) + Number(plan.value.gracePeriod)}s`
+                    : "—"}
+                </span>
+              </div>
+            </div>
+            <p className="vitals-note">
+              A median and a maximum are aggregates over the agent&rsquo;s whole heartbeat
+              series, which is why they come from an index rather than a contract call. They
+              describe what the cadence was &mdash; not proof the agent was doing work, since a
+              regular cadence is cheap to manufacture.
+            </p>
+          </div>
+        )}
+
         <div className="timeline-wrap">
           {events.ok ? (
             <EventTimeline events={events.value} />
@@ -187,7 +241,9 @@ export default async function OverviewPage() {
               <strong>Could not load on-chain history.</strong>
               <span>{events.error}</span>
               <span className="panel-error-note">
-                This is an RPC failure, not an empty history.
+                The index is unreachable. This is deliberately not falling back to an RPC scan:
+                a silent fallback would show plausible history while the labelled source is
+                broken, which is the failure this replaced.
               </span>
             </div>
           )}

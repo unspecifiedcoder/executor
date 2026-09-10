@@ -42,7 +42,11 @@ column of real heartbeats arriving every 30 seconds)*
 >
 > Then it dies. The process stops, the key goes quiet, and nobody is watching.
 > Its revenue keeps arriving at a wallet nobody operates, and the people it owes
-> get nothing. There is no insolvency process for software.
+> get nothing.
+>
+> We have given agents wallets, identities, and the ability to earn. What we
+> haven't given them is a standard process for resolving what they owe when they
+> stop operating.
 
 ---
 

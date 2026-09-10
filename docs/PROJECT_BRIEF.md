@@ -10,7 +10,8 @@ pasted whole. Nothing here is aspirational unless it says so.
 An autonomous agent that earns money also owes money — an inference bill, a
 compute provider, whoever it buys from. When the agent dies, nothing stops. Its
 revenue keeps arriving at a wallet nobody operates, and its creditors have no
-recourse, because there is no insolvency process for software. Executor gives an
+recourse, because there is no standard resolution process for an autonomous
+software agent acting as an economic entity. Executor gives an
 agent a **resolution plan it commits to before it fails**, and makes that plan
 the thing payments actually consult. When the heartbeat stops, the payment
 destination flips on-chain, and creditors are paid out of an estate by priority

@@ -320,3 +320,63 @@ main {
 .lifecycle .node.current .ring {
   animation: live-pulse 2.2s ease-in-out infinite;
 }
+
+/* Liveness history - the aggregates only an index can answer cheaply. */
+.vitals-strip {
+  margin: 28px 0 8px;
+  padding: 18px 20px;
+  border: 1px solid var(--line, #1b2432);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.vitals-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.vitals-source {
+  font-size: 12px;
+  color: var(--dim, #5b6b80);
+  letter-spacing: 0.02em;
+}
+
+.vitals-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+}
+
+.vital {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--line, #1b2432);
+  border-radius: 8px;
+}
+
+.vital-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim, #5b6b80);
+}
+
+.vital-value {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text, #c6d4e4);
+}
+
+.vitals-note {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--dim, #5b6b80);
+  max-width: 78ch;
+}

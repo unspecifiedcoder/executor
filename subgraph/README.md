@@ -17,10 +17,15 @@ the worst possible failure for a panel labelled `live`.
 
 Two things this index does that no `eth_call` can:
 
-- **Heartbeat gaps.** `Heartbeat.gapFromPrevious` is computed at index time. A
-  list of heartbeats proves transactions were sent; a *steady* gap is what
-  distinguishes an agent that genuinely ran from a history manufactured in a
-  burst. Answering that from RPC means fetching the whole series and diffing it.
+- **Heartbeat gaps.** `Heartbeat.gapFromPrevious` is computed at index time,
+  which is the unit the protocol's own deadline is expressed in. Answering it
+  from RPC means fetching the whole series and diffing it.
+
+  This is **observability, not proof of liveness.** A steady cadence is trivial
+  to manufacture - anyone holding the signer key can beat on a timer, and no
+  index can tell that apart from an agent that genuinely ran. What this gives is
+  what the cadence *was* and where it broke. Reading it as authenticity would be
+  claiming a security property the design does not have.
 - **Who called a transition.** `StatusChange.caller` is `transaction.from`,
   which is not in the event at all. It matters because `enterAdministration` is
   permissionless: the interesting fact is usually that the caller held no role.

@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isAddress, isHex, zeroAddress, type Hex } from "viem";
-import { getAgentPlan, getPaymentDestination, getAgentEvents, EXECUTOR_REGISTRY } from "../../../lib/ens";
+import { getAgentPlan, getPaymentDestination, EXECUTOR_REGISTRY } from "../../../lib/ens";
+import { getAgentHistory } from "../../../lib/subgraph";
 import FlowPanel from "../../components/FlowPanel";
 import EventTimeline from "../../components/EventTimeline";
 import SyncingBar from "../../components/SyncingBar";
@@ -13,7 +14,7 @@ import { Suspense } from "react";
  * rather than as an empty timeline. */
 async function AgentHistory({ id }: { id: Hex }) {
   try {
-    const events = await getAgentEvents(id);
+    const events = (await getAgentHistory(id)).events;
     return <EventTimeline events={events} />;
   } catch (err) {
     return (
