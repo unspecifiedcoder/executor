@@ -33,13 +33,17 @@ mark(0,'dashboard (hero)');
 await page.goto(DASH, { waitUntil: 'domcontentloaded', timeout: 90000 });
 await sleep(1500);
 // a slow drift down the page so the frame is never static
+// Drift a bounded number of pixels, not a fraction of the page. The page grows
+// with the agent's heartbeat history, so a percentage that framed the hero on a
+// young agent scrolls past it entirely on an older one - which is exactly what
+// happened when the demo agent was replaced.
 await page.evaluate(ms => new Promise(res => {
-  const end = performance.now()+ms, max = document.body.scrollHeight - innerHeight;
+  const target = Math.min(330, Math.max(0, document.body.scrollHeight - innerHeight));
   const t0 = performance.now();
   (function f(){
-    const p = Math.min(1,(performance.now()-t0)/ms);
-    scrollTo(0, max*Math.min(1,p*1.15)*0.55);
-    performance.now()<end ? requestAnimationFrame(f) : res();
+    const p = Math.min(1, (performance.now() - t0) / ms);
+    scrollTo(0, target * p);
+    p < 1 ? requestAnimationFrame(f) : res();
   })();
 }), (OPEN_S-4)*1000);
 await holdUntil(OPEN_S);
