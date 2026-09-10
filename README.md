@@ -564,7 +564,7 @@ Directories that run:
   `test/Estate.t.sol` (40), `test/ExecutorRegistry.t.sol` (37),
   `test/ExecutorResolver.t.sol` (14), `test/LivingWill.t.sol` (9, ENSv2 role
   semantics) and `test/Receiver.t.sol` (4, for the superseded contract) cover
-  them — **104 in total**, all passing.
+  them — **108 in total**, all passing.
 - `packages/agent-debtor/src/gateway.ts` — the x402 resource server.
   `pay-for-research.ts` — the matching paying client.
 - `apps/dashboard` — the Next.js dashboard. Current state comes from contract
@@ -609,7 +609,7 @@ exists, is tested, and is deployed — on Sepolia, not on Arc.
 pnpm install
 cd contracts && forge install
 
-forge test                                    # 104 tests
+forge test                                    # 108 tests
 pnpm -C apps/dashboard exec tsc --noEmit
 pnpm -C apps/dashboard dev                    # dashboard on :3000
 
@@ -654,6 +654,19 @@ There is no deployed public URL for the dashboard — run it locally.
   gas-limit brick waiting to happen. Larger estates need to be split across
   several `Estate` contracts.
 - **Payments are native HBAR**, not USDC.
+- **The deployed `Estate` bytecode predates the `sweepSurplus` fix.** An
+  adversarial review found that `sweepSurplus` was gated only on
+  `totalOutstanding() == 0`, which is vacuously true before any claim is
+  registered, and had no status check at all — so a trustee could have emptied
+  an estate before curating its creditors, or during the Administration window
+  the protocol calls recoverable. Source and tests are fixed (three gates now;
+  four tests written red first, 104 → 108). **Neither deployed estate is
+  exposed:** `0xD52b37AD…7C5F` and `0x83f447FA…fC7F` both hold 0 USDC and both
+  still report non-zero `totalOutstanding`, so `ClaimsOutstanding` blocks the
+  path on each. They are not redeployed because doing so would invalidate every
+  transaction link in this README to close a path that is already unreachable
+  there — but the bytecode at those addresses is the old bytecode, and that is
+  worth knowing before reading them as reference implementations.
 - **The live demo agent is the weakest agent in this repo, and deliberately so.**
   Agent `0x6b7f61f1…5255` — the one the dashboard and the ENS name point at —
   has all four of its roles held by a *single* address

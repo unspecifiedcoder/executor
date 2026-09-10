@@ -70,8 +70,8 @@ Active → Administration → Liquidation → Resolved, with `getPaymentDestinat
 as the single primitive everything else reads. `lockPlan` freezes the plan by
 making `updatePlan` revert `PlanIsLocked` — that is enforced on live Sepolia,
 not just asserted in a test. `Estate` implements the claims registry and the
-waterfall. 104 tests, including fuzz tests asserting the waterfall never pays a
-creditor more than its allowed claim and never distributes more than it holds.
+waterfall. 108 tests, among them a fuzz test asserting the waterfall never pays
+a creditor more than its allowed claim and never distributes more than it holds.
 CI runs `forge fmt --check`, `forge build --sizes`, `forge test`, `tsc` and
 `next build`.
 
@@ -141,15 +141,33 @@ lock is not permanent past name expiry, and that limit is documented.
 > `getPaymentDestination` returns on Sepolia for the same agent. A request with
 > no `?q=` is refused free, before the payment middleware runs.
 
-**Third slot — decide before submitting.** x402 has no standalone track at this
-event, so the x402 work counts under Hedera. Pick whichever remaining partner
-prize the project can honestly back; do not file one it cannot.
+**The Graph — Best AI Tooling or AI Use Case.** The dashboard's history and
+liveness statistics come from `subgraph/`, live at
+`https://api.studio.thegraph.com/query/1760047/executor/v0.1.1` (public, no key).
+This is a replacement, not an addition: the chunked `eth_getLogs` scan it
+displaced has no callers left. Two fields carry the weight —
+`Heartbeat.gapFromPrevious`, computed during ingestion, which the dashboard
+reduces to a median and a longest gap over the whole series; and
+`StatusChange.caller`, which is `transaction.from` and appears in no event, and
+is how you can see that agent 3 was moved into Administration by an address
+holding none of its four roles. Estates are per-agent, so they are indexed via a
+dynamic data source template with the agent id passed through its context.
+Honest boundary, stated in the subgraph README: the gap figures are
+observability, not proof of liveness — a regular cadence is cheap to manufacture.
+
+**x402** has no standalone track at this event, so that work counts under Hedera
+rather than as a fourth filing.
 
 ---
 
 ## Do not claim
 
-Circle/Arc, Chainlink CRE, The Graph, Uniswap, World, Ledger, Privy, Bazantic.
-Every one of those was scoped and deliberately withdrawn — the code that would
-have backed them was stubs, and filing on a stub is an eligibility risk, not a
-long shot. `FEEDBACK.md` records the withdrawals.
+Circle/Arc, Chainlink CRE, Uniswap, World, Ledger, Privy, Bazantic. Every one of
+those was scoped and deliberately withdrawn — the code that would have backed
+them was stubs, and filing on a stub is an eligibility risk, not a long shot.
+`FEEDBACK.md` records the withdrawals.
+
+The Graph was on that list for the same reason, and has come off it: a real
+subgraph was built, deployed, and made the dashboard's only source of history.
+See the track note above and `subgraph/README.md`. It is filed because the code
+exists now, not because the bar moved.

@@ -164,7 +164,7 @@ status change)*
 > What's real: the registry, the flip, a hosted x402 service settling on Hedera,
 > an ENS name that decides where money goes, a subgraph the dashboard actually
 > depends on, and a settled estate — one agent, one life, all of it on a public
-> chain. A hundred and four tests.
+> chain. A hundred and eight tests.
 >
 > What isn't: a human trustee still curates the claims, because a contract can't
 > decide whether a debt is real. That part is deliberate.
