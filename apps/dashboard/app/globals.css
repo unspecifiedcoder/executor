@@ -1366,3 +1366,11 @@ main {
 .register .fillbtn{padding:var(--s2) var(--s4);font-size:var(--t2)}
 .register .fillnote{font-size:var(--t2);color:var(--faint)}
 .register input::placeholder{color:rgba(150,190,235,.22)}
+
+/* What /register is, and what it isn't. */
+.register .scoping{display:flex;flex-direction:column;gap:var(--s2);margin:var(--s5) 0;
+  padding:var(--s4) var(--s5);border-left:2px solid var(--border-strong);
+  font-size:var(--t2);line-height:1.8}
+.register .scoping b{font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  font-size:var(--t1);color:var(--dim)}
+.register .scoping span{color:var(--faint)}

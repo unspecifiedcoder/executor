@@ -251,6 +251,21 @@ export default function RegisterPage() {
           deploy.
         </p>
 
+        {/* Naming the limit rather than letting a reader find it. Asking for
+            five hex addresses is an admin surface, not a consumer flow, and
+            saying so converts a real UX weakness into a scoping statement -
+            the same move as the deployment-mismatch table in the README and
+            the caveats under the overview. */}
+        <div className="scoping mono">
+          <b>What this page is</b>
+          <span>
+            It proves the registry is permissionless: anyone can register an agent on the same
+            contract, and we hold no key that could stop them. A production agent would mint the
+            heartbeat key for you and default the rest to your wallet. Five addresses are the
+            protocol, not the intended consumer flow.
+          </span>
+        </div>
+
         {errorMsg && <div className="error-banner mono">{errorMsg}</div>}
 
         {step === "connect" && (
