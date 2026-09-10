@@ -1283,3 +1283,67 @@ main {
   background:var(--succession);border-radius:3px;padding:2px var(--s2)}
 .revenue-receipt{font-size:var(--t1);color:var(--faint);letter-spacing:.04em;
   padding-bottom:var(--s4);border-bottom:1px solid var(--border);margin-bottom:var(--s4)}
+
+/* Two actions: watch the proof, or drive the protocol yourself. The second is
+   the answer to "is this usable by anyone but you?" and it should not be a nav
+   link nobody clicks. */
+.overview .ctas{display:flex;gap:var(--s3);flex-wrap:wrap;align-items:center}
+.overview .cta-2{background:transparent;color:var(--text);border:1px solid var(--border-strong);
+  text-decoration:none}
+.overview .cta-2:hover{border-color:var(--alive);color:var(--alive)}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   /vitals and /register adopt the overview's system.
+
+   They were built before it and still carried the old scale, the old accent and
+   a geometric sans headline. A judge who clicks past the overview was seeing a
+   different product - which is a usability failure before it is an aesthetic
+   one, because it makes the site feel assembled rather than designed.
+
+   Same tokens, same serif for headings, same one-accent-per-state rule.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.layout,
+.register{
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:36px; --s7:56px; --s8:88px;
+  --t1:10px; --t2:11px; --t3:12px; --t4:14px; --t5:17px; --t6:23px; --t7:31px; --t8:64px;
+  --alive:#35f0c0; --lapsed:#ffb545; --terminal:#ff5470;
+  --serif:"Instrument Serif",Georgia,serif;
+  font-family:var(--mono);
+}
+
+/* headings take the serif, at the overview's scale */
+.register h1,
+.layout h1{font-family:var(--serif);font-weight:400;font-size:var(--t8);line-height:.98;
+  letter-spacing:-.018em;text-wrap:balance;color:var(--text)}
+.register h2,
+.layout h2{font-family:var(--serif);font-weight:400;font-size:var(--t7);letter-spacing:-.01em;color:var(--text)}
+.register .eyebrow,
+.layout .eyebrow{font-size:var(--t1);font-weight:600;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--dim)}
+.register .sub{font-size:var(--t4);line-height:1.75;color:var(--dim)}
+
+/* buttons match the overview's two-action language */
+.layout .btn,
+.register .btn{font-family:var(--mono);font-size:var(--t3);letter-spacing:.06em;
+  border-radius:var(--s2);padding:var(--s3) var(--s5);border:1px solid var(--border-strong);
+  background:transparent;color:var(--text);cursor:pointer;transition:border-color .15s,color .15s}
+.layout .btn:hover:not(:disabled),
+.register .btn:hover:not(:disabled){border-color:var(--alive);color:var(--alive)}
+.layout .btn.danger{border-color:var(--terminal);color:var(--terminal)}
+.layout .btn.danger:hover:not(:disabled){background:var(--terminal);color:var(--bg)}
+
+/* labels and values read like the overview's instrument rows */
+.layout .label,
+.register .label{font-size:var(--t1);letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.register .value{font-size:var(--t3);color:var(--text)}
+.layout .countdown{font-family:var(--mono);font-size:var(--t8);line-height:1;
+  font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.layout .agent-name{font-size:var(--t3);color:var(--dim);letter-spacing:.04em}
+.layout .disclosure,
+.register .disclosure{font-size:var(--t2);color:var(--faint);line-height:2}
+
+/* the state colours are the protocol's, not decoration */
+.layout .receivership{color:var(--lapsed)}
+.layout .admin-banner{color:var(--lapsed);border-color:var(--lapsed)}
+.layout .error-banner,
+.register .error-banner{color:var(--terminal);border-color:var(--terminal)}

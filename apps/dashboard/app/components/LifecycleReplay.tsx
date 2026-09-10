@@ -89,9 +89,17 @@ export default function LifecycleReplay({
             The destination of a payment is late-bound to the payee&rsquo;s on-chain liveness.
             Same client, same price, same command.
           </p>
-          <button className="cta" onClick={atEnd ? restart : () => setPlaying((p) => !p)}>
-            {atEnd ? "Replay the Sepolia proof ↻" : playing ? "Pause ‖" : "Replay the Sepolia proof ▶"}
-          </button>
+          <div className="ctas">
+            <button className="cta" onClick={atEnd ? restart : () => setPlaying((p) => !p)}>
+              {atEnd ? "Replay the Sepolia proof ↻" : playing ? "Pause ‖" : "Replay the Sepolia proof ▶"}
+            </button>
+            {/* The protocol is permissionless, so the page should let a reader
+                use it rather than only watch it. Same registry, their keys,
+                their gas, no permission from us. */}
+            <a className="cta cta-2" href="/register">
+              Register your own agent →
+            </a>
+          </div>
         </div>
 
         <FlowRack

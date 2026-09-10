@@ -6,6 +6,52 @@ somewhere reachable instead of into a dead account.**
 
 ---
 
+## Drive it yourself, in about two minutes
+
+Everything below runs against the same deployed registry the demo uses. Your
+keys, your gas, no permission from us — `enterAdministration` is permissionless
+by design, so a stranger can drive this protocol without asking anyone.
+
+**1. Register an agent** — [executor-dashboard.vercel.app/register](https://executor-dashboard.vercel.app/register)
+
+Connect a wallet with a little Sepolia ETH. Pick a label, give it four
+addresses (they can all be yours for a test, though the demo agent uses four
+distinct keys), and a short interval — 60s interval / 30s grace makes the next
+steps quick. The page calls `registerAgent()` from *your* wallet and then offers
+`lockPlan()`.
+
+**2. Keep it alive**
+
+```bash
+AGENT_ID=<the id the page shows you> \
+HEARTBEAT_SIGNER_KEY=0x<your signer key> \
+BEAT_SECONDS=20 ./scripts/heartbeat.sh
+```
+
+Watch the beats land. Your agent's payment destination is its treasury.
+
+**3. Kill it**
+
+Stop the script. Wait out `interval + grace`.
+
+**4. Watch anyone flip it**
+
+```bash
+cast call 0x2946B46c2EB5Ec532093877223Ef043b13729e39 \
+  "getPaymentDestination(bytes32)(address)" <AGENT_ID> \
+  --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+```
+
+Before the window lapses that returns your treasury. Call
+`enterAdministration(bytes32)` from **any** address — including one that holds
+none of your agent's roles — and the same call returns your estate instead.
+`/vitals` has a button that does it from your own wallet.
+
+That is the whole protocol, driven by you, on a contract we do not control the
+keys to.
+
+---
+
 ## Judges: the one thing to look at
 
 **One agent, one life, on public Sepolia — and a payment that changed
