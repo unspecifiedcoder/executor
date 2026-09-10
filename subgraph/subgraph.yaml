@@ -1,0 +1,80 @@
+specVersion: 1.0.0
+description: >-
+  Agent lifecycles on ExecutorRegistry - registration, heartbeats, the
+  status/payment-destination flip, and the creditor waterfall that runs in each
+  agent's Estate.
+repository: https://github.com/unspecifiedcoder/executor
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: ExecutorRegistry
+    network: sepolia
+    source:
+      address: "0x2946B46c2EB5Ec532093877223Ef043b13729e39"
+      abi: ExecutorRegistry
+      # The deploy block. Starting from 0 would spend hours scanning history
+      # that provably cannot contain this contract's logs.
+      startBlock: 11669841
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/registry.ts
+      entities:
+        - Agent
+        - Heartbeat
+        - StatusChange
+        - DestinationChange
+        - IndexStatus
+      abis:
+        - name: ExecutorRegistry
+          file: ./abis/ExecutorRegistry.json
+      eventHandlers:
+        - event: AgentRegistered(indexed bytes32,address,address)
+          handler: handleAgentRegistered
+        - event: PlanUpdated(indexed bytes32,address,address)
+          handler: handlePlanUpdated
+        - event: PlanLocked(indexed bytes32)
+          handler: handlePlanLocked
+        - event: Heartbeat(indexed bytes32,uint64)
+          handler: handleHeartbeat
+        - event: StatusChanged(indexed bytes32,uint8)
+          handler: handleStatusChanged
+        - event: PaymentDestinationChanged(indexed bytes32,address,uint8)
+          handler: handlePaymentDestinationChanged
+templates:
+  # Estates are deployed per agent, so their addresses are not known when this
+  # manifest is written - they arrive in AgentRegistered/PlanUpdated at index
+  # time. A template spawned from those handlers is the only way to index them
+  # without hardcoding an address per agent and redeploying the subgraph every
+  # time someone registers one.
+  - kind: ethereum
+    name: Estate
+    network: sepolia
+    source:
+      abi: Estate
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/estate.ts
+      entities:
+        - Agent
+        - Claim
+        - Payout
+        - PlanExecution
+      abis:
+        - name: Estate
+          file: ./abis/Estate.json
+      eventHandlers:
+        - event: ClaimRegistered(indexed bytes32,indexed address,uint256,uint8)
+          handler: handleClaimRegistered
+        - event: ClaimPaid(indexed bytes32,indexed address,uint256)
+          handler: handleClaimPaid
+        - event: PayoutEscrowed(indexed bytes32,indexed address,uint256)
+          handler: handlePayoutEscrowed
+        - event: PayoutClaimed(indexed address,uint256)
+          handler: handlePayoutClaimed
+        - event: PlanExecuted(indexed bytes32,uint256,uint256)
+          handler: handlePlanExecuted

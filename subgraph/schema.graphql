@@ -1,0 +1,140 @@
+# Executor's index of agent lifecycles.
+#
+# The shape here is deliberate: `Agent` is a *current-state* entity that the
+# dashboard reads directly, and everything else is an append-only log that hangs
+# off it. That split matters because the two questions this project asks of the
+# chain are different questions - "where does money go right now" has to be a
+# single cheap lookup, while "prove this agent actually lived" is a scan over
+# history that no `eth_call` can answer at all.
+
+type Agent @entity(immutable: false) {
+  "The agentId - keccak of the label, as passed to registerAgent()"
+  id: Bytes!
+  treasury: Bytes!
+  estate: Bytes!
+
+  "Active | Administration | Liquidation | Resolved"
+  status: String!
+
+  """
+  The registry's own answer, mirrored from PaymentDestinationChanged. Treasury while Active, estate otherwise - this is the primitive the whole protocol exists to serve.
+  """
+  paymentDestination: Bytes!
+
+  "Once true, updatePlan() reverts. One-way."
+  planLocked: Boolean!
+
+  registeredAt: BigInt!
+  registeredAtBlock: BigInt!
+
+  "Unix seconds carried in the Heartbeat event itself, not the block timestamp."
+  lastHeartbeat: BigInt
+  heartbeatCount: Int!
+
+  """
+  Whether an Estate *contract* was ever seen emitting events for this agent. The registry's `estate` field can legitimately be an EOA, and conflating the two is how a demo ends up claiming a waterfall it never ran.
+  """
+  estateIsContract: Boolean!
+
+  heartbeats: [Heartbeat!]! @derivedFrom(field: "agent")
+  statusChanges: [StatusChange!]! @derivedFrom(field: "agent")
+  destinationChanges: [DestinationChange!]! @derivedFrom(field: "agent")
+  claims: [Claim!]! @derivedFrom(field: "agent")
+  payouts: [Payout!]! @derivedFrom(field: "agent")
+  executions: [PlanExecution!]! @derivedFrom(field: "agent")
+}
+
+type Heartbeat @entity(immutable: true) {
+  id: Bytes!
+  agent: Agent!
+  "The uint64 the signer attested to, which is what the deadline is computed from."
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  txHash: Bytes!
+
+  """
+  Seconds since this agent's previous heartbeat, null for the first. Computed at index time because a gap is the only thing that distinguishes an agent that is alive from a list of transactions that happen to exist.
+  """
+  gapFromPrevious: BigInt
+}
+
+type StatusChange @entity(immutable: true) {
+  id: Bytes!
+  agent: Agent!
+  from: String!
+  to: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  txHash: Bytes!
+  """
+  Who sent the transaction. For enterAdministration this is the whole point: the contract checks the deadline, not the caller, so this address is routinely a stranger to the agent.
+  """
+  caller: Bytes!
+}
+
+type DestinationChange @entity(immutable: true) {
+  id: Bytes!
+  agent: Agent!
+  previousDestination: Bytes
+  destination: Bytes!
+  status: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  txHash: Bytes!
+}
+
+type Claim @entity(immutable: false) {
+  id: Bytes!
+  agent: Agent!
+  estate: Bytes!
+  creditor: Bytes!
+  allowedAmount: BigInt!
+  "Secured | Administrative | Unsecured - paid strictly in that order."
+  priorityClass: String!
+  amountPaid: BigInt!
+  amountEscrowed: BigInt!
+  registeredAtBlock: BigInt!
+}
+
+type Payout @entity(immutable: true) {
+  id: Bytes!
+  agent: Agent!
+  estate: Bytes!
+  claim: Claim
+  creditor: Bytes!
+  amount: BigInt!
+  """
+  PAID when the token transfer landed, ESCROWED when it was refused and the creditor must pull it, CLAIMED when they did.
+  """
+  kind: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  txHash: Bytes!
+}
+
+type PlanExecution @entity(immutable: true) {
+  id: Bytes!
+  agent: Agent!
+  estate: Bytes!
+  planHash: Bytes!
+  totalPaid: BigInt!
+  """
+  What the estate could not cover. Non-zero is the normal case in an insolvency, and a waterfall that only ever demos zero is not demonstrating priority ordering at all.
+  """
+  shortfall: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  txHash: Bytes!
+}
+
+"""
+One row. Lets the dashboard show what the index actually covers rather than implying it has seen everything.
+"""
+type IndexStatus @entity(immutable: false) {
+  id: Bytes!
+  agentCount: Int!
+  heartbeatCount: Int!
+  lastBlock: BigInt!
+  lastBlockTimestamp: BigInt!
+}

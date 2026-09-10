@@ -1,0 +1,460 @@
+[
+ {
+  "type": "function",
+  "name": "enterAdministration",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "internalType": "bytes32"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "enterLiquidation",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "internalType": "bytes32"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "getPaymentDestination",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "internalType": "bytes32"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "getStatus",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "internalType": "bytes32"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "",
+    "type": "uint8",
+    "internalType": "enum ExecutorRegistry.Status"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "heartbeat",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "internalType": "bytes32"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "lockPlan",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "internalType": "bytes32"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "plans",
+  "inputs": [
+   {
+    "name": "",
+    "type": "bytes32",
+    "internalType": "bytes32"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "owner",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "heartbeatSigner",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "trustee",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "recoveryAuthority",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "treasury",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "estate",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "heartbeatInterval",
+    "type": "uint64",
+    "internalType": "uint64"
+   },
+   {
+    "name": "gracePeriod",
+    "type": "uint64",
+    "internalType": "uint64"
+   },
+   {
+    "name": "lastHeartbeat",
+    "type": "uint64",
+    "internalType": "uint64"
+   },
+   {
+    "name": "status",
+    "type": "uint8",
+    "internalType": "enum ExecutorRegistry.Status"
+   },
+   {
+    "name": "planLocked",
+    "type": "bool",
+    "internalType": "bool"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "registerAgent",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "internalType": "bytes32"
+   },
+   {
+    "name": "heartbeatSigner",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "trustee",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "recoveryAuthority",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "treasury",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "estate",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "heartbeatInterval",
+    "type": "uint64",
+    "internalType": "uint64"
+   },
+   {
+    "name": "gracePeriod",
+    "type": "uint64",
+    "internalType": "uint64"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "resolve",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "internalType": "bytes32"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "restoreActive",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "internalType": "bytes32"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "updatePlan",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "internalType": "bytes32"
+   },
+   {
+    "name": "heartbeatSigner",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "trustee",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "recoveryAuthority",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "treasury",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "estate",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "heartbeatInterval",
+    "type": "uint64",
+    "internalType": "uint64"
+   },
+   {
+    "name": "gracePeriod",
+    "type": "uint64",
+    "internalType": "uint64"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "event",
+  "name": "AgentRegistered",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "indexed": true,
+    "internalType": "bytes32"
+   },
+   {
+    "name": "treasury",
+    "type": "address",
+    "indexed": false,
+    "internalType": "address"
+   },
+   {
+    "name": "estate",
+    "type": "address",
+    "indexed": false,
+    "internalType": "address"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "Heartbeat",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "indexed": true,
+    "internalType": "bytes32"
+   },
+   {
+    "name": "timestamp",
+    "type": "uint64",
+    "indexed": false,
+    "internalType": "uint64"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "PaymentDestinationChanged",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "indexed": true,
+    "internalType": "bytes32"
+   },
+   {
+    "name": "destination",
+    "type": "address",
+    "indexed": false,
+    "internalType": "address"
+   },
+   {
+    "name": "status",
+    "type": "uint8",
+    "indexed": false,
+    "internalType": "enum ExecutorRegistry.Status"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "PlanLocked",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "indexed": true,
+    "internalType": "bytes32"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "PlanUpdated",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "indexed": true,
+    "internalType": "bytes32"
+   },
+   {
+    "name": "treasury",
+    "type": "address",
+    "indexed": false,
+    "internalType": "address"
+   },
+   {
+    "name": "estate",
+    "type": "address",
+    "indexed": false,
+    "internalType": "address"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "StatusChanged",
+  "inputs": [
+   {
+    "name": "agentId",
+    "type": "bytes32",
+    "indexed": true,
+    "internalType": "bytes32"
+   },
+   {
+    "name": "status",
+    "type": "uint8",
+    "indexed": false,
+    "internalType": "enum ExecutorRegistry.Status"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "error",
+  "name": "AgentAlreadyRegistered",
+  "inputs": []
+ },
+ {
+  "type": "error",
+  "name": "AgentNotFound",
+  "inputs": []
+ },
+ {
+  "type": "error",
+  "name": "NotHeartbeatSigner",
+  "inputs": []
+ },
+ {
+  "type": "error",
+  "name": "NotOwner",
+  "inputs": []
+ },
+ {
+  "type": "error",
+  "name": "NotRecoveryAuthority",
+  "inputs": []
+ },
+ {
+  "type": "error",
+  "name": "NotTrustee",
+  "inputs": []
+ },
+ {
+  "type": "error",
+  "name": "PlanIsLocked",
+  "inputs": []
+ },
+ {
+  "type": "error",
+  "name": "TooEarly",
+  "inputs": []
+ },
+ {
+  "type": "error",
+  "name": "WrongStatus",
+  "inputs": [
+   {
+    "name": "current",
+    "type": "uint8",
+    "internalType": "enum ExecutorRegistry.Status"
+   }
+  ]
+ }
+]

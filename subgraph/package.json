@@ -1,0 +1,15 @@
+{
+  "name": "@executor/subgraph",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy executor-registry",
+    "test": "graph codegen && graph build"
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "0.97.1",
+    "@graphprotocol/graph-ts": "0.38.1"
+  }
+}
