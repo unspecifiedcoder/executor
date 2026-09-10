@@ -113,7 +113,11 @@ export async function hasRole(tokenId: bigint, roleBitmap: bigint, account: Addr
 
 /** The ExecutorRegistry deployment - the real payTo-flip primitive, not the ENSv2 registry above. */
 export const EXECUTOR_REGISTRY = "0x2946b46c2eb5ec532093877223ef043b13729e39" as const;
-export const AGENT_ID = "0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255" as const;
+/** The agent `executor-hackathon-demo.eth` resolves to, and the one this
+ * dashboard treats as "the live agent". Four distinct role keys - owner,
+ * heartbeat signer, trustee and recovery authority are four different
+ * addresses - which the agent this replaced did not have. */
+export const AGENT_ID = "0x6574c8cc5e4ca438a061eb83708582b10658d3a1a7334a8d94b6f6a1960dcb37" as const;
 
 export const AGENT_STATUS_LABEL = ["active", "administration", "liquidation", "resolved"] as const;
 export type AgentStatus = (typeof AGENT_STATUS_LABEL)[number];

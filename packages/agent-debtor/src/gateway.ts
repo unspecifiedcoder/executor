@@ -44,17 +44,19 @@ const EXECUTOR_REGISTRY = (process.env.EXECUTOR_REGISTRY_ADDRESS ??
  * with matching defaults, is what makes "repoint this at another agent" a
  * two-line change that is obviously either done or not done.
  *
- * To run this gateway for agent 3 (the agent that has an Estate *contract* and
- * a routed payment behind it), set both:
+ * The default is the agent `executor-hackathon-demo.eth` currently resolves to.
+ * If you repoint the name at a different agent, change this with it - a gateway
+ * serving agent A while resolving agent B's name can still pass its own
+ * cross-check whenever the two happen to share a destination, which is exactly
+ * when the mistake is hardest to see.
  *
- *   X402_AGENT_ID=0x96abf3c7f8f72fdf248e91137fb471a442dccf3fcece378b2065616cb68c36d4
+ * To run this gateway for a different agent, set both:
+ *
+ *   X402_AGENT_ID=<agent id>
  *   X402_ENS_LABEL=<the label bound to that agent id in ExecutorResolver>
- *
- * See README, "Which agent proves what", for why the hosted instance still
- * defaults to agent 1.
  */
 const AGENT_ID = (process.env.X402_AGENT_ID ??
-  "0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255") as `0x${string}`;
+  "0x6574c8cc5e4ca438a061eb83708582b10658d3a1a7334a8d94b6f6a1960dcb37") as `0x${string}`;
 
 /**
  * ENSv2 beta `PermissionedRegistry` (`ETHRegistry`) on Sepolia, from
