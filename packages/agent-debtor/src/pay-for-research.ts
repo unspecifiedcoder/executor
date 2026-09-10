@@ -25,8 +25,23 @@ const RESEARCH_QUERY =
 
 /** The query must be on the URL for both the 402 probe and the paid retry: the
  * x402 resource identity includes the full URL, so probing one URL and paying
- * against another would not settle. */
-const GATEWAY_URL = `${GATEWAY_BASE}?q=${encodeURIComponent(RESEARCH_QUERY)}`;
+ * against another would not settle.
+ *
+ * A `?q=` already present on GATEWAY_URL wins. Appending unconditionally is
+ * what the obvious template-string version does, and it produces a URL with two
+ * query strings glued together - the gateway then answers both questions at
+ * once, which looks like an LLM hallucination when it is really this client
+ * asking for it. Pasting a full URL with a question on it is the natural thing
+ * to do, so it has to be the thing that works. */
+function buildGatewayUrl(): string {
+  const url = new URL(GATEWAY_BASE);
+  if (!url.searchParams.get("q")) {
+    url.searchParams.set("q", RESEARCH_QUERY);
+  }
+  return url.toString();
+}
+
+const GATEWAY_URL = buildGatewayUrl();
 const CLIENT_HEDERA_ACCOUNT_ID = "0.0.10423620";
 
 async function main(): Promise<void> {
@@ -49,7 +64,9 @@ async function main(): Promise<void> {
   const client = new x402HTTPClient(coreClient);
 
   console.log(`[client] GET ${GATEWAY_URL}`);
-  console.log(`[client] query: ${RESEARCH_QUERY}`);
+  // Read back off the URL rather than printing RESEARCH_QUERY: when the
+  // caller supplied their own ?q=, the constant is not what gets bought.
+  console.log(`[client] query: ${new URL(GATEWAY_URL).searchParams.get("q")}`);
   const response = await fetch(GATEWAY_URL);
 
   if (response.status !== 402) {
