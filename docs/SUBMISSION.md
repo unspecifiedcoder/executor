@@ -133,13 +133,13 @@ grantable — plus 14 more on the resolver itself. Honest scope: the succession
 lock is not permanent past name expiry, and that limit is documented.
 
 > **Deployment state, stated plainly.** Everything above is verified against the
-> gateway running from this source tree, plus live Sepolia and Hedera testnet
-> state. The hosted gateway at `https://executor-gateway.vercel.app/research` is
-> still the **previous** build: it serves the old fixed string and has no
-> `/payto`. It needs a redeploy and a `GROQ_API_KEY` environment variable before
-> the hosted URL matches what is described here. The on-chain half — the
-> resolver, the `setResolver`, the ENS records — is live now and independent of
-> that redeploy.
+> **hosted** gateway, plus live Sepolia and Hedera testnet state. As of the last
+> check, `https://executor-gateway.vercel.app/research?q=...` returns a 402 whose
+> challenge is built from ENS at request time, and
+> `https://executor-gateway.vercel.app/payto` reports
+> `registryCrossCheck: passed` with a `payTo` equal to what
+> `getPaymentDestination` returns on Sepolia for the same agent. A request with
+> no `?q=` is refused free, before the payment middleware runs.
 
 **Third slot — decide before submitting.** x402 has no standalone track at this
 event, so the x402 work counts under Hedera. Pick whichever remaining partner
