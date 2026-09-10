@@ -8,9 +8,126 @@ somewhere reachable instead of into a dead account.**
 
 ## Judges: the one thing to look at
 
-**A complete agent insolvency, driven on Sepolia, paying real Circle USDC to
-real creditors in priority order.** Not a unit test, not anvil: 21 transactions
-on a public chain, every one of them checkable below without a wallet or a key.
+**One agent, one life, on public Sepolia — and a payment that changed
+destination without the payer changing anything.**
+
+Agent 3 — `0x96abf3c7f8f72fdf248e91137fb471a442dccf3fcece378b2065616cb68c36d4` —
+was registered under four distinct role keys, locked, heartbeat eighteen times
+on a real interval, paid while it was alive, left to die, pushed into
+Administration by a stranger, **paid again by the identical command**,
+liquidated by its trustee, and wound up. Every line below is on a public chain
+and checkable without a wallet or a key.
+
+### The full lifecycle
+
+| # | Step | Sent by (role) | Block | Transaction |
+|---|---|---|---|---|
+| 1 | `registerAgent` | **owner** `0xe21Ce561…D38F` | 11672753 | [`0xf018c159…e7d752846e`](https://sepolia.etherscan.io/tx/0xf018c159706e519e36bed163e20861e808b333461596fbedc53736e7d752846e) |
+| 2 | `lockPlan` — the plan is now frozen | **owner** | 11672754 | [`0x06a2c27b…8755a250c9`](https://sepolia.etherscan.io/tx/0x06a2c27bf82111e168269c0f825609b25090cf4afefa9b3d56cc118755a250c9) |
+| 3 | `heartbeat` ×18, ~96s apart | **heartbeat signer** `0xC63adec9…62D0` | 11672758–11672892 | [first](https://sepolia.etherscan.io/tx/0x9bbf8da4fbf481ccff417e182f20fbaa5c123d760a86a623b7d6799e25c48bf6) · [last](https://sepolia.etherscan.io/tx/0x8d59f3183f6077a8f17b07481c8f7007944c03952e5184ba20de9373a7335ce6) |
+| 4 | `registerClaim` ×3 — Secured / Administrative / Unsecured | **trustee** `0x108efe09…A310` | 11672772–11672775 | [`0xcb70b07a…4d91c68489`](https://sepolia.etherscan.io/tx/0xcb70b07a48e39a33a01d9c20c930dc42fcc39bacafe1faf92fd55b4d91c68489) · [`0x7c6518b1…01247a2759`](https://sepolia.etherscan.io/tx/0x7c6518b1a66dcba9608631f7887c1aa9dd7e6293c98a56efc4689001247a2759) · [`0xac559003…bf9e5f3aa0`](https://sepolia.etherscan.io/tx/0xac55900389faa0acdb4c74cc859281d9479a51e3ed73b101a1f038bf9e5f3aa0) |
+| 5 | `approvePlan` — commits to the exact claim set | **trustee** | 11672776 | [`0xffba6a80…a4d5e633af`](https://sepolia.etherscan.io/tx/0xffba6a807d522fd5b17785e25e441b34ec2cf0849dc69c2ee39dfca4d5e633af) |
+| **6** | **routed payment → treasury `0x29eA9aE5…5557`** | payer `0xbFe5551e…16EA` | 11672895 | [**`0x73131910…ef8ea243c5`**](https://sepolia.etherscan.io/tx/0x731319100c29e25cf27270085ef91caaba946f9907cd14dfa67e33ef8ea243c5) |
+| 7 | *heartbeat stops. the window lapses.* | — | — | — |
+| 8 | `enterAdministration` | *anyone* — `0x72db032c…c706`, **holds none of the four roles** | 11672930 | [`0x345811aa…3e6ae2ea8e`](https://sepolia.etherscan.io/tx/0x345811aa27275686899f84ec30c6b5c602cf6cc0d60e5be1edbb263e6ae2ea8e) |
+| **9** | **the same command → estate `0xD52b37AD…7C5F`** | payer `0xbFe5551e…16EA` | 11672932 | [**`0x17b0f956…d8816d37ad`**](https://sepolia.etherscan.io/tx/0x17b0f95681e3fea74423e06978d319ca1d57a20228480191f12c99d8816d37ad) |
+| 10 | `enterLiquidation` — the human judgement call | **trustee** | 11672934 | [`0x8a5121bb…7e90a39242`](https://sepolia.etherscan.io/tx/0x8a5121bb95318a52a292ebe4df962d5a04262634bdfc2ec7de69677e90a39242) |
+| **11** | **`executePlan` — the waterfall** | *anyone* (same stranger) | 11672939 | [**`0xb693dbab…2e9a8bafc8`**](https://sepolia.etherscan.io/tx/0xb693dbab092d82cb70379969b7880bc3103874498bafe48682d0882e9a8bafc8) |
+| 12 | `resolve` — terminal wind-up | **trustee** | 11672942 | [`0xba235502…49b2bceda9`](https://sepolia.etherscan.io/tx/0xba2355020125ac12cfd06af36f0e6c3593281dcdfbfd81151a660149b2bceda9) |
+
+### Rows 6 and 9 are the entire project
+
+Both were sent by the same address, to the same contract (Circle USDC
+`0x1c7D4B19…7238`), for the same amount, by the same script. The only thing that
+differed is 37 blocks of elapsed time, in which the agent died.
+
+```bash
+# scripts/route-payment.sh takes an agent id. It does NOT take a destination.
+$ cast call $REGISTRY "getPaymentDestination(bytes32)(address)" $AGENT3
+# ...and sends to exactly whatever that returned.
+```
+
+That distinction is the whole reason this is a protocol rather than two
+addresses someone funded by hand. The obvious way to fake this demo is to send
+money to wallet A, then send money to wallet B, and narrate it as a flip. Here
+the payer cannot do that even if it wants to: the destination is not one of its
+inputs.
+
+The `Transfer` events are the proof, decoded from the two receipts:
+
+```text
+row 6   200000 USDC   0xbFe5551e…16EA -> 0x29eA9aE5…5557   (treasury)
+row 9   200000 USDC   0xbFe5551e…16EA -> 0xD52b37AD…7C5F   (estate)
+row 11  200000 USDC   0xD52b37AD…7C5F -> 0x77b31B4a…C35a   (secured creditor)
+```
+
+Read the third line against the second: **the USDC the waterfall paid out is the
+USDC that routed in.**
+
+### What the waterfall did, under scarcity
+
+`executePlan` ran with 200000 units available against 850000 owed. Nobody was
+made whole, which is the normal case in an insolvency and the only case worth
+demonstrating:
+
+| Class | Creditor | Allowed | Paid |
+|---|---|---|---|
+| Secured | `0x77b31B4a…C35a` | 250000 | **200000** |
+| Administrative | `0xb081dc53…042f` | 200000 | 0 |
+| Unsecured | `0x356895DE…810b` | 400000 | 0 |
+| | | | estate drained to **0**, shortfall **650000** |
+
+Strict priority, not pro-rata across classes: secured is paid as far as the
+money goes and the rest get nothing.
+
+### Four keys, and a stranger
+
+The five addresses in the table are five different keys. Agent 3's owner cannot
+heartbeat, its trustee cannot restore it, and the address that pushed it into
+Administration and later ran the waterfall — `0x72db032c…c706` — holds **none**
+of its roles. That is the design working, not a shortcut:
+`enterAdministration` checks the deadline, not the caller, because a dead-man's
+switch that needs a trusted party to be awake is not one.
+
+The estate is a real contract, and provably this agent's:
+
+```bash
+$ cast codesize 0xD52b37AD931F221A902fC7F43A9ed2D87Ce07C5F   # 6539
+$ cast call 0xD52b37AD931F221A902fC7F43A9ed2D87Ce07C5F "agentId()(bytes32)"
+0x96abf3c7f8f72fdf248e91137fb471a442dccf3fcece378b2065616cb68c36d4
+```
+
+### Verify the current state yourself
+
+```bash
+RPC=https://ethereum-sepolia-rpc.publicnode.com
+REG=0x2946B46c2EB5Ec532093877223Ef043b13729e39
+A3=0x96abf3c7f8f72fdf248e91137fb471a442dccf3fcece378b2065616cb68c36d4
+
+cast call $REG "getStatus(bytes32)(uint8)" $A3 --rpc-url $RPC              # 3 = Resolved
+cast call $REG "getPaymentDestination(bytes32)(address)" $A3 --rpc-url $RPC # the estate
+```
+
+Or query the subgraph for the whole life in one request:
+
+```bash
+curl -s https://api.studio.thegraph.com/query/1760047/executor/v0.1.1 \
+  -H 'content-type: application/json' -d '{"query":"{ agent(id:\"'$A3'\"){ status heartbeatCount executions{ totalPaid shortfall } claims{ priorityClass allowedAmount amountPaid } statusChanges(orderBy:blockNumber){ from to caller } } }"}'
+```
+
+---
+
+## The second agent: recovery, and life after `resolve()`
+
+Agent 3 above is the cleaner story, but it never recovered and it only ran the
+waterfall once. Agent 2 covers the two properties it does not: **a missed
+heartbeat that gets walked back**, and **an estate that still pays after the
+agent has been wound up**. 21 transactions, same public chain, same rules.
+
+One thing agent 2 deliberately does *not* prove, and the reason it is no longer
+the headline: its estate was funded by hand (step 8 below). Nothing in agent 2's
+history shows money *routing* to a destination the protocol chose. That is
+agent 3's rows 6 and 9, and it is the claim that matters most.
 
 Agent 2 — `0x3bb9846eddba2c5c78b94bbc2be970db97c11731d2588aa86d375e281183cc67` —
 was registered under four **distinct** role keys, heartbeat once from its
@@ -61,7 +178,9 @@ the waterfall still ran and still paid. `Estate.executePlan` accepts status 2
 The whole of it renders in the dashboard, which reads any agent id, not just
 the demo one: `pnpm -C apps/dashboard dev`, then
 `/agent/0x3bb9846eddba2c5c78b94bbc2be970db97c11731d2588aa86d375e281183cc67`.
-The history panel there is built from the registry's own logs.
+The history panel there is served by the subgraph in `subgraph/`, not by an RPC
+log scan - see [subgraph/README.md](subgraph/README.md) for why that swap was
+made and what it does and does not let us claim.
 
 The remaining two are the recoverable flip, re-run on the original demo agent —
 [`enterAdministration`](https://sepolia.etherscan.io/tx/0x47a310d6fac2fd00add0192d01bc0d1514d9ce34e037132798641912e5bfb3dc)
@@ -440,21 +559,32 @@ accounts.
 
 Directories that run:
 
-- `contracts/` — Foundry. `ExecutorRegistry.sol` and `Estate.sol` are both
-  deployed on Sepolia (addresses above). `test/ExecutorRegistry.t.sol`
-  (37 tests), `test/Estate.t.sol` (40 tests), `test/LivingWill.t.sol` (9 tests,
-  ENSv2 role semantics) and `test/Receiver.t.sol` (4 tests, for the superseded
-  contract) cover them — 90 in total.
+- `contracts/` — Foundry. `ExecutorRegistry.sol`, `Estate.sol` and
+  `ExecutorResolver.sol` are all deployed on Sepolia (addresses above).
+  `test/Estate.t.sol` (40), `test/ExecutorRegistry.t.sol` (37),
+  `test/ExecutorResolver.t.sol` (14), `test/LivingWill.t.sol` (9, ENSv2 role
+  semantics) and `test/Receiver.t.sol` (4, for the superseded contract) cover
+  them — **104 in total**, all passing.
 - `packages/agent-debtor/src/gateway.ts` — the x402 resource server.
   `pay-for-research.ts` — the matching paying client.
-- `apps/dashboard` — the Next.js dashboard.
+- `apps/dashboard` — the Next.js dashboard. Current state comes from contract
+  reads; history and liveness statistics come from the subgraph.
+- `subgraph/` — the Graph subgraph indexing `ExecutorRegistry` and, through a
+  dynamic data source template, every `Estate` an agent has pointed at. Live at
+  `https://api.studio.thegraph.com/query/1760047/executor/v0.1.1`.
+- `scripts/route-payment.sh` — pays an agent by reading
+  `getPaymentDestination` at payment time. Takes an agent id and **no
+  destination**, which is what makes rows 6 and 9 above meaningful.
+- `scripts/heartbeat.sh` — the liveness runner.
+- `scripts/record-demo/` — how the demo video was produced, including the
+  script that pulls every displayed value off-chain.
 - `scripts/e2e-local.sh` — the same lifecycle from an empty anvil chain, with
   assertions on every step and negative assertions checked against the 4-byte
   custom-error selector.
 - `demo/script.md` — the shot list, describing only things that exist.
 
 **There is no stub graveyard any more.** `packages/optional`, `packages/sweep`,
-`packages/bazantic`, `packages/subgraph`, `packages/cre-workflow`,
+`packages/bazantic`, `packages/cre-workflow`,
 `packages/agent-trustee`, `packages/agent-client`, `packages/shared`,
 `demo/run-e2e.ts`, `demo/seed.ts` and four dead files under
 `packages/agent-debtor/src/` were `git rm`'d rather than left as decoration —
@@ -545,4 +675,9 @@ There is no deployed public URL for the dashboard — run it locally.
 
 ## Prizes
 
-`docs/PRIZES.md` — ENS, Hedera, x402. Nothing else is filed.
+`docs/PRIZES.md` — **ENS**, **Hedera** and **The Graph**. Nothing else is filed.
+
+x402 is central to how this works but is not a standalone track at this event,
+so that work is claimed under Hedera rather than as a fourth filing. Eight other
+partner tracks were scoped and withdrawn rather than filed on stubs; `FEEDBACK.md`
+records which and why.
