@@ -13,6 +13,7 @@ import type { AgentEvent } from "../lib/ens";
 import { getAgentHistory, getIndexMeta } from "../lib/subgraph";
 import FlowPanel from "./components/FlowPanel";
 import LivenessMonitor from "./components/LivenessMonitor";
+import LifecycleReplay from "./components/LifecycleReplay";
 import EventTimeline from "./components/EventTimeline";
 
 const DEMO_LABEL = "executor-hackathon-demo";
@@ -205,6 +206,8 @@ export default async function OverviewPage() {
         </div>
 
         {!name.ok && <p className="read-error mono">ENS registry read failed: {name.error}</p>}
+
+        <LifecycleReplay />
 
         {vitals && (
           <div className="vitals-strip">

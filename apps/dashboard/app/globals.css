@@ -499,3 +499,450 @@ main {
 .monitor-deadline-fill[data-near="yes"] {
   background: var(--administration);
 }
+
+/* ── Flow rack ───────────────────────────────────────────────────────────────
+   The money path, top to bottom: name → resolver → primitive → fork. Hairlines
+   and sockets rather than cards, because this is a rack of instruments and not
+   a set of tiles. */
+.rack {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--raised);
+  padding: 18px;
+}
+
+.rack-node {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.012);
+}
+
+.rack-label {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.rack-derived {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.rack-value {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.rack-primitive .rack-value[data-dest="treasury"] {
+  color: var(--active);
+}
+.rack-primitive .rack-value[data-dest="estate"] {
+  color: var(--administration);
+}
+
+.rack-conduit {
+  height: 16px;
+  display: flex;
+  justify-content: center;
+}
+.rack-conduit span {
+  width: 1px;
+  background: linear-gradient(to bottom, var(--border-strong), transparent);
+}
+
+.rack-rail {
+  position: relative;
+  height: 34px;
+  margin: 6px 0 10px;
+}
+.rack-rail-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--border-strong);
+}
+.rack-packet {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--text);
+  color: #05070d;
+  white-space: nowrap;
+}
+.rack-packet-amount {
+  font-size: 12px;
+  font-weight: 600;
+}
+.rack-packet-unit {
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+}
+
+.rack-hoppers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.hopper {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.012);
+}
+
+/* the lit face is the shared element that travels between hoppers */
+.hopper-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  border: 1px solid var(--active);
+  background: radial-gradient(120% 130% at 50% 0%, rgba(53, 240, 192, 0.14), transparent 70%);
+}
+.hopper[data-phase="administration"] .hopper-face,
+.hopper[data-phase="liquidation"] .hopper-face,
+.hopper[data-phase="resolved"] .hopper-face {
+  border-color: var(--administration);
+  background: radial-gradient(120% 130% at 50% 0%, rgba(255, 181, 69, 0.16), transparent 70%);
+}
+
+.hopper-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.hopper-name {
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.hopper-addr {
+  font-size: 13px;
+  color: var(--text);
+}
+.hopper-sub {
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.rack-foot {
+  margin: 12px 0 0;
+  font-size: 11px;
+  color: var(--dim);
+  line-height: 1.5;
+}
+
+/* ── Phase rail ──────────────────────────────────────────────────────────── */
+.phaserail {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  list-style: none;
+  margin: 16px 0;
+  padding: 0;
+}
+.phasenode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--faint);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: color 0.25s var(--ease-settle), border-color 0.25s var(--ease-settle);
+}
+.phasenode-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+.phasenode-on {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.phasenode-on[data-phase="active"] {
+  color: var(--active);
+  box-shadow: inset 0 0 0 1px rgba(53, 240, 192, 0.35);
+}
+.phasenode-on[data-phase="administration"] {
+  color: var(--administration);
+  box-shadow: inset 0 0 0 1px rgba(255, 181, 69, 0.35);
+}
+.phasenode-on[data-phase="liquidation"],
+.phasenode-on[data-phase="resolved"] {
+  color: var(--liquidation);
+  box-shadow: inset 0 0 0 1px rgba(255, 84, 112, 0.3);
+}
+
+/* ── Replay ──────────────────────────────────────────────────────────────── */
+.replay {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--raised);
+  padding: 20px;
+  margin: 32px 0;
+}
+.replay-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.replay-title {
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--text);
+}
+.replay-sub {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+.replay-controls {
+  display: flex;
+  gap: 6px;
+}
+.replay-btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s var(--ease-press), background 0.15s var(--ease-press);
+}
+.replay-btn:hover:not(:disabled) {
+  border-color: var(--active);
+}
+.replay-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.replay-btn-primary {
+  border-color: var(--active);
+  color: var(--active);
+}
+
+.replay-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.replay-step {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.012);
+}
+.replay-step-n {
+  font-size: 11px;
+  color: var(--faint);
+  letter-spacing: 0.1em;
+}
+.replay-step-title {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 17px;
+  margin: 6px 0 6px;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.replay-step-caption {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--dim);
+}
+.replay-meta {
+  display: flex;
+  gap: 18px;
+  margin: 0 0 12px;
+  font-size: 11.5px;
+}
+.replay-meta dt {
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 10px;
+}
+.replay-meta dd {
+  margin: 2px 0 0;
+  color: var(--text);
+}
+.replay-meta dd[data-actor="stranger"] {
+  color: var(--administration);
+}
+.replay-tx {
+  display: inline-block;
+  font-size: 11.5px;
+  color: var(--succession);
+  text-decoration: none;
+  word-break: break-all;
+}
+.replay-tx:hover {
+  text-decoration: underline;
+}
+.replay-tx-none {
+  color: var(--faint);
+}
+
+.replay-scrub {
+  height: 2px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-top: 16px;
+  overflow: hidden;
+}
+.replay-scrub-fill {
+  height: 100%;
+  background: var(--active);
+  transition: width 0.4s linear;
+}
+.replay-foot {
+  margin: 8px 0 0;
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+/* ── Waterfall ───────────────────────────────────────────────────────────── */
+.pour {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 12px;
+  background: rgba(255, 255, 255, 0.012);
+}
+.pour-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.pour-title {
+  font-family: var(--display);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.pour-ratio {
+  font-size: 11px;
+  color: var(--dim);
+}
+.pour-shelves {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.shelf-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+.shelf-class {
+  color: var(--text);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+.shelf-creditor {
+  color: var(--faint);
+  font-size: 10.5px;
+}
+.shelf-track {
+  height: 8px;
+  border-radius: 3px;
+  background: rgba(150, 190, 235, 0.08);
+  overflow: hidden;
+}
+.shelf-fill {
+  height: 100%;
+  background: var(--active);
+}
+.shelf[data-dry="yes"] .shelf-fill {
+  background: var(--liquidation);
+}
+.shelf-nums {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10.5px;
+  color: var(--dim);
+  margin-top: 5px;
+}
+.shelf-zero {
+  color: var(--liquidation);
+}
+.shelf-paid {
+  color: var(--active);
+}
+.pour-foot {
+  margin: 12px 0 0;
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+@media (max-width: 900px) {
+  .replay-body {
+    grid-template-columns: 1fr;
+  }
+  .phaserail {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* The limit of what the replay proves, kept on screen rather than in a doc. */
+.replay-caveat {
+  margin: 6px 0 0;
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: var(--faint);
+  max-width: 86ch;
+}
+.replay-caveat em {
+  font-style: normal;
+  color: var(--dim);
+}
