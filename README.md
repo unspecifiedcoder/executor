@@ -746,6 +746,15 @@ There is no deployed public URL for the dashboard — run it locally.
   waterfall. The consumer that does exist is `Estate.executePlan`, which refuses
   to run in Administration.
 
+## How this was built
+
+Claude Code wrote most of the source. The protocol design, the adversarial
+review process that found the worst bug in it, and every call about what to ship
+or withdraw were the team's. [`docs/AI_ATTRIBUTION.md`](docs/AI_ATTRIBUTION.md)
+sets out who did what, file by file — including the three-attempt correction of a
+fatal `sweepSurplus` drain where the first two fixes were themselves defeated by
+review.
+
 ## Prizes
 
 `docs/PRIZES.md` — **ENS**, **Hedera** and **The Graph**. Nothing else is filed.

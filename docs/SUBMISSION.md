@@ -160,6 +160,17 @@ rather than as a fourth filing.
 
 ---
 
+## AI tool use
+
+Claude Code (Opus 5) wrote most of the source; 44 of 61 commits carry a
+`Co-Authored-By` trailer and `git log` confirms it. The protocol design, the
+contract structs and variables, the adversarial review method, and every
+judgement about what to ship or withdraw were the team's.
+`docs/AI_ATTRIBUTION.md` documents this file by file, as the submission rules
+require, and includes the record of a fatal bug in AI-written code whose first
+two fixes were also wrong — caught each time by a review process the team
+designed.
+
 ## Do not claim
 
 Circle/Arc, Chainlink CRE, Uniswap, World, Ledger, Privy, Bazantic. Every one of
