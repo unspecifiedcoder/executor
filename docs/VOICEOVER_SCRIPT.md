@@ -1,6 +1,6 @@
 # Voiceover script — timestamped to the silent recording
 
-The recording is **`media/executor-demo-silent.mp4`** — 1920×1080, 25fps, **3:20**,
+The recording is **`media/executor-demo-silent.mp4`** — 1920×1080, 25fps, **3:26**,
 **no audio track at all**. Every segment below is cut to a fixed length, so
 these timestamps are exact: read each line inside its window and the picture
 will match.
@@ -9,7 +9,7 @@ will match.
 
 | rule | this video |
 |---|---|
-| 2–4 minutes | 3:20 ✅ |
+| 2–4 minutes | 3:26 ✅ |
 | ≥720p | 1080p ✅ |
 | **human voice — TTS and AI voiceover are explicitly prohibited** | that is why you are reading this and not me |
 | do not speed the video up | recorded at real time ✅ |
@@ -25,17 +25,24 @@ changes, so joins are invisible.
 factual beats excited. Say the numbers out loud — spoken numbers make judges
 look up.
 
-**One thing to know before you read it.** Everything in the middle six segments
-is *one agent* — `0x96abf3c7…c36d4` — running the entire lifecycle, in order, on
-public Sepolia. That is deliberate, and it is the thing to sound confident
-about: an earlier cut proved the payment rail on one agent and the creditor
-waterfall on another, which is a much weaker claim. This is one life.
+**Two things to know before you read it.**
+
+**Everything you see is the actual dashboard.** An earlier cut used a console
+page built only for recording, so the video and the live site were two different
+products. This is a screen recording of `executor-dashboard.vercel.app` — a
+judge can open it and click the same buttons.
+
+**The middle is one agent** — `0x96abf3c7…c36d4` — running the entire lifecycle,
+in order, on public Sepolia, replayed from chain history with each step's
+transaction one click away. Sound confident about that: an earlier cut proved
+the payment rail on one agent and the waterfall on another, which is a much
+weaker claim.
 
 ---
 
 ## 0:00 – 0:22 · The problem
-*(on screen: the live dashboard, drifting down into the on-chain history — a
-column of real heartbeats arriving every 30 seconds)*
+*(on screen: the live dashboard, drifting down past the routing panel and the
+liveness trace)*
 
 > An autonomous agent earns money. It also owes money — an inference bill, a
 > compute provider, whoever it buys from.
@@ -50,124 +57,130 @@ column of real heartbeats arriving every 30 seconds)*
 
 ---
 
-## 0:22 – 0:45 · The primitive
-*(on screen: `getPaymentDestination` returning the treasury, then status Active)*
+## 0:22 – 0:40 · The primitive
+*(on screen: the replay panel, at rest on step one)*
 
-> Executor gives an agent a resolution plan it commits to before it fails.
+> Here is one agent's entire life, replayed from Sepolia.
 >
-> One contract on Sepolia. Every payment asks it the same question — get payment
-> destination. While the agent is alive, the answer is its treasury.
->
-> That's a live read against Sepolia, on an agent that is alive right now.
+> Every payment asks the registry the same question — get payment destination.
+> Follow that line down: the agent's id, the registry, the answer. Right now the
+> answer is its treasury.
 
 ---
 
-## 0:45 – 1:08 · It was genuinely alive
-*(on screen: a GraphQL query to our subgraph returning eighteen heartbeats with
-their gaps)*
+## 0:40 – 0:50 · The plan is a pre-commitment
+*(on screen: step 2, lock plan)*
 
-> This is a different agent — one whose whole life already ran, start to finish.
->
-> Here's its heartbeat history, out of our subgraph. Eighteen transactions, one
-> every ninety-six seconds, for twenty-seven minutes. A signer proving liveness
-> on an interval — and that signer is a different key from the owner, the
-> trustee, and the recovery authority. Four separate authorities, on purpose.
->
-> The gap column is an indexed field. It's a number the index computed while
-> ingesting, not something the chain will hand you.
+> The plan is locked before anything goes wrong. From here, update plan reverts.
+> The treasury, the estate, the timing — none of it can be changed, not even by
+> the owner.
 
 ---
 
-## 1:08 – 1:30 · A real payment, while alive
-*(on screen: route-payment.sh reading the registry, then landing in the treasury)*
+## 0:50 – 1:02 · It was genuinely alive
+*(on screen: step 3, eighteen heartbeats)*
 
-> Now a payment. The payer is never told where to send. The script reads get
-> payment destination out of the registry at payment time and sends to exactly
-> that address — the destination is not an argument you can pass it.
->
-> Two hundred thousand units of real Circle USDC, into the treasury, at block
-> eleven-six-seven-two-eight-nine-five.
+> Eighteen heartbeats, one every ninety-six seconds, signed by a key that is not
+> the owner's, not the trustee's, and not the recovery authority's. Four separate
+> authorities, on purpose.
 
 ---
 
-## 1:30 – 1:52 · The agent dies
-*(on screen: the TooEarly revert, then enterAdministration succeeding)*
+## 1:02 – 1:18 · A real payment, while alive
+*(on screen: step 4, the packet lands in TREASURY)*
 
-> The heartbeat stops.
+> Now a payment. The payer is never told where to send — the script reads get
+> payment destination and sends to exactly that. The destination is not an
+> argument you can pass it.
 >
-> Try it too early and the contract refuses — TooEarly. It won't take anyone's
-> word that the agent is dead; the deadline has to have actually passed.
->
-> Once it has, enter administration goes through. And look who called it — an
-> address that is not the owner, not the signer, not the trustee, not the
-> recovery key. Enter administration is permissionless. The contract checks the
-> deadline, not the caller. Nothing here depends on a trustworthy party being
-> awake.
+> Two hundred thousand units of real Circle USDC, into the treasury.
 
 ---
 
-## 1:52 – 2:14 · The same command, different money
-*(on screen: the destination now returning the estate, then the two payments
-stacked — treasury above, estate below)*
+## 1:18 – 1:30 · The agent dies
+*(on screen: step 5, heartbeat stops)*
 
-> Same question, same agent. The answer is now the estate contract.
+> The heartbeat stops. The deadline — interval plus grace — begins to lapse.
+
+---
+
+## 1:30 – 1:46 · Anyone can call it
+*(on screen: step 6, enterAdministration, actor marked "stranger")*
+
+> Enter administration. Look at who called it: an address holding none of the
+> four roles. The contract checks the deadline, not the caller.
 >
-> So run the identical command again. Same payer, same two hundred thousand
-> USDC, same script — and the money lands somewhere else.
+> Nothing here depends on a trustworthy party being awake.
+
+---
+
+## 1:46 – 2:06 · The same command, different money
+*(on screen: step 7 — the lit face moves from TREASURY to ESTATE, and the packet
+lands there instead. **This is the shot. Let it breathe.**)*
+
+> Same payer. Same two hundred thousand USDC. Same script.
 >
-> Nothing about the payer changed. The agent's on-chain state did. That's the
+> And the money lands somewhere else.
+>
+> Nothing about the payer changed. The agent's on-chain state did. That is the
 > whole idea: the destination of a payment is late-bound to whether the payee is
 > still alive.
 
 ---
 
-## 2:14 – 2:40 · Creditors actually get paid
-*(on screen: enterLiquidation by the trustee, then executePlan and the waterfall)*
+## 2:06 – 2:18 · Only liquidation unlocks payouts
+*(on screen: step 8, enterLiquidation)*
 
-> The estate isn't a forwarding address. The trustee declares liquidation — and
-> only liquidation unlocks payouts, because an agent in administration might
-> still recover, and paying its creditors while that's possible would be the
-> worst bug this protocol could have.
->
+> The trustee declares liquidation. Only this unlocks payouts — an agent in
+> administration might still recover, and paying its creditors while that is
+> possible would be the worst bug this protocol could have.
+
+---
+
+## 2:18 – 2:36 · Creditors, in order
+*(on screen: step 9, the waterfall filling)*
+
 > Then the waterfall runs, and anyone can run it. Two hundred thousand available
 > against eight hundred and fifty thousand owed — insolvent, which is the normal
-> case. Secured is paid in full. Administrative gets nothing. Unsecured gets
-> nothing. The estate is drained to zero.
+> case.
 >
-> And that is the same USDC that routed in ninety seconds earlier.
+> Secured is paid as far as the money goes. Administrative gets nothing.
+> Unsecured gets nothing. Shortfall, six hundred and fifty thousand.
+>
+> And that is the same USDC that routed in a moment ago.
 
 ---
 
-## 2:40 – 3:00 · The whole life, one query
-*(on screen: one GraphQL request returning status, claims, execution, and every
-status change)*
+## 2:36 – 2:46 · Wind-up
+*(on screen: step 10, resolve)*
 
-> Everything you just watched, in one request.
->
-> The status. Every claim with what it was allowed and what it was actually
-> paid. The execution, with its shortfall. And every status change — with who
-> called it.
->
-> That last column isn't in the event. It's the transaction sender, recovered
-> while indexing. It's how you can see that a stranger moved this agent into
-> administration, and the trustee only did the two steps that are actually the
-> trustee's to make.
->
-> This is what the dashboard reads. It replaced a log scan that paged the chain
-> fifty thousand blocks at a time.
+> The trustee winds it up. Terminal — and the estate can still pay out late
+> revenue, because resolving first must not strand anyone.
 
 ---
 
-## 3:00 – 3:20 · Close, honestly
-*(on screen: back to the live dashboard)*
+## 2:46 – 3:06 · What the index gives you
+*(on screen: the liveness history panel)*
+
+> This agent's cadence — heartbeat count, median gap, longest gap, against the
+> deadline the contract enforces. Those are aggregates over the whole series, so
+> they come from our subgraph rather than a contract call.
+>
+> Read that as observability, not proof of work. A regular cadence is cheap to
+> manufacture, and we say so on the panel.
+
+---
+
+## 3:06 – 3:26 · Close, honestly
+*(on screen: back at the top of the live dashboard)*
 
 > What's real: the registry, the flip, a hosted x402 service settling on Hedera,
-> an ENS name that decides where money goes, a subgraph the dashboard actually
-> depends on, and a settled estate — one agent, one life, all of it on a public
-> chain. A hundred and eight tests.
+> an ENS name that decides where money goes, a subgraph the dashboard depends on,
+> and a settled estate. A hundred and twenty-six tests.
 >
 > What isn't: a human trustee still curates the claims, because a contract can't
-> decide whether a debt is real. That part is deliberate.
+> decide whether a debt is real. And the ENS name and the waterfall are proven on
+> two different agents — no code joins them yet. Both are on the page.
 >
 > Executor. When an agent fails, its obligations don't.
 
