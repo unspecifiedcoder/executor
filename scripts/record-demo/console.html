@@ -1,0 +1,110 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Executor</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#07090c; --panel:#0c1017; --line:#1b2432;
+  --dim:#5b6b80; --text:#c6d4e4; --bright:#eaf2fb;
+  --live:#31e0a8; --flip:#ffb347; --warn:#ff6b6b; --key:#7aa2ff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--ground);overflow:hidden}
+body{font-family:'JetBrains Mono',ui-monospace,monospace;color:var(--text)}
+#stage{position:absolute;inset:0;display:flex;flex-direction:column;padding:44px 60px 18px}
+header{display:flex;align-items:baseline;gap:18px;flex:0 0 auto;padding-bottom:22px}
+.mark{font-family:Inter,system-ui,sans-serif;font-weight:600;font-size:15px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--bright)}
+.mark span{color:var(--live)}
+.chapter{font-family:Inter,system-ui,sans-serif;font-size:15px;color:var(--dim);letter-spacing:.02em}
+.chapter b{color:var(--text);font-weight:500}
+#term{flex:1 1 auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:30px 34px;overflow:hidden;font-size:19px;line-height:1.62;
+  box-shadow:0 30px 80px -30px #000}
+.blk{margin-bottom:26px}
+.cmd{color:var(--bright);font-weight:500;white-space:pre-wrap}
+.cmd::before{content:"$ ";color:var(--live)}
+.out{white-space:pre-wrap;color:var(--text);margin-top:8px}
+.note{font-family:Inter,system-ui,sans-serif;font-size:16px;color:var(--dim);
+  margin-top:12px;padding-left:14px;border-left:2px solid var(--line);font-style:normal}
+.cur{display:inline-block;width:11px;height:20px;background:var(--live);
+  vertical-align:-3px;animation:bl 1s steps(1) infinite}
+@keyframes bl{50%{opacity:0}}
+#bar{flex:0 0 auto;height:2px;background:var(--line);margin:26px 0 0;position:relative}
+#fill{position:absolute;left:0;top:0;bottom:0;background:var(--live);width:0}
+#ticks{flex:0 0 auto;height:30px;position:relative}
+.tick{position:absolute;top:8px;font-family:Inter,sans-serif;font-size:11px;color:#2b3849;
+  letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.tick.last{transform:translateX(-100%)}
+mark{background:none;color:var(--live);font-weight:700}
+mark.f{color:var(--flip)}
+mark.w{color:var(--warn)}
+mark.k{color:var(--key)}
+</style></head><body>
+<div id="stage">
+ <header><div class="mark">EXEC<span>UTOR</span></div><div class="chapter" id="chap"></div></header>
+ <div id="term"></div>
+ <div id="bar"><div id="fill"></div></div>
+ <div id="ticks"></div>
+</div>
+<script>
+const SCENES = __SCENES__;
+const TOTAL = SCENES.reduce((a,s)=>a+s.dur,0);
+const term=document.getElementById('term'), chap=document.getElementById('chap'),
+      fill=document.getElementById('fill'), ticks=document.getElementById('ticks');
+let acc=0;
+SCENES.forEach(s=>{const d=document.createElement('div');d.className='tick';
+  d.style.left=(acc/TOTAL*100)+'%';d.textContent=s.title;
+  if(acc+s.dur>=TOTAL){d.classList.add('last');d.style.left='100%';}
+  ticks.appendChild(d);acc+=s.dur;});
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+// colourise real output without altering a single character of it
+function paint(t){
+  return t
+   .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+   .replace(/(status 1 \(success\))/g,'<mark>$1</mark>')
+   .replace(/(TooEarly\(\) \[0x085de625\])/g,'<mark class="w">$1</mark>')
+   .replace(/(Error: execution reverted:)/g,'<mark class="w">$1</mark>')
+   .replace(/\(treasury\)/g,'<mark class="k">(treasury)</mark>')
+   .replace(/\(estate\)/g,'<mark class="f">(estate)</mark>')
+   .replace(/(&lt;- [^\n]*)/g,'<mark class="f">$1</mark>')
+   .replace(/(in full|drained)/g,'<mark>$1</mark>');
+}
+async function typeCmd(el,text){
+  for(let i=0;i<text.length;i++){el.textContent=text.slice(0,i+1);await sleep(9);}
+}
+async function run(){
+  const t0=performance.now();
+  requestAnimationFrame(function tick(){
+    const e=(performance.now()-t0)/1000;
+    fill.style.width=Math.min(100,e/TOTAL*100)+'%';
+    if(e<TOTAL+1)requestAnimationFrame(tick);
+  });
+  let elapsed=0;
+  for(const s of SCENES){
+    const start=elapsed;
+    chap.innerHTML='<b>'+s.title+'</b>';
+    term.innerHTML='';
+    // budget: type + reveal within the scene, then hold
+    for(const b of s.blocks){
+      const wrap=document.createElement('div');wrap.className='blk';
+      const c=document.createElement('div');c.className='cmd';
+      const cur=document.createElement('span');cur.className='cur';
+      wrap.appendChild(c);term.appendChild(wrap);c.appendChild(cur);
+      await typeCmd(c,b.cmd);
+      c.appendChild(cur);
+      await sleep(420);
+      cur.remove();
+      const o=document.createElement('div');o.className='out';o.innerHTML=paint(b.out);
+      wrap.appendChild(o);
+      if(b.note){const n=document.createElement('div');n.className='note';n.textContent=b.note;wrap.appendChild(n);}
+      await sleep(1100);
+    }
+    elapsed+=s.dur;
+    // hold until this scene's wall-clock boundary, exactly
+    const target=t0+elapsed*1000;
+    while(performance.now()<target) await sleep(30);
+  }
+  document.title='DONE';
+  window.__done=true;
+}
+window.__start=run;
+</script></body></html>

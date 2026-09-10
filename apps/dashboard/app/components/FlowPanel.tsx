@@ -55,12 +55,18 @@ export default function FlowPanel({
   const treasuryBoxRef = useRef<HTMLDivElement>(null);
   const estateBoxRef = useRef<HTMLDivElement>(null);
   const prevToEstate = useRef<boolean | null>(null);
-  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  // The wall clock is a client-only fact. Seeding this from Date.now() during
+  // render makes the server emit one "Ns ago" and the client hydrate with
+  // another, and React responds to that mismatch by throwing away the whole
+  // server tree and re-rendering the root on the client - which is exactly the
+  // wrong trade for a panel whose job is to look continuously live.
+  const [now, setNow] = useState<number | null>(null);
   const toEstate = destination.toLowerCase() === estate.toLowerCase();
   const isActive = status === "active" || status === "resolved";
   const highlightColor = isActive ? "var(--active)" : "var(--administration)";
 
   useEffect(() => {
+    setNow(Math.floor(Date.now() / 1000));
     const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
     return () => clearInterval(id);
   }, []);
@@ -145,8 +151,8 @@ export default function FlowPanel({
     return () => cancelAnimationFrame(raf);
   }, [toEstate, isActive]);
 
-  const heartbeatAgo = now - lastHeartbeat;
-  const countdown = eligibleAt - now;
+  const heartbeatAgo = now === null ? null : now - lastHeartbeat;
+  const countdown = now === null ? null : eligibleAt - now;
 
   return (
     <div className="flow-panel">
@@ -171,11 +177,13 @@ export default function FlowPanel({
           getPaymentDestination() → <strong>{toEstate ? "estate" : "treasury"}</strong> ({short(destination)})
         </span>
         <span>
-          {isActive
-            ? `last heartbeat ${relTime(heartbeatAgo)}`
-            : countdown > 0
-              ? `eligible for administration in ${countdown}s`
-              : "eligible for administration now"}
+          {heartbeatAgo === null || countdown === null
+            ? "\u00a0"
+            : isActive
+              ? `last heartbeat ${relTime(heartbeatAgo)}`
+              : countdown > 0
+                ? `eligible for administration in ${countdown}s`
+                : "eligible for administration now"}
         </span>
       </div>
 

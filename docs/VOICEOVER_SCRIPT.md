@@ -1,31 +1,41 @@
 # Voiceover script — timestamped to the silent recording
 
-The screen recording is `executor-demo-silent.mp4` (1920×1080, no audio). Every
-segment below is cut to a fixed length, so these timestamps are exact — read
-each line inside its window and the picture will match.
+The recording is **`media/executor-demo-silent.mp4`** — 1920×1080, 25fps, 3:00,
+**no audio track at all**. Every segment below is cut to a fixed length, so
+these timestamps are exact: read each line inside its window and the picture
+will match.
 
-**ETHGlobal rules this has to satisfy** (verified from the event's own
-submission page):
-- 2–4 minutes total ✅ (this is **3:00**)
-- ≥720p ✅ (1080p)
-- **Human voice — text-to-speech and AI voiceover are explicitly prohibited.**
-  That is why you are reading this and not me.
-- Do not speed the video up
-- Do not record on a phone
+**ETHGlobal rules this satisfies** (from the event's own submission page):
 
-**How to record it:** play the silent video, read along, capture your voice in
-anything (Audacity, Voice Memos, your phone as a *mic* is fine — just don't
-film on it). Then drop both into any editor and export. If a line runs long,
-pause between sentences rather than rushing — the cut points are generous.
+| rule | this video |
+|---|---|
+| 2–4 minutes | 3:00 ✅ |
+| ≥720p | 1080p ✅ |
+| **human voice — TTS and AI voiceover are explicitly prohibited** | that is why you are reading this and not me |
+| do not speed the video up | recorded at real time ✅ |
+| do not record on a phone | screen capture ✅ |
 
-Tone: explain it to a smart engineer who has never heard of this. Flat and
+**How to record it:** play the video, read along, capture your voice in anything
+(Audacity, Voice Memos — your phone as a *microphone* is fine, just don't film
+on it). Drop both into any editor and export. If a line runs long, pause between
+sentences rather than rushing; the cut points are generous and all land on scene
+changes, so joins are invisible.
+
+**Tone:** explain it to a smart engineer who has never heard of this. Flat and
 factual beats excited. Say the numbers out loud — spoken numbers make judges
 look up.
+
+**One thing to know before you read it.** Everything in the middle six segments
+is *one agent* — `0x96abf3c7…c36d4` — running the entire lifecycle, in order, on
+public Sepolia. That is deliberate, and it is the thing to sound confident
+about: an earlier cut proved the payment rail on one agent and the creditor
+waterfall on another, which is a much weaker claim. This is one life.
 
 ---
 
 ## 0:00 – 0:22 · The problem
-*(on screen: the live dashboard)*
+*(on screen: the live dashboard, drifting down into the on-chain history — a
+column of real heartbeats arriving every 30 seconds)*
 
 > An autonomous agent earns money. It also owes money — an inference bill, a
 > compute provider, whoever it buys from.
@@ -37,85 +47,98 @@ look up.
 ---
 
 ## 0:22 – 0:45 · The primitive
-*(on screen: terminal — `getPaymentDestination` returning the treasury)*
+*(on screen: `getPaymentDestination` returning the treasury, then status Active)*
 
-> Executor gives the agent a resolution plan it commits to before it fails.
+> Executor gives an agent a resolution plan it commits to before it fails.
 >
 > One contract on Sepolia. Every payment asks it the same question — get payment
-> destination. While the agent is alive, the answer is its treasury. This is a
-> live read, right now.
+> destination. While the agent is alive, the answer is its treasury.
+>
+> That's a live read against Sepolia, on an agent that is alive right now.
 
 ---
 
 ## 0:45 – 1:08 · It was genuinely alive
-*(on screen: the heartbeat history on chain)*
+*(on screen: eighteen Heartbeat events, block numbers, a steady 96-second gap)*
 
-> This agent was alive. That's its heartbeat history on Sepolia — a signer
-> proving liveness on an interval, each one a real transaction.
+> This is a different agent — one whose whole life already ran, start to finish.
 >
-> Its plan is locked. The treasury, the estate, the timing — none of it can be
-> changed now, not even by the owner. Lock plan is one way.
+> Here's its heartbeat history. Eighteen transactions, one every ninety-six
+> seconds, for twenty-seven minutes. A signer proving liveness on an interval —
+> and that signer is a different key from the owner, the trustee, and the
+> recovery authority. Four separate authorities, on purpose.
 
 ---
 
 ## 1:08 – 1:30 · A real payment, while alive
-*(on screen: routed payment landing in the treasury)*
+*(on screen: route-payment.sh reading the registry, then landing in the treasury)*
 
-> Here's a payment. The payer never gets told where to send — it reads the
-> destination out of the registry at payment time, and sends there.
+> Now a payment. The payer is never told where to send. The script reads get
+> payment destination out of the registry at payment time and sends to exactly
+> that address — the destination is not an argument you can pass it.
 >
-> Two hundred thousand units of real Circle USDC, into the treasury.
+> Two hundred thousand units of real Circle USDC, into the treasury, at block
+> eleven-six-seven-two-eight-nine-five.
 
 ---
 
 ## 1:30 – 1:52 · The agent dies
-*(on screen: the heartbeat stopping, then enterAdministration)*
+*(on screen: the TooEarly revert, then enterAdministration succeeding)*
 
-> Now the heartbeat stops.
+> The heartbeat stops.
 >
-> The window lapses, and enter administration is called. Notice who called it —
-> nobody privileged. The contract checks the deadline, not the caller. Any
-> stranger can do this. That's the point: nothing depends on a trustworthy party
-> being awake.
+> Try it too early and the contract refuses — TooEarly. It won't take anyone's
+> word that the agent is dead; the deadline has to have actually passed.
+>
+> Once it has, enter administration goes through. And look who called it — an
+> address that is not the owner, not the signer, not the trustee, not the
+> recovery key. Enter administration is permissionless. The contract checks the
+> deadline, not the caller. Nothing here depends on a trustworthy party being
+> awake.
 
 ---
 
 ## 1:52 – 2:14 · The same command, different money
-*(on screen: identical routed payment landing in the estate)*
+*(on screen: the destination now returning the estate, then the two payments
+stacked — treasury above, estate below)*
 
-> Same command. Same payer. Same agent.
+> Same question, same agent. The answer is now the estate contract.
 >
-> But the money went somewhere else — into the estate contract — because the
-> agent's on-chain state changed and the payment asked the protocol where to go.
+> So run the identical command again. Same payer, same two hundred thousand
+> USDC, same script — and the money lands somewhere else.
 >
-> That's the whole idea: the destination of a payment is late-bound to whether
-> the payee is still alive.
+> Nothing about the payer changed. The agent's on-chain state did. That's the
+> whole idea: the destination of a payment is late-bound to whether the payee is
+> still alive.
 
 ---
 
 ## 2:14 – 2:40 · Creditors actually get paid
-*(on screen: liquidation, then the waterfall paying out)*
+*(on screen: enterLiquidation by the trustee, then executePlan and the waterfall)*
 
 > The estate isn't a forwarding address. The trustee declares liquidation — and
 > only liquidation unlocks payouts, because an agent in administration might
 > still recover, and paying its creditors while that's possible would be the
 > worst bug this protocol could have.
 >
-> Then the waterfall runs. Secured first, in full. Administrative next, split
-> pro-rata. Unsecured last, and there's nothing left for them. Real USDC, on a
-> public chain.
+> Then the waterfall runs, and anyone can run it. Two hundred thousand available
+> against eight hundred and fifty thousand owed — insolvent, which is the normal
+> case. Secured is paid in full. Administrative gets nothing. Unsecured gets
+> nothing. The estate is drained to zero.
+>
+> And that is the same USDC that routed in ninety seconds earlier.
 
 ---
 
 ## 2:40 – 3:00 · Close, honestly
-*(on screen: the dashboard)*
+*(on screen: back to the live dashboard)*
 
-> What's real: the registry, the flip, a hosted x402 service on Hedera, an ENS
-> name that decides where money goes, and a settled estate. A hundred and four
-> tests.
+> What's real: the registry, the flip, a hosted x402 service settling on Hedera,
+> an ENS name that decides where money goes, and a settled estate — one agent,
+> one life, all of it on a public chain. A hundred and four tests.
 >
-> What isn't: a human trustee still curates the claims — because a contract
-> can't decide whether a debt is real. That part is deliberate.
+> What isn't: a human trustee still curates the claims, because a contract can't
+> decide whether a debt is real. That part is deliberate.
 >
 > Executor. When an agent fails, its obligations don't.
 
@@ -123,13 +146,31 @@ look up.
 
 ## If you fluff a line
 
-Don't restart the whole thing. Record that one segment again and splice — the
-cut points above are all on scene changes, so joins are invisible.
+Don't restart. Re-record that one segment and splice — every cut point above is
+on a scene change, so joins are invisible.
 
 ## Words to avoid
 
 - Don't call the paid endpoint an "AI agent" — it's a paid service that runs an
   LLM query. Overclaiming it is the one thing that would undo the honesty this
   project is scoring well on.
-- Don't say "fully automated" — the trustee is human and the bridge is manual.
-  Both are stated in the README and neither costs you anything to admit.
+- Don't say "fully automated" — the trustee is human and the Hedera↔Sepolia
+  bridge is manual. Both are in the README and neither costs you anything to
+  admit.
+
+## Every number spoken above, and where it came from
+
+| claim | verify with |
+|---|---|
+| 18 heartbeats, 96s apart | `cast logs --address $REGISTRY "Heartbeat(bytes32,uint64)"` |
+| pay #1 → treasury, block 11672895 | tx `0x731319100c29e25cf27270085ef91caaba946f9907cd14dfa67e33ef8ea243c5` |
+| enterAdministration, block 11672930 | tx `0x345811aa27275686899f84ec30c6b5c602cf6cc0d60e5be1edbb263e6ae2ea8e` |
+| pay #2 → estate, block 11672932 | tx `0x17b0f95681e3fea74423e06978d319ca1d57a20228480191f12c99d8816d37ad` |
+| enterLiquidation, block 11672934 | tx `0x8a5121bb95318a52a292ebe4df962d5a04262634bdfc2ec7de69677e90a39242` |
+| executePlan, secured paid 200000 | tx `0xb693dbab092d82cb70379969b7880bc3103874498bafe48682d0882e9a8bafc8` |
+| resolve, terminal | tx `0xba2355020125ac12cfd06af36f0e6c3593281dcdfbfd81151a660149b2bceda9` |
+
+Agent `0x96abf3c7f8f72fdf248e91137fb471a442dccf3fcece378b2065616cb68c36d4`,
+estate `0xD52b37AD931F221A902fC7F43A9ed2D87Ce07C5F`, registry
+`0x2946B46c2EB5Ec532093877223Ef043b13729e39`, USDC
+`0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` — all Sepolia.
