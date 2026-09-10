@@ -70,7 +70,7 @@ Active → Administration → Liquidation → Resolved, with `getPaymentDestinat
 as the single primitive everything else reads. `lockPlan` freezes the plan by
 making `updatePlan` revert `PlanIsLocked` — that is enforced on live Sepolia,
 not just asserted in a test. `Estate` implements the claims registry and the
-waterfall. 122 tests, among them a fuzz test asserting the waterfall never pays
+waterfall. 126 tests, among them a fuzz test asserting the waterfall never pays
 a creditor more than its allowed claim and never distributes more than it holds.
 CI runs `forge fmt --check`, `forge build --sizes`, `forge test`, `tsc` and
 `next build`.

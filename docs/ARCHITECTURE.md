@@ -89,7 +89,7 @@ that matters given `Resolved` is one-way and unordered with respect to
 `executePlan`. `0xD67a…286f` has done
 none of that and never will; it predates the `ZeroCreditor` fix. Everything
 neither deployment exercised — the pull-payment escrow branch, the 200-claim
-ceiling, reentrancy — is covered by 52 unit tests and by
+ceiling, reentrancy — is covered by 56 unit tests and by
 `scripts/e2e-local.sh` end to end on anvil against a real ERC-20.
 
 ## Why one contract instead of two
@@ -131,8 +131,9 @@ plumbing, not a trust assumption the contract has to solve.
   mechanical and must not depend on the trustee staying online.
 - `Estate.claimPayout()` — the creditor themselves, for a payout the token
   refused to accept at distribution time.
-- `Estate.returnToTreasury()` — **permissionless**, and only while the registry
-  reports the agent `Active`. Sends the estate's distributable balance back to
+- `Estate.returnToTreasury()` — **permissionless**, only while the registry
+  reports the agent `Active`, and only while nothing is owed
+  (`totalOutstanding() == 0`). Sends the estate's distributable balance back to
   the treasury after a recovery.
 
   This exists because "Administration is recoverable" was only half true.
@@ -240,7 +241,7 @@ the files still in `contracts/src/` and `packages/`:
   waterfall — `registerClaim`, a trustee-approved plan hash covering the exact
   claim terms, `executePlan` paying by priority class with pro-rata splitting
   inside a class, pull-payment escrow for refused transfers, and repeatable
-  rounds for late funds. 52 unit tests, plus `scripts/e2e-local.sh` end to end
+  rounds for late funds. 56 unit tests, plus `scripts/e2e-local.sh` end to end
   on anvil, plus a live Sepolia deployment at `0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F`
   bound to Circle USDC that has settled an insolvent estate across two
   distribution rounds — see the README. Not on Arc. The trustee here is an EOA

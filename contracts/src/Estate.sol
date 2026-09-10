@@ -159,6 +159,7 @@ contract Estate {
     error ClaimsOutstanding(uint256 outstanding);
     error AgentNotActive(uint8 status);
     error NoClaimsRegistered();
+    error ZeroAmount();
     error TooManyClaims();
     error Reentrancy();
 
@@ -201,6 +202,14 @@ contract Estate {
         // amount still counts towards its class total and so dilutes every
         // other creditor in that class pro-rata into a burn address.
         if (creditor == address(0)) revert ZeroCreditor();
+        // A zero-amount claim is a no-op in every path that pays: `executePlan`
+        // skips it (`owed == 0` continues) and it adds nothing to any class
+        // total. Its one and only observable effect anywhere in this contract
+        // was to satisfy `sweepSurplus`'s non-empty-claim-set gate while
+        // contributing nothing to `totalOutstanding()` - which turned that gate
+        // into one extra transaction for a trustee sweeping before curation.
+        // A value whose sole effect is to satisfy a guard belongs at the door.
+        if (allowedAmount == 0) revert ZeroAmount();
         if (claims[claimId].registered) revert ClaimAlreadyRegistered();
         if (claimIds.length >= MAX_CLAIMS) revert TooManyClaims();
 
@@ -490,6 +499,13 @@ contract Estate {
         // attack: empty the estate, then register the creditors who will find
         // nothing left.
         if (claimIds.length == 0) revert NoClaimsRegistered();
+        // Re-derive, exactly as `executePlan` does. Without it the approval can
+        // drift: approve an honest claim set, register another claim, and this
+        // function still sees a non-zero approval that no longer describes what
+        // it is sweeping around. `executePlan` has had this check since the
+        // plan-hash work; `sweepSurplus` reading a staler commitment than the
+        // function it guards makes no sense.
+        if (currentPlanHash() != approvedPlanHash) revert PlanMismatch();
 
         uint8 status = IExecutorRegistry(registry).getStatus(agentId);
         if (status != STATUS_LIQUIDATION && status != STATUS_RESOLVED) {

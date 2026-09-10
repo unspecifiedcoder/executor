@@ -371,7 +371,7 @@ settlement rail: `contracts/src/Estate.sol` is live at
 constructor-bound to Circle's real Sepolia USDC
 [`0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`](https://sepolia.etherscan.io/address/0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238)
 (`symbol()` is `"USDC"`, `decimals()` is `6`). It reads the same registry via
-`getStatus` and refuses to distribute until Liquidation. Its 52 tests cover
+`getStatus` and refuses to distribute until Liquidation. Its 56 tests cover
 priority classes, pro-rata splitting, pull-payment escrow and repeat rounds.
 
 **That contract has now run on Sepolia, with real Circle USDC.** Not at

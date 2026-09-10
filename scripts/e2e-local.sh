@@ -83,6 +83,13 @@ if ! cast block-number --rpc-url "$RPC" >/dev/null 2>&1; then
   fail "no chain at $RPC - start anvil first"
 fi
 
+# Compile before anything parses forge's output. `forge create` prints compiler
+# progress on stdout when the cache is cold, which lands in front of its `--json`
+# payload and makes the `jq` below fail with a parse error rather than anything
+# resembling a diagnosis. Warm caches hid this: it only ever bit on a fresh
+# clone, which is exactly the case this script exists to serve.
+forge build >/dev/null 2>&1 || fail "forge build failed - run it directly to see why"
+
 AGENT_ID="$(cast keccak "executor-local-e2e")"
 INTERVAL=60
 GRACE=30

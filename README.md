@@ -565,7 +565,7 @@ Directories that run:
   `test/Estate.t.sol` (40), `test/ExecutorRegistry.t.sol` (37),
   `test/ExecutorResolver.t.sol` (14), `test/LivingWill.t.sol` (9, ENSv2 role
   semantics) and `test/Receiver.t.sol` (4, for the superseded contract) cover
-  them — **122 in total**, all passing.
+  them — **126 in total**, all passing.
 - `packages/agent-debtor/src/gateway.ts` — the x402 resource server.
   `pay-for-research.ts` — the matching paying client.
 - `apps/dashboard` — the Next.js dashboard. Current state comes from contract
@@ -610,7 +610,7 @@ exists, is tested, and is deployed — on Sepolia, not on Arc.
 pnpm install
 cd contracts && forge install
 
-forge test                                    # 122 tests
+forge test                                    # 126 tests
 pnpm -C apps/dashboard exec tsc --noEmit
 pnpm -C apps/dashboard dev                    # dashboard on :3000
 

@@ -954,7 +954,7 @@ contract EstateTest is Test {
     /// is trustee-only, `approvePlan` used to take any 32 bytes, and an estate
     /// with no claims registered reports nothing outstanding. Four calls and
     /// the balance was gone before a single creditor existed.
-    function test_sweepSurplus_cannotSweepBeforeCuratingCreditors() public {
+    function test_sweepSurplus_cannotSweepWithNoClaimsRegistered() public {
         usdc.mint(address(estate), 1_000_000);
         registry.setStatus(LIQUIDATION);
 
@@ -1027,9 +1027,78 @@ contract EstateTest is Test {
         registry.setStatus(LIQUIDATION);
         estate.executePlan(planHash);
 
+        // Liquidation is terminal in the real registry, so a Liquidation ->
+        // Active edge does not exist and a test that drove one would be
+        // describing a state the protocol cannot reach. Administration is the
+        // status `restoreActive` actually accepts.
+        registry.setStatus(ADMINISTRATION);
         registry.setStatus(ACTIVE);
         usdc.mint(address(estate), 25_000);
         assertEq(estate.returnToTreasury(), 25_000);
         assertEq(usdc.balanceOf(treasury), 25_000);
+    }
+
+    /// Round 3's bypass: `claimIds.length != 0` was satisfiable by a claim that
+    /// contributes nothing to `totalOutstanding()`, so both sweep gates fell to
+    /// one extra transaction. A zero-amount claim is now rejected outright.
+    function test_registerClaim_rejectsZeroAmount() public {
+        vm.prank(trustee);
+        vm.expectRevert(Estate.ZeroAmount.selector);
+        estate.registerClaim(bytes32(uint256(1)), makeAddr("c"), 0, Estate.PriorityClass.Secured);
+    }
+
+    function test_sweepSurplus_zeroAmountClaimCannotUnlockADrain() public {
+        address attacker = makeAddr("attacker");
+        usdc.mint(address(estate), 1_000_000);
+
+        // the whole attack rested on this call succeeding
+        vm.prank(trustee);
+        vm.expectRevert(Estate.ZeroAmount.selector);
+        estate.registerClaim(bytes32(uint256(1)), attacker, 0, Estate.PriorityClass.Unsecured);
+
+        assertEq(estate.claimCount(), 0, "no claim was created");
+        assertEq(usdc.balanceOf(address(estate)), 1_000_000, "nothing left the estate");
+    }
+
+    /// After execution the approval cannot go stale at all, because
+    /// `registerClaim` reverts `AlreadyExecuted` - so the sweep this function
+    /// exists for (late revenue on a settled estate) still works.
+    function test_sweepSurplus_worksWhenApprovalStillDescribesTheClaimSet() public {
+        _claim(bytes32(uint256(1)), makeAddr("c1"), 1_000, Estate.PriorityClass.Secured);
+        bytes32 planHash = _approveCurrent();
+        usdc.mint(address(estate), 1_000);
+        registry.setStatus(LIQUIDATION);
+        estate.executePlan(planHash);
+        assertEq(estate.totalOutstanding(), 0, "the approved set is settled");
+
+        // no claim can be added now, so the approval cannot go stale
+        vm.prank(trustee);
+        vm.expectRevert(Estate.AlreadyExecuted.selector);
+        estate.registerClaim(
+            bytes32(uint256(2)), makeAddr("c2"), 5_000, Estate.PriorityClass.Secured
+        );
+
+        // and the sweep the approval still describes correctly is allowed
+        usdc.mint(address(estate), 7_000);
+        vm.prank(trustee);
+        assertEq(estate.sweepSurplus(trustee), 7_000);
+    }
+
+    /// Before execution, a claim registered after approval makes the stored
+    /// approval describe a claim set that no longer exists. The re-derivation
+    /// catches it, and catches it *before* the outstanding-claims check does -
+    /// so the failure names the actual problem (a stale commitment) rather than
+    /// a symptom of it.
+    function test_sweepSurplus_revertsOnADriftedApproval() public {
+        _claim(bytes32(uint256(1)), makeAddr("c1"), 1_000, Estate.PriorityClass.Secured);
+        _approveCurrent();
+        usdc.mint(address(estate), 9_000);
+        registry.setStatus(LIQUIDATION);
+
+        _claim(bytes32(uint256(2)), makeAddr("c2"), 5_000, Estate.PriorityClass.Secured);
+
+        vm.prank(trustee);
+        vm.expectRevert(Estate.PlanMismatch.selector);
+        estate.sweepSurplus(trustee);
     }
 }
