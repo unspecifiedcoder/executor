@@ -120,13 +120,137 @@ contract EstateTest is Test {
             uint256 amount,
             Estate.PriorityClass class,
             bool paid,
+            bool registered,
             uint256 paidAmount
         ) = estate.claims(bytes32(uint256(1)));
         assertEq(storedCreditor, creditor);
         assertEq(amount, 100);
         assertEq(uint8(class), uint8(Estate.PriorityClass.Secured));
         assertFalse(paid);
+        assertTrue(registered);
         assertEq(paidAmount, 0);
+    }
+
+    /// The `registered` flag is the existence sentinel, and it has to be
+    /// unset for an id nobody registered - otherwise it is not a sentinel.
+    function test_registerClaim_unknownIdIsNotRegistered() public view {
+        (,,,, bool registered,) = estate.claims(keccak256("never-registered"));
+        assertFalse(registered);
+    }
+
+    /// A claim payable to the zero address is refused outright. It is refused
+    /// on its own merits - an allowed amount owed to nobody still counts
+    /// towards its priority class and dilutes every real creditor in that
+    /// class pro-rata - and refusing it also closes the door the freeze below
+    /// came through.
+    function test_registerClaim_rejectsZeroCreditor() public {
+        vm.prank(trustee);
+        vm.expectRevert(Estate.ZeroCreditor.selector);
+        estate.registerClaim(bytes32(uint256(1)), address(0), 100, Estate.PriorityClass.Unsecured);
+        assertEq(estate.claimCount(), 0);
+    }
+
+    /// The permanent-freeze regression, end to end.
+    ///
+    /// While `claims[id].creditor != address(0)` was the existence sentinel, a
+    /// claim registered with a zero creditor did not set it. The same id then
+    /// passed the duplicate check a second time and was pushed into `claimIds`
+    /// twice. `_classTotal` counted it twice, two allocation slots settled
+    /// against one `Claim`, `paidAmount` overshot `allowedAmount`, and from
+    /// then on every `allowedAmount - paidAmount` reverted with an arithmetic
+    /// panic - inside `totalOutstanding()`, which both `executePlan` and
+    /// `sweepSurplus` call. Estate funds frozen forever, with no admin path
+    /// out.
+    ///
+    /// This asserts the whole chain: the duplicate cannot be created, the
+    /// claim array does not grow, the waterfall still runs, and the estate can
+    /// still be swept afterwards.
+    function test_registerClaim_zeroCreditorCannotFreezeTheEstate() public {
+        address real = makeAddr("real-creditor");
+        _claim(bytes32(uint256(1)), real, 100, Estate.PriorityClass.Secured);
+
+        bytes32 ghost = keccak256("ghost");
+        for (uint256 i = 0; i < 2; i++) {
+            vm.prank(trustee);
+            vm.expectRevert(Estate.ZeroCreditor.selector);
+            estate.registerClaim(ghost, address(0), 500, Estate.PriorityClass.Unsecured);
+        }
+
+        assertEq(estate.claimCount(), 1, "the ghost claim never entered claimIds");
+        assertEq(estate.totalOutstanding(), 100);
+
+        bytes32 planHash = _approveCurrent();
+        usdc.mint(address(estate), 2000);
+        registry.setStatus(LIQUIDATION);
+
+        // Both of these reverted with panic 0x11 under the old sentinel.
+        estate.executePlan(planHash);
+        assertEq(usdc.balanceOf(real), 100);
+        assertEq(estate.totalOutstanding(), 0);
+
+        vm.prank(trustee);
+        uint256 swept = estate.sweepSurplus(trustee);
+        assertEq(swept, 1900);
+        assertEq(usdc.balanceOf(address(estate)), 0, "no funds left frozen in the estate");
+    }
+
+    /// A token that returns `true` from `transfer` and moves nothing must not
+    /// be able to turn an unpaid creditor into a settled one. `_tryTransfer`
+    /// defines success as this contract's balance falling, not as the token
+    /// saying so, so a lying token lands in the same escrow branch as a
+    /// blacklist and the creditor can still pull once the token behaves.
+    function test_tokenThatReportsSuccessWithoutPayingIsEscrowed() public {
+        address creditor = makeAddr("creditor");
+        _claim(bytes32(uint256(1)), creditor, 100, Estate.PriorityClass.Unsecured);
+        bytes32 planHash = _approveCurrent();
+        usdc.mint(address(estate), 100);
+        registry.setStatus(LIQUIDATION);
+
+        usdc.setLieOnTransfer(true);
+        estate.executePlan(planHash);
+
+        assertEq(usdc.balanceOf(creditor), 0, "nothing actually moved");
+        assertEq(usdc.balanceOf(address(estate)), 100, "the funds are still here");
+        assertEq(estate.withdrawable(creditor), 100, "and they are booked to the creditor");
+        assertEq(estate.totalEscrowed(), 100);
+        assertEq(estate.distributable(), 0, "escrowed funds are not distributable");
+
+        usdc.setLieOnTransfer(false);
+        vm.prank(creditor);
+        estate.claimPayout();
+        assertEq(usdc.balanceOf(creditor), 100);
+    }
+
+    /// The same guard on the pull path: `claimPayout` must not burn a credit
+    /// against a transfer that reported success and moved nothing.
+    function test_claimPayout_preservesCreditAgainstALyingToken() public {
+        address creditor = makeAddr("creditor");
+        _claim(bytes32(uint256(1)), creditor, 100, Estate.PriorityClass.Unsecured);
+        bytes32 planHash = _approveCurrent();
+        usdc.mint(address(estate), 100);
+        registry.setStatus(LIQUIDATION);
+
+        usdc.setBlocked(creditor, true);
+        estate.executePlan(planHash);
+        assertEq(estate.withdrawable(creditor), 100);
+
+        usdc.setBlocked(creditor, false);
+        usdc.setLieOnTransfer(true);
+        vm.prank(creditor);
+        vm.expectRevert(Estate.TransferFailed.selector);
+        estate.claimPayout();
+        assertEq(estate.withdrawable(creditor), 100, "the credit survived");
+    }
+
+    /// And on the sweep path, where a lying token would otherwise emit
+    /// `SurplusSwept` for money that never left.
+    function test_sweepSurplus_revertsAgainstALyingToken() public {
+        usdc.mint(address(estate), 500);
+        usdc.setLieOnTransfer(true);
+        vm.prank(trustee);
+        vm.expectRevert(Estate.TransferFailed.selector);
+        estate.sweepSurplus(trustee);
+        assertEq(usdc.balanceOf(address(estate)), 500);
     }
 
     // --- the liquidation gate ----------------------------------------------

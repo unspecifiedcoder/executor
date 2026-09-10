@@ -11,7 +11,10 @@ import { PrivateKey } from "@hiero-ledger/sdk";
  * same command, same endpoint, different real on-chain destination.
  */
 
-const GATEWAY_URL = "http://localhost:3200/research";
+/** Points at the hosted gateway when GATEWAY_URL is set, so the same script
+ * proves the flip against a service a judge can reach rather than one only
+ * running on this laptop. Falls back to local for development. */
+const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://localhost:3200/research";
 const CLIENT_HEDERA_ACCOUNT_ID = "0.0.10423620";
 
 async function main(): Promise<void> {

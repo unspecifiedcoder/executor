@@ -143,10 +143,18 @@ two addresses stored in the agent's plan.
 > `enterAdministration` and fresh HBAR payments, and we would rather label the
 > existing artifacts honestly than quietly let them imply an address they
 > predate.
+>
+> **Update:** the Sepolia half of that is now done. `0x2946…9e39` has been
+> flipped for real — twice on agent 2 and once, there and back, on the demo
+> agent (see the lifecycle table in the root README). What is still outstanding
+> is a *fresh HBAR payment* made while the gateway reads `0x2946…9e39`, which
+> is what would let the Hedera table above stand on its own. It has not been
+> made, and the table is still labelled as belonging to the previous registry.
 
-> `packages/agent-debtor/src/server-hedera.ts` is a stub whose `startServer`
-> only logs "would listen on…". It is not part of this claim; `gateway.ts` is
-> the real server.
+> `packages/agent-debtor/src/server-hedera.ts` used to sit next to `gateway.ts`
+> as a stub whose `startServer` only logged "would listen on…". It has been
+> deleted, along with `server-arc.ts`, `heartbeat.ts` and `kill.ts`. `gateway.ts`
+> is the only server in this package and always was the real one.
 
 ---
 
@@ -186,11 +194,24 @@ settlement rail: `contracts/src/Estate.sol` is live at
 constructor-bound to Circle's real Sepolia USDC
 [`0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`](https://sepolia.etherscan.io/address/0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238)
 (`symbol()` is `"USDC"`, `decimals()` is `6`). It reads the same registry via
-`getStatus` and refuses to distribute until Liquidation. Its 34 tests cover
+`getStatus` and refuses to distribute until Liquidation. Its 40 tests cover
 priority classes, pro-rata splitting, pull-payment escrow and repeat rounds.
-It is deployed and readable; it holds no USDC and no claims yet, and
-`executePlan` has never run at that address — the waterfall itself is exercised
-on anvil by `scripts/e2e-local.sh`.
+
+**That contract has now run on Sepolia, with real Circle USDC.** Not at
+`0xD67a…286f` — that deployment predates a fix and was never funded — but at
+[`0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F`](https://sepolia.etherscan.io/address/0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F),
+the estate of a second agent whose entire lifecycle was driven publicly. 0.5
+USDC against 1.4 USDC of claims: secured paid in full, both administrative
+claims split the remainder pro-rata, unsecured got nothing, and a second round
+after late revenue finished the administrative class:
+
+| | Transaction |
+|---|---|
+| `executePlan` round 1 (insolvent, 0.9 USDC shortfall) | [`0xd5c45ef3…f7f65b327f`](https://sepolia.etherscan.io/tx/0xd5c45ef3d20a67beb6e9bbc94a25f11380147af580c0682e516ecdf7f65b327f) |
+| `executePlan` round 2 (after `resolve()`) | [`0xae50be9a…6f2f495521`](https://sepolia.etherscan.io/tx/0xae50be9a3ce584a0952e3a51f590b94bdd247d04687f0b60d429ca6f2f495521) |
+
+The full 21-transaction table, including which of four distinct role keys
+signed each step, is in the root `README.md`.
 
 Note that the plan's `estate` *field* is `0xDE32…2337`, the Hedera-mapped
 payout account, **not** the `Estate` contract. Two rails settle the same
@@ -228,7 +249,20 @@ so nobody mistakes it for the current address:
 | `StatusChanged` → Active (restore) | [`0x69e3324b…6d13794`](https://sepolia.etherscan.io/tx/0x69e3324b5562cd8c956ac82bec60755a29a1dfdc98f44b96fd90becaf6d13794) |
 
 That earlier build had no `updatePlan` and no `resolve`; the current one has
-both, which is why the redeploy happened. The demo agent on `0x2946…9e39` is
-`Active` and has not been flipped there yet.
+both, which is why the redeploy happened.
 
-Agent id `0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255`.
+**The flip has since been run on `0x2946…9e39` too**, so the table above is
+history rather than the only evidence:
+
+| Event | Agent | Transaction |
+|---|---|---|
+| `StatusChanged` → Administration | demo | [`0x47a310d6…12e5bfb3dc`](https://sepolia.etherscan.io/tx/0x47a310d6fac2fd00add0192d01bc0d1514d9ce34e037132798641912e5bfb3dc) |
+| `StatusChanged` → Active (restore) | demo | [`0x69d859e2…32c9fe13720`](https://sepolia.etherscan.io/tx/0x69d859e25676aac5468d6d175c9c30395fe016a7f5ba033b831cd32c9fe13720) |
+| the full Active → … → Resolved walk | agent 2 | see the root `README.md` |
+
+The demo agent was left `Active`. `enterAdministration` is permissionless and
+its window reopens 90 seconds after the restore, so treat `getStatus` as the
+authority on where it is right now.
+
+Demo agent id `0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255`.
+Agent 2 id `0x3bb9846eddba2c5c78b94bbc2be970db97c11731d2588aa86d375e281183cc67`.

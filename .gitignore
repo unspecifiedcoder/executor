@@ -12,13 +12,6 @@ contracts/cache/
 contracts/broadcast/*/31337/
 contracts/broadcast/*/*/dry-run/
 
-# Subgraph
-packages/subgraph/generated/
-packages/subgraph/build/
-
-# CRE
-packages/cre-workflow/.cre/
-
 *.log
 .DS_Store
 apps/dashboard/tsconfig.tsbuildinfo

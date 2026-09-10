@@ -6,11 +6,9 @@
   "scripts": {
     "gateway": "tsx src/gateway.ts",
     "pay": "tsx src/pay-for-research.ts",
-    "dev": "tsx watch src/gateway.ts",
-    "kill": "tsx src/kill.ts"
+    "dev": "tsx watch src/gateway.ts"
   },
   "dependencies": {
-    "@executor/shared": "workspace:*",
     "@hiero-ledger/sdk": "2.85.0",
     "@x402/core": "~2.25.0",
     "@x402/express": "~2.25.0",

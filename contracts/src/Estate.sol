@@ -68,6 +68,18 @@ contract Estate {
         uint256 allowedAmount;
         PriorityClass class;
         bool paid;
+        /// @dev The existence sentinel, and deliberately a field of its own
+        /// rather than `creditor != address(0)`. A sentinel derived from a
+        /// caller-supplied value is only a sentinel for the values the caller
+        /// declines to supply: registering a claim with a zero creditor made
+        /// `registerClaim` accept the same id twice, push it into `claimIds`
+        /// twice, and let two allocation slots settle against one claim until
+        /// `paidAmount` passed `allowedAmount` and every later
+        /// `allowedAmount - paidAmount` reverted with an arithmetic panic -
+        /// which is `executePlan` and `sweepSurplus` both bricked, permanently,
+        /// with no admin path out. `registered` cannot collide with a value a
+        /// creditor might legitimately have.
+        bool registered;
         uint256 paidAmount;
     }
 
@@ -82,11 +94,13 @@ contract Estate {
     /// grows as O(classes * claims) with a constant that is not small - and the
     /// array is unbounded from this contract's point of view. The cap keeps a
     /// full distribution inside one block by construction rather than by hope:
-    /// measured at 9.4M gas for 200 claims spread across all three classes with
-    /// a real token transfer each, against a 30M block. An estate with more
-    /// creditors than that should be split across several Estate contracts,
-    /// which the registry already supports by pointing `estate` at whichever
-    /// one holds the funds.
+    /// measured at 12.2M gas for 200 claims spread across all three classes
+    /// with a real token transfer each, against a 30M block. (It was 9.4M
+    /// before `_tryTransfer` started verifying that the balance actually moved;
+    /// two extra `balanceOf` reads per payout is what that costs.) An estate
+    /// with more creditors than that should be split across several Estate
+    /// contracts, which the registry already supports by pointing `estate` at
+    /// whichever one holds the funds.
     uint256 public constant MAX_CLAIMS = 200;
 
     address public immutable usdc;
@@ -135,6 +149,7 @@ contract Estate {
     error AlreadyExecuted();
     error NoPlanApproved();
     error ClaimAlreadyRegistered();
+    error ZeroCreditor();
     error NothingToDistribute();
     error TransferFailed();
     error NothingToClaim();
@@ -174,10 +189,17 @@ contract Estate {
         PriorityClass class
     ) external onlyTrustee {
         if (executed) revert AlreadyExecuted();
-        if (claims[claimId].creditor != address(0)) revert ClaimAlreadyRegistered();
+        // Both guards, not either. `registered` is what actually makes the
+        // duplicate check sound; rejecting the zero creditor is a separate
+        // property - a claim payable to nobody is a hole in the waterfall
+        // whether or not it can be registered twice, because its allowed
+        // amount still counts towards its class total and so dilutes every
+        // other creditor in that class pro-rata into a burn address.
+        if (creditor == address(0)) revert ZeroCreditor();
+        if (claims[claimId].registered) revert ClaimAlreadyRegistered();
         if (claimIds.length >= MAX_CLAIMS) revert TooManyClaims();
 
-        claims[claimId] = Claim(creditor, allowedAmount, class, false, 0);
+        claims[claimId] = Claim(creditor, allowedAmount, class, false, true, 0);
         claimIds.push(claimId);
         emit ClaimRegistered(claimId, creditor, allowedAmount, class);
     }
@@ -385,17 +407,44 @@ contract Estate {
         emit SurplusSwept(to, amount);
     }
 
-    /// @dev A transfer that neither reverts nor returns false. Uses a low-level
-    /// call so a token that returns nothing (the original USDT shape) is not
-    /// mistaken for a failure, and so a token that reverts does not take the
-    /// whole distribution with it.
+    /// @dev A transfer that neither reverts, nor returns false, nor lies. Uses
+    /// a low-level call so a token that returns nothing (the original USDT
+    /// shape) is not mistaken for a failure, and so a token that reverts does
+    /// not take the whole distribution with it.
+    ///
+    /// The balance check is the part that is not boilerplate. A token can
+    /// return `true` from `transfer` and move nothing; taking its word for it
+    /// would mark a creditor's claim settled against a payment that never
+    /// happened, and there is no way back from that - `paidAmount` is the only
+    /// record of what a creditor received. So success is defined as this
+    /// contract's balance falling by at least `amount`, not as the token
+    /// saying so. A token that reports success without paying is treated
+    /// exactly like a blacklist: the caller books the amount to `withdrawable`
+    /// and the round carries on, rather than the whole estate reverting on one
+    /// misbehaving payee.
+    ///
+    /// Not exploitable against the Circle USDC this contract is deployed
+    /// against, which is honest about its own transfers; it matters because
+    /// `usdc` is a constructor argument and every future deployment picks its
+    /// own token.
     function _tryTransfer(address to, uint256 amount) internal returns (bool) {
+        uint256 balanceBefore = IERC20(usdc).balanceOf(address(this));
+
         (bool success, bytes memory data) =
             usdc.call(abi.encodeWithSelector(IERC20.transfer.selector, to, amount));
         if (!success) return false;
-        if (data.length == 0) return true;
-        if (data.length < 32) return false;
-        return abi.decode(data, (bool));
+        if (data.length != 0) {
+            if (data.length < 32) return false;
+            if (!abi.decode(data, (bool))) return false;
+        }
+
+        uint256 balanceAfter = IERC20(usdc).balanceOf(address(this));
+        // `>` rather than an unchecked subtraction: a transfer to this contract
+        // itself leaves the balance unchanged, and a token that credits us
+        // mid-call would otherwise underflow the comparison.
+        if (balanceAfter > balanceBefore) return false;
+        if (balanceBefore - balanceAfter < amount) return false;
+        return true;
     }
 
     function _classTotal(PriorityClass class) internal view returns (uint256 total) {

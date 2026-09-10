@@ -1,7 +1,0 @@
-{
-  "name": "@executor/ats-claims",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Day 6 stretch: mint Hedera ATS tokens representing filed claims, tradeable while liquidation is pending."
-}

@@ -138,7 +138,21 @@ app.get("/research", (_req, res) => {
   });
 });
 
-const PORT = 3200;
-app.listen(PORT, () => {
-  console.log(`[gateway] listening on :${PORT}, paying out per ExecutorRegistry state`);
-});
+/** A hosted x402 service is the whole point - a paywall only reachable on the
+ * author's laptop demonstrates nothing to anyone else. Every PaaS assigns the
+ * port through the environment, so taking it from there is what makes this
+ * deployable; 3200 stays as the local default. */
+const PORT = Number(process.env.PORT ?? 3200);
+
+/** Exported so a serverless entrypoint can mount the same app without opening a
+ * socket. Kept separate from the listen() below, which only runs when this file
+ * is executed directly (local dev, Docker, any long-lived host). */
+export default app;
+export { app };
+
+const isDirectRun = process.env.X402_GATEWAY_SERVERLESS !== "1";
+if (isDirectRun) {
+  app.listen(PORT, () => {
+    console.log(`[gateway] listening on :${PORT}, paying out per ExecutorRegistry state`);
+  });
+}

@@ -1,9 +1,0 @@
-{
-  "$schema": "https://bazantic.dev/schema/gateway.json",
-  "service": "executor-estate-api",
-  "routes": [
-    { "path": "/estate/:address/status", "handler": "src/api.ts#getStatus" },
-    { "path": "/estate/:address/claims", "handler": "src/api.ts#getClaims" },
-    { "path": "/estate/:address/plan", "handler": "src/api.ts#getPlan" }
-  ]
-}

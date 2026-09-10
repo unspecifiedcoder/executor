@@ -28,10 +28,9 @@ payment up on the mirror node and confirm which account received it.
 
 ## What does not run
 
-- `src/server-hedera.ts` — a stub. `startServer` logs `would listen on…` and
-  returns. Superseded by `gateway.ts`.
-- `src/server-arc.ts` — a stub. There is no Arc integration.
-- `src/heartbeat.ts` — targets `Receiver.ping()`, a contract that was never
-  deployed. The deployed contract's method is `ExecutorRegistry.heartbeat(agentId)`.
-  Not wired up.
-- `src/kill.ts` — demo helper for the above.
+Nothing in this package. The stubs that used to sit here - `server-hedera.ts`,
+`server-arc.ts`, `heartbeat.ts` and `kill.ts` - have been deleted rather than
+left as decoration; `git log` has them. `heartbeat.ts` in particular targeted
+`Receiver.ping()`, a contract that was never deployed. The live heartbeat is
+`ExecutorRegistry.heartbeat(bytes32)`, and it has been called on Sepolia - see
+the agent-2 lifecycle table in the root README.

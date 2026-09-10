@@ -44,8 +44,9 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      # The workspace contains stub packages that are not part of the build;
-      # install everything so workspace links resolve, then build only the app.
+      # Two workspace packages remain - apps/dashboard and
+      # packages/agent-debtor. Install both so workspace links resolve, then
+      # typecheck and build the app.
       - run: pnpm install --frozen-lockfile
 
       - name: Typecheck

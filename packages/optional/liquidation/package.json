@@ -1,7 +1,0 @@
-{
-  "name": "@executor/liquidation",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Day 6 stretch: sell any non-USDC estate assets via CoW Protocol/1inch or the Uniswap API before running the waterfall."
-}

@@ -48,6 +48,7 @@ ERR_PLAN_IS_LOCKED="0x96cb9f37"           # PlanIsLocked()
 ERR_NOT_IN_LIQUIDATION="0xed8e4fc4"       # AgentNotInLiquidation(uint8)
 ERR_WRONG_STATUS="0x359011cc"             # WrongStatus(uint8)
 ERR_NOT_TRUSTEE="0x5aa309bb"              # NotTrustee()
+ERR_ZERO_CREDITOR="0xef5fa8b7"            # ZeroCreditor()
 
 CONTRACTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../contracts" && pwd)"
 cd "$CONTRACTS_DIR"
@@ -162,6 +163,19 @@ ok "4 claims registered by the trustee (300 secured / 200 administrative / 500 +
 expect_revert "$ERR_NOT_TRUSTEE" "registerClaim reverts for the owner - claims are trustee-curated" \
   --from "$DEPLOYER" "$ESTATE" "registerClaim(bytes32,address,uint256,uint8)" \
   "$(cast keccak 'claim-forged')" "$DEPLOYER" 9999 0
+
+# A claim payable to nobody used to be registrable, and - because the existence
+# sentinel was `creditor != address(0)` - registrable TWICE, which pushed one id
+# into claimIds twice, double-counted it in _classTotal, overshot paidAmount and
+# made every later `allowedAmount - paidAmount` panic. That is executePlan and
+# sweepSurplus both bricked forever, with no admin escape. Asserted here as well
+# as in the unit tests because it is the one bug in this contract that has no
+# recovery path once triggered.
+expect_revert "$ERR_ZERO_CREDITOR" "registerClaim rejects a zero creditor - the permanent-freeze path" \
+  --from "$TRUSTEE" "$ESTATE" "registerClaim(bytes32,address,uint256,uint8)" \
+  "$(cast keccak 'claim-ghost')" "0x0000000000000000000000000000000000000000" 500 2
+expect_eq "$(call "$ESTATE" "claimCount()(uint256)")" "4" \
+  "claimCount is still 4 - the ghost claim never entered claimIds"
 
 PLAN_HASH="$(call "$ESTATE" "currentPlanHash()(bytes32)")"
 send_as "$TRUSTEE_KEY" "$ESTATE" "approvePlan(bytes32)" "$PLAN_HASH"

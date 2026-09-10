@@ -6,7 +6,187 @@ somewhere reachable instead of into a dead account.**
 
 ---
 
-## Judges: click these 4 things in 60 seconds
+## Judges: the one thing to look at
+
+**A complete agent insolvency, driven on Sepolia, paying real Circle USDC to
+real creditors in priority order.** Not a unit test, not anvil: 21 transactions
+on a public chain, every one of them checkable below without a wallet or a key.
+
+Agent 2 — `0x3bb9846eddba2c5c78b94bbc2be970db97c11731d2588aa86d375e281183cc67` —
+was registered under four **distinct** role keys, heartbeat once from its
+heartbeat signer, let the window lapse, was pushed into Administration by a
+stranger, pulled back to Active by its recovery authority, dropped again,
+liquidated by its trustee, and then paid its creditors out of an estate holding
+less than half of what it owed.
+
+### The full lifecycle, on Sepolia
+
+| # | Step | Sent by (role) | Transaction |
+|---|---|---|---|
+| 1 | `registerAgent` (estate = placeholder) | **owner** `0x99dD…D085` | [`0x3ead1a4e…3425a7f9a2`](https://sepolia.etherscan.io/tx/0x3ead1a4e7c674cadfb9d85c580efbcf67752adb7003d7a0e997a3a3425a7f9a2) |
+| 2 | `Estate` deployed, bound to Circle USDC | operator | [`0x7e82cd00…ee6c62feb2`](https://sepolia.etherscan.io/tx/0x7e82cd004ef3cc5eae8c5699d06f04f2f5d6f7fa33f286e1445104ee6c62feb2) |
+| 3 | `updatePlan` — estate amended to the real contract | **owner** | [`0xb8f1e4b4…21bb9086f9`](https://sepolia.etherscan.io/tx/0xb8f1e4b40a201bb2c7330bf30853d940e98fd0af61212386268b9a21bb9086f9) |
+| 4 | `lockPlan` — the plan is now frozen | **owner** | [`0x6c0ad580…4a508ba6a2f5`](https://sepolia.etherscan.io/tx/0x6c0ad580d0cc83e644f997331935d388a9a7c03b8689da952a9f4a508ba6a2f5) |
+| 5 | `heartbeat` | **heartbeat signer** `0xB3E8…2F17` | [`0x867c5b4d…7b7010f7e25d`](https://sepolia.etherscan.io/tx/0x867c5b4d068d2ad518d7b69386c7722b9ed45d15a56c02334c629b7010f7e25d) |
+| 6 | `enterAdministration` — the window lapsed | *anyone* (operator, holds none of the four roles) | [`0xce331993…14b4422b0f314c4108a`](https://sepolia.etherscan.io/tx/0xce331993eb3b909ef591214b3fbf529eadf5add7ad2ca19b4422b0f314c4108a) |
+| 7 | `restoreActive` — a missed heartbeat is not insolvency | **recovery authority** `0xcB51…1901` | [`0xb378d97e…1105403f45e8`](https://sepolia.etherscan.io/tx/0xb378d97e3c6e1816f7419d29b48ca0ea51251a913eeff49dc24d1105403f45e8) |
+| 8 | 0.5 USDC transferred into the estate | operator | [`0x6735b7aa…ccadddd1a5c`](https://sepolia.etherscan.io/tx/0x6735b7aa13696d93c6fbbd2acc1c783d751b8df0b8c982fd1dd44ccadddd1a5c) |
+| 9 | `registerClaim` — Secured, 0.20 USDC | **trustee** `0xd09e…ED8C` | [`0xe91f8769…3bd9b25168`](https://sepolia.etherscan.io/tx/0xe91f8769baaaeb713e4ab329c3992cd5961d5a13d26d70f976527b3bd9b25168) |
+| 10 | `registerClaim` — Administrative, 0.40 USDC | **trustee** | [`0xe091b515…85d09fa91a5c`](https://sepolia.etherscan.io/tx/0xe091b5158369fd8c07fa5e2f26e15bac452772a8af65ee45f57385d09fa91a5c) |
+| 11 | `registerClaim` — Administrative, 0.30 USDC | **trustee** | [`0x807876f5…9f8c417718c6c`](https://sepolia.etherscan.io/tx/0x807876f527627d79be7c34fb56465377541700f3c7e0470f3d29f8c417718c6c) |
+| 12 | `registerClaim` — Unsecured, 0.50 USDC | **trustee** | [`0x48ecd757…cad67974b7bc`](https://sepolia.etherscan.io/tx/0x48ecd7578c6356c3868df0e864465720c8a187440ae2e95d3c99cad67974b7bc) |
+| 13 | `approvePlan` — commits to the exact claim set | **trustee** | [`0x2e8153a6…934c011d26b`](https://sepolia.etherscan.io/tx/0x2e8153a639f757414c56bb30e7d5920cb56f2a3c9d5ee616b133f934c011d26b) |
+| 14 | `enterAdministration` again | *anyone* | [`0x010cffcb…b5c81b2a127`](https://sepolia.etherscan.io/tx/0x010cffcb1282ee103870878513d17088e3445b2a6145d98dc45b3b5c81b2a127) |
+| 15 | `enterLiquidation` — the human judgement call | **trustee** | [`0x5155823f…1df32ab2c6ac`](https://sepolia.etherscan.io/tx/0x5155823f2040e7230afdfafba47ded09277c11e8aab3f88d388c1df32ab2c6ac) |
+| **16** | **`executePlan` — the waterfall, round 1** | *anyone* | [**`0xd5c45ef3…f7f65b327f`**](https://sepolia.etherscan.io/tx/0xd5c45ef3d20a67beb6e9bbc94a25f11380147af580c0682e516ecdf7f65b327f) |
+| 17 | `resolve` — terminal state, **before** the estate is finished | **trustee** | [`0xff2d9200…692760e6179`](https://sepolia.etherscan.io/tx/0xff2d9200ac65ff3a8a4bf95db8d12aa1cdf1fbe79ee5a9fb02dd3692760e6179) |
+| 18 | late revenue: another 0.5 USDC arrives | operator | [`0x7477e4dd…49d3a6ca5d8f`](https://sepolia.etherscan.io/tx/0x7477e4dde3e2b0afd731b61d72ecfaee86c43c63ff20b640f53149d3a6ca5d8f) |
+| **19** | **`executePlan` — round 2, on a Resolved agent** | *anyone* | [**`0xae50be9a…6f2f495521`**](https://sepolia.etherscan.io/tx/0xae50be9a3ce584a0952e3a51f590b94bdd247d04687f0b60d429ca6f2f495521) |
+
+The whole of it renders in the dashboard, which reads any agent id, not just
+the demo one: `pnpm -C apps/dashboard dev`, then
+`/agent/0x3bb9846eddba2c5c78b94bbc2be970db97c11731d2588aa86d375e281183cc67`.
+The history panel there is built from the registry's own logs.
+
+The remaining two are the recoverable flip, re-run on the original demo agent —
+[`enterAdministration`](https://sepolia.etherscan.io/tx/0x47a310d6fac2fd00add0192d01bc0d1514d9ce34e037132798641912e5bfb3dc)
+then
+[`restoreActive`](https://sepolia.etherscan.io/tx/0x69d859e25676aac5468d6d175c9c30395fe016a7f5ba033b831cd32c9fe13720),
+so that agent's history panel has real `StatusChanged` events too. Its
+`enterLiquidation` was deliberately *not* called: liquidation is one-way, and
+that agent is the live dashboard demo. It was left Active.
+
+### What the waterfall actually did
+
+The estate held **0.5 USDC** against **1.4 USDC** of allowed claims. That is the
+interesting case: strict priority across classes, pro-rata inside the class that
+runs out, and truncation dust that has to go somewhere.
+
+| Creditor | Class | Allowed | Round 1 | Round 2 | Final |
+|---|---|---|---|---|---|
+| `0x3AFf06C6…6087cb` | Secured | 0.200000 | **0.200000** (in full, first) | — | 0.200000 |
+| `0x8e8D8415…6083a9` | Administrative | 0.400000 | 0.171429 | +0.228571 | 0.400000 |
+| `0x72F0E1d0…9fA455` | Administrative | 0.300000 | 0.128571 | +0.171429 | 0.300000 |
+| `0xBe8fE696…C7514c` | Unsecured | 0.500000 | **0** (estate exhausted) | +0.100000 | 0.100000 |
+
+Round 1's Administrative split is the arithmetic worth checking: 0.3 USDC left
+against 0.7 USDC of Administrative claims, so `400000 * 300000 / 700000` =
+171428 and `300000 * 300000 / 700000` = 128571 — 299999 of the 300000. The
+missing unit is not stranded: `executePlan`'s remainder pass hands it to the
+first claim still short, which is why the log says 171429. The two
+`PlanExecuted` events report shortfalls of 900000 and then 400000 — the real
+numbers, not zero.
+
+Check the payouts yourself:
+
+```bash
+for c in 0x3AFf06C662A51F1B701C1499ac50F8F56d6087cb \
+         0x8e8D8415cf0e527e06a04E0A0FD5D3B4ae6083a9 \
+         0x72F0E1d0327CE912C3baE2D1f555e50CeB9fA455 \
+         0xBe8fE696404eBA73fEe09e7d8F6c9eCD3BC7514c; do
+  cast call 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 \
+    "balanceOf(address)(uint256)" $c \
+    --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+done
+# 200000  400000  300000  100000
+```
+
+### Agent 2's four roles are four different addresses
+
+The judge's fair criticism of the original demo agent was that its owner,
+heartbeat signer, trustee and recovery authority are all
+`0x72db…c706`, which means separation of powers was declared and never
+exercised. On agent 2 it is exercised, and the transaction table above shows
+which key signed what. The negative side is checkable too — these are `eth_call`s,
+so they cost nothing and prove *which* guard fired:
+
+```bash
+REG=0x2946B46c2EB5Ec532093877223Ef043b13729e39
+AID=0x3bb9846eddba2c5c78b94bbc2be970db97c11731d2588aa86d375e281183cc67
+RPC=https://ethereum-sepolia-rpc.publicnode.com
+
+# 0x92af0fc8 = NotHeartbeatSigner()  - the owner cannot heartbeat
+cast call $REG "heartbeat(bytes32)" $AID \
+  --from 0x99dDbaE5142bb0C2FE5B46A571adb04437d2D085 --rpc-url $RPC
+
+# 0x054ac53f = NotRecoveryAuthority() - the trustee cannot restore
+cast call $REG "restoreActive(bytes32)" $AID \
+  --from 0xd09e929E440c6743164D63CC806A1c7A39DfED8C --rpc-url $RPC
+
+# 0x359011cc + 3 = WrongStatus(Resolved) - not even the recovery authority
+# can walk a resolved agent back. This is what makes liquidation terminal.
+cast call $REG "restoreActive(bytes32)" $AID \
+  --from 0xcB5161bdE9671aE5EC613ab05AC631E1Bc7f1901 --rpc-url $RPC
+
+# 0x5aa309bb = NotTrustee() - a stranger cannot register a claim
+cast call 0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F \
+  "registerClaim(bytes32,address,uint256,uint8)" \
+  $(cast keccak "forged") 0x72db032c0dFB6E7502e16A73fabdab31712dc706 9999 0 \
+  --from 0x72db032c0dFB6E7502e16A73fabdab31712dc706 --rpc-url $RPC
+```
+
+### The permanent-freeze bug, and its fix, on the live contract
+
+`Estate.registerClaim` used `claims[claimId].creditor != address(0)` as its
+existence check. A claim registered with a zero creditor therefore never set
+the sentinel, so the same id passed the duplicate check again and was pushed
+into `claimIds` twice. `_classTotal` then counted it twice, two allocation
+slots settled against one `Claim`, `paidAmount` overshot `allowedAmount`, and
+every later `allowedAmount - paidAmount` reverted with an arithmetic panic —
+inside `totalOutstanding()`, which both `executePlan` **and** `sweepSurplus`
+call. That is every path out of the contract closed, permanently, with no admin
+escape.
+
+The fix is a dedicated `registered` flag as the sentinel plus an outright
+rejection of the zero creditor. `test_registerClaim_zeroCreditorCannotFreezeTheEstate`
+reproduces the whole chain — the duplicate push, the overshoot, the panic — and
+fails against the old code. `scripts/e2e-local.sh` asserts the same guard by
+selector. And it is refused on Sepolia:
+
+```bash
+# reverts 0xef5fa8b7 = ZeroCreditor()
+cast call 0x775223E7a0bAE836511934435ec7B2Ea838Eb832 \
+  "registerClaim(bytes32,address,uint256,uint8)" \
+  $(cast keccak "ghost") 0x0000000000000000000000000000000000000000 500000 2 \
+  --from 0xd09e929E440c6743164D63CC806A1c7A39DfED8C \
+  --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+
+# reverts 0xc33e5e92 = ClaimAlreadyRegistered() - the id is already taken, and
+# now the `registered` flag is what says so
+cast call 0x775223E7a0bAE836511934435ec7B2Ea838Eb832 \
+  "registerClaim(bytes32,address,uint256,uint8)" \
+  0x8727f387cf2a7a26c7b47a48dc2fdb45a64d423da4e52fb0b495c30679211df1 \
+  0x8e8D8415cf0e527e06a04E0A0FD5D3B4ae6083a9 1 0 \
+  --from 0xd09e929E440c6743164D63CC806A1c7A39DfED8C \
+  --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+```
+
+**Why a third address for those two calls.** `registerClaim` checks `executed`
+before it checks anything about its arguments, so on the estate that actually
+ran the waterfall (`0x83f4…fC7F`) both of the calls above now return
+`0x0dc10197` = `AlreadyExecuted()` and prove nothing about the fix. Rather than
+print a command that reverts for the wrong reason, there is a second Estate at
+[`0x775223E7a0bAE836511934435ec7B2Ea838Eb832`](https://sepolia.etherscan.io/address/0x775223E7a0bAE836511934435ec7B2Ea838Eb832)
+— same build, same trustee, one registered claim, no funds, never executed —
+kept open precisely so these guards stay callable. It was checked live against
+`0x83f4…fC7F` too, before the distribution, and returned `0xef5fa8b7` there.
+
+### Agent 2's addresses
+
+| | |
+|---|---|
+| agent id | `0x3bb9846eddba2c5c78b94bbc2be970db97c11731d2588aa86d375e281183cc67` |
+| owner | [`0x99dDbaE5142bb0C2FE5B46A571adb04437d2D085`](https://sepolia.etherscan.io/address/0x99dDbaE5142bb0C2FE5B46A571adb04437d2D085) |
+| heartbeat signer | [`0xB3E86A269BFf4cd615DaB7a8109B0275dF1D2F17`](https://sepolia.etherscan.io/address/0xB3E86A269BFf4cd615DaB7a8109B0275dF1D2F17) |
+| trustee | [`0xd09e929E440c6743164D63CC806A1c7A39DfED8C`](https://sepolia.etherscan.io/address/0xd09e929E440c6743164D63CC806A1c7A39DfED8C) |
+| recovery authority | [`0xcB5161bdE9671aE5EC613ab05AC631E1Bc7f1901`](https://sepolia.etherscan.io/address/0xcB5161bdE9671aE5EC613ab05AC631E1Bc7f1901) |
+| treasury | `0x81f6c368ede3ab917DC5616736F8C9cbFc540cc8` |
+| `Estate` (settled the waterfall) | [`0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F`](https://sepolia.etherscan.io/address/0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F) |
+| `Estate` (guard demonstrator, unexecuted) | [`0x775223E7a0bAE836511934435ec7B2Ea838Eb832`](https://sepolia.etherscan.io/address/0x775223E7a0bAE836511934435ec7B2Ea838Eb832) |
+
+---
+
+## Three more things you can check in 60 seconds
 
 1. **The contract, on Sepolia** —
    [`0x2946B46c2EB5Ec532093877223Ef043b13729e39`](https://sepolia.etherscan.io/address/0x2946B46c2EB5Ec532093877223Ef043b13729e39)
@@ -15,7 +195,7 @@ somewhere reachable instead of into a dead account.**
    `0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255`:
 
    ```bash
-   # 0x7ea7…7330 — the treasury, because the agent is Active right now
+   # returns 0x7ea7…7330 (treasury) while Active, 0xDE32…2337 (estate) if not
    cast call 0x2946B46c2EB5Ec532093877223Ef043b13729e39 \
      "getPaymentDestination(bytes32)(address)" \
      0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255 \
@@ -23,7 +203,14 @@ somewhere reachable instead of into a dead account.**
    ```
 
    It returns the treasury `0x7ea7…7330` while the agent is Active and the
-   estate payout address `0xDE32…2337` once it isn't.
+   estate payout address `0xDE32…2337` once it isn't. It was left Active — but
+   `enterAdministration` is permissionless and its heartbeat deadline lapses 90
+   seconds after the last `restoreActive`, so if a passer-by has flipped it
+   since, you will read the estate address instead. That is the mechanism
+   working, not the README being wrong: pair this with
+   `getStatus(bytes32)` and the two agree. Agent 2's lifecycle above is the
+   version that cannot drift, because every state it passed through is a
+   recorded transaction.
 
 2. **The plan lock, enforced on live chain** — the plan was
    [amended](https://sepolia.etherscan.io/tx/0xa6e85bec3c4334659cb2b84aab274b48e9e75026a4947e3cee5ee2020eb6953c)
@@ -83,7 +270,7 @@ Five pieces:
 | Piece | Where | What it does | Deployed? |
 |---|---|---|---|
 | `ExecutorRegistry` | `contracts/src/ExecutorRegistry.sol` | One agent's resolution plan: heartbeat clock, status machine, `updatePlan`/`lockPlan`, `resolve`, and `getPaymentDestination()` | Sepolia [`0x2946…9e39`](https://sepolia.etherscan.io/address/0x2946B46c2EB5Ec532093877223Ef043b13729e39) |
-| `Estate` | `contracts/src/Estate.sol` | Creditor claims, a trustee-approved plan hash, and a priority-class distribution waterfall with pull-payment fallback | Sepolia [`0xD67a…286f`](https://sepolia.etherscan.io/address/0xD67a10D5466d311C2f995744937c7b9e1734286f), bound to Circle USDC |
+| `Estate` | `contracts/src/Estate.sol` | Creditor claims, a trustee-approved plan hash, and a priority-class distribution waterfall with pull-payment fallback | Sepolia [`0x83f4…fC7F`](https://sepolia.etherscan.io/address/0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F) (agent 2 — **has run**, twice), and the earlier [`0xD67a…286f`](https://sepolia.etherscan.io/address/0xD67a10D5466d311C2f995744937c7b9e1734286f) (demo agent — never used). Both bound to Circle USDC |
 | x402 gateway | `packages/agent-debtor/src/gateway.ts` | A real x402 resource server on Hedera testnet whose `payTo` is re-read from the registry on every request | Runs locally against Hedera testnet |
 | Dashboard | `apps/dashboard` | Next.js app doing live chain reads, plus two write routes that call `enterAdministration` / `restoreActive` | Runs locally |
 | ENSv2 name | `executor-hackathon-demo.eth` | Identity, with the resolver-admin role irreversibly revoked | Sepolia |
@@ -92,11 +279,16 @@ Five pieces:
 
 Both contracts are on Sepolia, and the deployed registry is the same build as
 `contracts/src/ExecutorRegistry.sol` — `updatePlan` and `resolve` included.
+`Estate` is deployed twice: `0x83f4…fC7F` is the current source, including the
+`ZeroCreditor` fix, and is the one that ran the waterfall above.
+`0xD67a…286f` predates the fix, holds nothing, and is left in place only so the
+older links in these docs keep resolving.
 
 | Thing | Address | Deploy tx |
 |---|---|---|
 | `ExecutorRegistry` | [`0x2946B46c2EB5Ec532093877223Ef043b13729e39`](https://sepolia.etherscan.io/address/0x2946B46c2EB5Ec532093877223Ef043b13729e39) (block 11669841) | [`0xe0975d0b…9ca49129e`](https://sepolia.etherscan.io/tx/0xe0975d0b2bf4590cf72d3eb84f057c2da49a0d60162916c930402439ca49129e) |
-| `Estate` | [`0xD67a10D5466d311C2f995744937c7b9e1734286f`](https://sepolia.etherscan.io/address/0xD67a10D5466d311C2f995744937c7b9e1734286f) | [`0xf234c5ff…d77cb049362`](https://sepolia.etherscan.io/tx/0xf234c5ff5a0f31b56ebdb43ae813f7f3920ec5fcf5d504d2ccdb1d77cb049362) |
+| `Estate` (agent 2, current code, **settled a real waterfall**) | [`0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F`](https://sepolia.etherscan.io/address/0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F) | [`0x7e82cd00…ee6c62feb2`](https://sepolia.etherscan.io/tx/0x7e82cd004ef3cc5eae8c5699d06f04f2f5d6f7fa33f286e1445104ee6c62feb2) |
+| `Estate` (demo agent, pre-`ZeroCreditor`-fix build, never used) | [`0xD67a10D5466d311C2f995744937c7b9e1734286f`](https://sepolia.etherscan.io/address/0xD67a10D5466d311C2f995744937c7b9e1734286f) | [`0xf234c5ff…d77cb049362`](https://sepolia.etherscan.io/tx/0xf234c5ff5a0f31b56ebdb43ae813f7f3920ec5fcf5d504d2ccdb1d77cb049362) |
 
 The demo agent's plan was written in three transactions, in the order that makes
 `lockPlan` mean something:
@@ -129,49 +321,64 @@ cast call 0x2946B46c2EB5Ec532093877223Ef043b13729e39 \
 
 ### Two settlement rails, and why the `estate` field is not the `Estate` contract
 
-This trips people up on first read, so: the plan's `estate` field holds
-`0xDE3207F493fE4600DeEc424e0875ec943d712337`, which is **not** the `Estate`
-contract at `0xD67a…286f`. It is not a mistake. There are two settlement rails
-for the same failed agent, and they carry different money:
+This trips people up on first read, so: the **demo agent's** plan holds
+`estate = 0xDE3207F493fE4600DeEc424e0875ec943d712337`, which is **not** an
+`Estate` contract at all. It is not a mistake. There are two settlement rails
+for the same failed agent, and they carry different money. (Agent 2 is the
+other configuration: its plan's `estate` field *is* its `Estate` contract
+`0x83f4…fC7F`, which is why `enterAdministration` there flips the payment
+destination straight onto the waterfall.)
 
 - **x402 revenue settles on Hedera.** `0xDE32…2337` is an EVM address with no
   code on Sepolia; it is the Hedera-mapped payout account `0.0.10423647`. When
   the registry flips, the gateway resolves `getPaymentDestination()` through the
   mirror node and the *next HBAR payment* lands there. That is the rail the
   Hedera transaction IDs in `docs/PRIZES.md` are on.
-- **Creditor claims settle on Sepolia in USDC.** `Estate` at `0xD67a…286f` is
-  the contract that takes registered claims, a trustee-approved plan hash and a
-  priority-class waterfall. Its constructor bound it to Circle's real Sepolia
-  USDC `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` (`symbol()` is `"USDC"`,
-  `decimals()` is `6`), and its `registry()`, `trustee()` and `agentId()` getters
-  read back the registry above, the operator, and the demo agent id.
+- **Creditor claims settle on Sepolia in USDC.** `Estate` is the contract that
+  takes registered claims, a trustee-approved plan hash and a priority-class
+  waterfall. Its constructor binds it to Circle's real Sepolia USDC
+  `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` (`symbol()` is `"USDC"`,
+  `decimals()` is `6`), and its `registry()`, `trustee()` and `agentId()`
+  getters read back the registry above, that estate's trustee, and its agent
+  id. Agent 2's estate `0x83f4…fC7F` did exactly this, for 1 USDC, in the
+  transactions at the top of this file.
 
 ```bash
-cast call 0xD67a10D5466d311C2f995744937c7b9e1734286f "usdc()(address)" \
+cast call 0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F "usdc()(address)" \
   --rpc-url https://ethereum-sepolia-rpc.publicnode.com     # 0x1c7D…7238
-cast call 0xD67a10D5466d311C2f995744937c7b9e1734286f "registry()(address)" \
+cast call 0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F "registry()(address)" \
   --rpc-url https://ethereum-sepolia-rpc.publicnode.com     # 0x2946…9e39
+cast call 0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F "totalOutstanding()(uint256)" \
+  --rpc-url https://ethereum-sepolia-rpc.publicnode.com     # 400000 - the real shortfall
 ```
 
 Nothing automatically moves value from the Hedera rail to the Sepolia one. A
 trustee would have to bridge it. That gap is real and is not implemented.
 
-### What is *not* proven on-chain at this address
+### What is and is not proven on-chain
 
-Being exact about it, because the addresses changed:
-
-- **The lifecycle flip has not been run on `0x2946…9e39` yet.** The agent there
-  is `Active` and has never entered Administration. The recorded
-  `Active -> Administration -> Active` transactions in `docs/PRIZES.md` are
-  against the previous deployment `0x99AB…2521`, and are labelled as such.
-  The flip is reproducible on the new address — `enterAdministration` is
-  permissionless and the heartbeat deadline has passed — via the dashboard's
-  write route or a direct `cast send`.
-- **`Estate` holds no funds and no claims yet.** Its USDC balance is zero and no
-  `registerClaim` has been called on it. The waterfall itself is exercised by 34
-  unit tests and by `./scripts/e2e-local.sh` end to end on a local anvil chain
-  against a real ERC-20. Deployed and readable is not the same as exercised
-  in production, and this README does not claim it is.
+- **The lifecycle has been run on `0x2946…9e39`.** Twice, on two agents: the
+  full `Active -> Administration -> Active -> Administration -> Liquidation ->
+  Resolved` walk on agent 2, and the recoverable `Active -> Administration ->
+  Active` flip on the demo agent. Before this the registry had emitted only
+  `AgentRegistered`, `PlanUpdated` and `PlanLocked` — zero `StatusChanged`,
+  zero `Heartbeat`. It now has both, and `cast logs` on the address will show
+  you how many.
+- **The waterfall has run on Sepolia, with real Circle USDC.** Two rounds, four
+  creditors, a 0.9 USDC shortfall in round one. See the tables at the top. What
+  it did *not* do is exercise the pull-payment escrow path on chain — no real
+  USDC address involved here is blacklisted, and blacklisting one is not
+  something we can arrange. That branch is covered by unit tests and by
+  `scripts/e2e-local.sh` against a mock that models USDC's blocklist.
+- **`Estate` at `0xD67a…286f` — the *first* Estate, bound to the original demo
+  agent — still holds no funds and no claims.** It was superseded by
+  `0x83f4…fC7F`, which carries the `registerClaim` fix and is the one that
+  settled. Nothing was ever executed at `0xD67a…286f`, and this README does not
+  claim otherwise.
+- **Nothing bridges the two rails.** x402 revenue lands on Hedera; creditor
+  claims settle in USDC on Sepolia. A trustee would have to move value between
+  them by hand. The 1 USDC that funded agent 2's estate came from the operator
+  directly, not from x402 revenue.
 
 **The mechanism.** An agent registers a plan naming a treasury, an estate, a
 heartbeat interval and a grace period. While it heartbeats, the registry is
@@ -194,21 +401,30 @@ Directories that run:
 
 - `contracts/` — Foundry. `ExecutorRegistry.sol` and `Estate.sol` are both
   deployed on Sepolia (addresses above). `test/ExecutorRegistry.t.sol`
-  (37 tests), `test/Estate.t.sol` (34 tests), `test/LivingWill.t.sol` (9 tests,
+  (37 tests), `test/Estate.t.sol` (40 tests), `test/LivingWill.t.sol` (9 tests,
   ENSv2 role semantics) and `test/Receiver.t.sol` (4 tests, for the superseded
-  contract) cover them — 84 in total.
+  contract) cover them — 90 in total.
 - `packages/agent-debtor/src/gateway.ts` — the x402 resource server.
   `pay-for-research.ts` — the matching paying client.
 - `apps/dashboard` — the Next.js dashboard.
+- `scripts/e2e-local.sh` — the same lifecycle from an empty anvil chain, with
+  assertions on every step and negative assertions checked against the 4-byte
+  custom-error selector.
+- `demo/script.md` — the shot list, describing only things that exist.
 
-Directories that do **not** run, kept only because earlier commits reference
-them: `packages/optional`, `packages/sweep`, `packages/bazantic`,
-`packages/subgraph`, `packages/cre-workflow`, `packages/agent-trustee`,
-`packages/agent-client`, `demo/`. They contain stubs — `console.log`s and
-`throw new Error("not implemented")`. `contracts/src/Receiver.sol` was never
-deployed; `ExecutorRegistry.sol` supersedes it and says so in its header.
+**There is no stub graveyard any more.** `packages/optional`, `packages/sweep`,
+`packages/bazantic`, `packages/subgraph`, `packages/cre-workflow`,
+`packages/agent-trustee`, `packages/agent-client`, `packages/shared`,
+`demo/run-e2e.ts`, `demo/seed.ts` and four dead files under
+`packages/agent-debtor/src/` were `git rm`'d rather than left as decoration —
+`console.log`s and `throw new Error("not implemented")` in directories a reader
+has to open before learning they do nothing. Git history keeps them.
+
+Two things in `contracts/src/` are still there and still do not run, because
+`ExecutorRegistry.sol`'s header comment refers to them:
+`contracts/src/Receiver.sol` was never deployed and is superseded, and
 `contracts/src/adapters/EnsAdapter.sol` describes an ENSv2 registry interface
-that does not exist and is unused.
+that does not exist. Both say so in their own headers.
 
 An earlier version of this README described a two-chain system with an
 `Estate` contract on Arc and a Chainlink CRE TEE performing confidential
@@ -222,7 +438,7 @@ exists, is tested, and is deployed — on Sepolia, not on Arc.
 pnpm install
 cd contracts && forge install
 
-forge test                                    # 84 tests
+forge test                                    # 90 tests
 pnpm -C apps/dashboard exec tsc --noEmit
 pnpm -C apps/dashboard dev                    # dashboard on :3000
 
@@ -241,18 +457,26 @@ There is no deployed public URL for the dashboard — run it locally.
 
 ## Honest limitations
 
-- **The settlement half is deployed but has never settled anything.**
-  `Estate.sol` implements creditor claims, a trustee-approved plan hash, a
-  priority-class waterfall with pro-rata splitting inside a class, pull-payment
-  fallback for refused transfers, and repeatable distribution rounds for late
-  funds. It is live on Sepolia at `0xD67a…286f` against real Circle USDC — but
-  it holds zero USDC, has zero registered claims, and has never run
-  `executePlan` there. All of that behaviour is exercised by 34 unit tests and
-  by `scripts/e2e-local.sh` on a local anvil chain. Treat it as reviewed,
-  deployed code, not as a system that has processed a real insolvency.
+- **The estate has settled one insolvency, for 1 USDC.** That is a real
+  distribution with real money on a public chain, and it is also a small one.
+  It exercised strict priority, pro-rata splitting, truncation-remainder
+  recovery, repeat rounds and post-`resolve` execution. It did not exercise the
+  pull-payment escrow branch (nobody here can get an address blacklisted by
+  Circle), the 200-claim ceiling, or any adversarial trustee. Those live in the
+  test suite.
+- **The estate trusts the token it was constructed with — but less than it
+  used to.** `_tryTransfer` no longer takes a token's `true` at face value; it
+  requires this contract's balance to have actually fallen, and treats a token
+  that reports success while moving nothing exactly like a blacklist, escrowing
+  the amount for a later pull instead of marking the claim settled. That closes
+  a hole that was never exploitable against Circle USDC and would have been
+  against a hostile token, and it costs two extra `balanceOf` reads per payout
+  (the 200-claim distribution went from 9.4M to 12.2M gas). What it still does
+  not do is defend against a token that lies about `balanceOf` as well.
 - **The waterfall settles one ERC-20.** Non-USDC estate assets are not sold
-  first, and nothing values them. `packages/optional/liquidation` was reserved
-  for that and is a stub.
+  first, and nothing values them. There is no code for that, and the stub
+  directory that used to stand in for it has been deleted rather than left
+  looking like a plan.
 - **A claim ceiling.** `Estate.MAX_CLAIMS` is 200, because `executePlan` walks
   the claim array several times per priority class and an unbounded array is a
   gas-limit brick waiting to happen. Larger estates need to be split across

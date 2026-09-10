@@ -11,7 +11,10 @@ pragma solidity ^0.8.26;
 /// revert for that address, and an estate that treats one refused payout as a
 /// fatal error hands any single creditor a permanent brick on everyone else's
 /// money. `setBlocked` reverts (like USDC); `setFailTransfers` returns false
-/// globally (the other failure shape an ERC-20 can take).
+/// globally (the other failure shape an ERC-20 can take); `setLieOnTransfer`
+/// returns `true` and moves nothing, which is the shape an honest-looking
+/// token uses to make an estate mark a claim settled against a payment that
+/// never happened.
 contract MockUSDC {
     string public constant name = "Mock USDC";
     string public constant symbol = "mUSDC";
@@ -20,6 +23,7 @@ contract MockUSDC {
     mapping(address => uint256) public balanceOf;
     mapping(address => bool) public blocked;
     bool public failTransfers;
+    bool public lieOnTransfer;
 
     function mint(address to, uint256 amount) external {
         balanceOf[to] += amount;
@@ -29,12 +33,17 @@ contract MockUSDC {
         failTransfers = v;
     }
 
+    function setLieOnTransfer(bool v) external {
+        lieOnTransfer = v;
+    }
+
     function setBlocked(address account, bool v) external {
         blocked[account] = v;
     }
 
     function transfer(address to, uint256 amount) external returns (bool) {
         if (failTransfers) return false;
+        if (lieOnTransfer) return true;
         require(!blocked[to] && !blocked[msg.sender], "blocked");
         require(balanceOf[msg.sender] >= amount, "insufficient");
         balanceOf[msg.sender] -= amount;
