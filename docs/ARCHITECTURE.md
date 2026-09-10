@@ -54,7 +54,7 @@ writes to it through two API routes.
 |---|---|---|
 | Sepolia | [`ExecutorRegistry` `0x2946…9e39`](https://sepolia.etherscan.io/address/0x2946B46c2EB5Ec532093877223Ef043b13729e39) | Liveness clock, status machine, payment-destination resolution |
 | Sepolia | ENSv2 `PermissionedRegistry` `0x67b7…4b43` | Identity **and payment path**: `executor-hackathon-demo.eth`, resolver-admin role revoked |
-| Sepolia | [`ExecutorResolver` `0xa5a6…4C5b`](https://sepolia.etherscan.io/address/0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b) | The name's ENS resolver. Derives `addr()` from `ExecutorRegistry` at call time — no stored address, so no stale record |
+| Sepolia | [`ExecutorResolver` `0x52fcc…7E43`](https://sepolia.etherscan.io/address/0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43) | The name's ENS resolver. Derives `addr()` from `ExecutorRegistry` at call time — no stored address, so no stale record |
 | Hedera testnet | (no contract) | Settlement rail. Payments are native HBAR to plain accounts |
 | Sepolia | [`Estate` `0x83f4…fC7F`](https://sepolia.etherscan.io/address/0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F) | Agent 2's estate. Creditor claims, trustee-approved plan hash, USDC distribution waterfall — **has run, twice** |
 | Sepolia | [`Estate` `0xD67a…286f`](https://sepolia.etherscan.io/address/0xD67a10D5466d311C2f995744937c7b9e1734286f) | The demo agent's estate. Same contract, pre-`ZeroCreditor`-fix build; never funded, never used |

@@ -36,7 +36,8 @@ that resolver, and the dashboard reads that fact live rather than asserting it.
 | Operator | `0x72db032c0dFB6E7502e16A73fabdab31712dc706` |
 | tokenId | `70819938539668139450264846801951294893386672383841701762255368442961331224578` |
 | namehash (node) | `0xebf5950ce1cd24d4bc0f0cabcc987510f64e6d4ec76005b69b500203c6a5e63d` |
-| Resolver | [`0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b`](https://sepolia.etherscan.io/address/0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b) (`ExecutorResolver`) |
+| Resolver | [`0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43`](https://sepolia.etherscan.io/address/0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43) (`ExecutorResolver`) |
+| Previous resolver | [`0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b`](https://sepolia.etherscan.io/address/0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b) — still deployed, still bound to the retired agent; the name no longer points at it |
 
 ### ENS is in the money path
 
@@ -45,7 +46,7 @@ single request, before it will quote a price:
 
 ```
 ENSv2 registry.getResolver("executor-hackathon-demo")
-  -> 0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b
+  -> 0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43
   -> resolver.addr(namehash("executor-hackathon-demo.eth"), 60)
   -> the address the payment is quoted to
 ```
@@ -86,10 +87,10 @@ RPC=https://ethereum-sepolia-rpc.publicnode.com
 #    contract and reverts.
 cast call 0x67b728a792e789a8978b30cf1b3b641f19354b43 \
   "getResolver(string)(address)" "executor-hackathon-demo" --rpc-url $RPC
-# -> 0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b
+# -> 0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43
 
 # 2. The ENSIP-9 addr record - this is the address the gateway quotes.
-cast call 0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b \
+cast call 0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43 \
   "addr(bytes32,uint256)(bytes)" \
   0xebf5950ce1cd24d4bc0f0cabcc987510f64e6d4ec76005b69b500203c6a5e63d 60 \
   --rpc-url $RPC
@@ -99,11 +100,11 @@ cast call 0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b \
 #    block, by construction.
 cast call 0x2946B46c2EB5Ec532093877223Ef043b13729e39 \
   "getPaymentDestination(bytes32)(address)" \
-  0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255 \
+  0x6574c8cc5e4ca438a061eb83708582b10658d3a1a7334a8d94b6f6a1960dcb37 \
   --rpc-url $RPC
 
 # 4. Human-readable status, derived the same way.
-cast call 0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b \
+cast call 0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43 \
   "text(bytes32,string)(string)" \
   0xebf5950ce1cd24d4bc0f0cabcc987510f64e6d4ec76005b69b500203c6a5e63d \
   "executor:status" --rpc-url $RPC
@@ -122,7 +123,7 @@ cast call 0x85edf8b6b7d4211e2b07aa687506b746357b92cf \
   0x176578656375746f722d6861636b6174686f6e2d64656d6f0365746800 \
   $(cast calldata "addr(bytes32)" 0xebf5950ce1cd24d4bc0f0cabcc987510f64e6d4ec76005b69b500203c6a5e63d) \
   --rpc-url $RPC
-# -> 0x...7ea7f6e97e24f1ad03db0bd544a0aef4a1f07330, 0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b
+# -> 0x...7ea7f6e97e24f1ad03db0bd544a0aef4a1f07330, 0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43
 ```
 
 Note that the `UpgradableUniversalResolverProxy` at `0xeEeE…EeEe` and the
@@ -138,7 +139,7 @@ Active, so it only ever exercises the treasury branch. Agent 2
 second node is bound in the resolver to it:
 
 ```bash
-cast call 0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b "addr(bytes32)(address)" \
+cast call 0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43 "addr(bytes32)(address)" \
   0x2c7b03ab41666ee798f9f6dbc8b6bf10cce1fea25c183791d7a6352b8b4e1a36 --rpc-url $RPC
 # -> 0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F   (agent 2's ESTATE, not its treasury)
 ```
@@ -439,15 +440,23 @@ history rather than the only evidence:
 
 | Event | Agent | Transaction |
 |---|---|---|
-| `StatusChanged` → Administration | demo | [`0x47a310d6…12e5bfb3dc`](https://sepolia.etherscan.io/tx/0x47a310d6fac2fd00add0192d01bc0d1514d9ce34e037132798641912e5bfb3dc) |
-| `StatusChanged` → Active (restore) | demo | [`0x69d859e2…32c9fe13720`](https://sepolia.etherscan.io/tx/0x69d859e25676aac5468d6d175c9c30395fe016a7f5ba033b831cd32c9fe13720) |
-| the full Active → … → Resolved walk | agent 2 | see the root `README.md` |
+| `StatusChanged` → Administration | a previous demo agent | [`0x47a310d6…12e5bfb3dc`](https://sepolia.etherscan.io/tx/0x47a310d6fac2fd00add0192d01bc0d1514d9ce34e037132798641912e5bfb3dc) |
+| `StatusChanged` → Active (restore) | a previous demo agent | [`0x69d859e2…32c9fe13720`](https://sepolia.etherscan.io/tx/0x69d859e25676aac5468d6d175c9c30395fe016a7f5ba033b831cd32c9fe13720) |
+| the full Active → … → Resolved walk | agent 3 | see the root `README.md` |
 
-The demo agent was left `Active`. `enterAdministration` is permissionless and
-its window reopens 90 seconds after the restore, so treat `getStatus` as the
-authority on where it is right now.
+Those two transactions belong to `0x6b7f61f1…5255`, the agent the ENS name used
+to resolve to. It was retired because all four of its roles sat on one address;
+the name now points at `0x6574c8cc…cb37`, which has four distinct keys. The
+transactions are still real and still demonstrate the recoverable flip — they
+are simply not the current demo agent's, and labelling them "demo" without
+saying so would be misleading.
 
-Demo agent id `0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255`.
+The current demo agent is `Active`, kept there by a heartbeat runner on a
+45-second cadence against a 180-second deadline. `enterAdministration` is
+permissionless, so if the runner is down the window lapses and anyone can flip
+it — treat `getStatus` as the authority on where it is right now.
+
+Demo agent id `0x6574c8cc5e4ca438a061eb83708582b10658d3a1a7334a8d94b6f6a1960dcb37`.
 Agent 2 id `0x3bb9846eddba2c5c78b94bbc2be970db97c11731d2588aa86d375e281183cc67`.
 
 

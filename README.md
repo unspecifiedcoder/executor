@@ -326,23 +326,24 @@ kept open precisely so these guards stay callable. It was checked live against
    [`0x2946B46c2EB5Ec532093877223Ef043b13729e39`](https://sepolia.etherscan.io/address/0x2946B46c2EB5Ec532093877223Ef043b13729e39)
    ([deployed](https://sepolia.etherscan.io/tx/0xe0975d0b2bf4590cf72d3eb84f057c2da49a0d60162916c930402439ca49129e)
    in block 11669841). Read `getPaymentDestination` with agent id
-   `0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255`:
+   `0x6574c8cc5e4ca438a061eb83708582b10658d3a1a7334a8d94b6f6a1960dcb37`:
 
    ```bash
    # returns 0x7ea7…7330 (treasury) while Active, 0xDE32…2337 (estate) if not
    cast call 0x2946B46c2EB5Ec532093877223Ef043b13729e39 \
      "getPaymentDestination(bytes32)(address)" \
-     0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255 \
+     0x6574c8cc5e4ca438a061eb83708582b10658d3a1a7334a8d94b6f6a1960dcb37 \
      --rpc-url https://ethereum-sepolia-rpc.publicnode.com
    ```
 
    It returns the treasury `0x7ea7…7330` while the agent is Active and the
    estate payout address `0xDE32…2337` once it isn't. It was left Active — but
-   `enterAdministration` is permissionless and its heartbeat deadline lapses 90
-   seconds after the last `restoreActive`, so if a passer-by has flipped it
-   since, you will read the estate address instead. That is the mechanism
-   working, not the README being wrong: pair this with
-   `getStatus(bytes32)` and the two agree. Agent 2's lifecycle above is the
+   A heartbeat runner keeps it Active on a 45-second cadence against a
+   180-second deadline (`heartbeatInterval` 120 + `gracePeriod` 60). If that
+   runner is not up when you read this, the window lapses and
+   `enterAdministration` becomes callable by anyone — so you may well read the
+   estate address instead. That is the mechanism working, not the README being
+   wrong: pair this with `getStatus(bytes32)` and the two always agree. Agent 2's lifecycle above is the
    version that cannot drift, because every state it passed through is a
    recorded transaction.
 
@@ -356,7 +357,7 @@ kept open precisely so these guards stay callable. It was checked live against
    # reverts with 0x96cb9f37 = PlanIsLocked()
    cast call 0x2946B46c2EB5Ec532093877223Ef043b13729e39 \
      "updatePlan(bytes32,address,address,address,address,address,uint64,uint64)" \
-     0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255 \
+     0x6574c8cc5e4ca438a061eb83708582b10658d3a1a7334a8d94b6f6a1960dcb37 \
      0x72db032c0dFB6E7502e16A73fabdab31712dc706 \
      0x72db032c0dFB6E7502e16A73fabdab31712dc706 \
      0x72db032c0dFB6E7502e16A73fabdab31712dc706 \
@@ -388,10 +389,10 @@ kept open precisely so these guards stay callable. It was checked live against
    # the name's resolver, from the ENSv2 registry (argument is the label string)
    cast call 0x67b728a792e789a8978b30cf1b3b641f19354b43 \
      "getResolver(string)(address)" "executor-hackathon-demo" --rpc-url $RPC
-   # -> 0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b
+   # -> 0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43
 
    # the addr record it serves - this is the address the 402 challenge quotes
-   cast call 0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b \
+   cast call 0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43 \
      "addr(bytes32,uint256)(bytes)" \
      0xebf5950ce1cd24d4bc0f0cabcc987510f64e6d4ec76005b69b500203c6a5e63d 60 \
      --rpc-url $RPC
@@ -431,7 +432,7 @@ Five pieces:
 | `ExecutorRegistry` | `contracts/src/ExecutorRegistry.sol` | One agent's resolution plan: heartbeat clock, status machine, `updatePlan`/`lockPlan`, `resolve`, and `getPaymentDestination()` | Sepolia [`0x2946…9e39`](https://sepolia.etherscan.io/address/0x2946B46c2EB5Ec532093877223Ef043b13729e39) |
 | `Estate` | `contracts/src/Estate.sol` | Creditor claims, a trustee-approved plan hash, and a priority-class distribution waterfall with pull-payment fallback | Sepolia [`0x83f4…fC7F`](https://sepolia.etherscan.io/address/0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F) (agent 2 — **has run**, twice), and the earlier [`0xD67a…286f`](https://sepolia.etherscan.io/address/0xD67a10D5466d311C2f995744937c7b9e1734286f) (demo agent — never used). Both bound to Circle USDC |
 | x402 gateway | `packages/agent-debtor/src/gateway.ts` | A real x402 resource server on Hedera testnet selling a genuine LLM query, whose `payTo` is resolved through ENS on every request | Runs locally against Hedera testnet |
-| `ExecutorResolver` | `contracts/src/ExecutorResolver.sol` | The ENS resolver in the money path. Derives `addr()` from `ExecutorRegistry` at call time, so the record cannot go stale | Sepolia [`0xa5a6…4C5b`](https://sepolia.etherscan.io/address/0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b) |
+| `ExecutorResolver` | `contracts/src/ExecutorResolver.sol` | The ENS resolver in the money path. Derives `addr()` from `ExecutorRegistry` at call time, so the record cannot go stale | Sepolia [`0x52fcc…7E43`](https://sepolia.etherscan.io/address/0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43) |
 | Dashboard | `apps/dashboard` | Next.js app doing live chain reads, plus two write routes that call `enterAdministration` / `restoreActive` | Runs locally |
 | ENSv2 name | `executor-hackathon-demo.eth` | The payment destination the gateway resolves before every quote, with the resolver-admin role irreversibly revoked | Sepolia |
 
@@ -468,7 +469,7 @@ placeholder to `0xDE32…2337`. And after `lockPlan`, the *same* call from the
 # reverts with 0x96cb9f37 = PlanIsLocked()
 cast call 0x2946B46c2EB5Ec532093877223Ef043b13729e39 \
   "updatePlan(bytes32,address,address,address,address,address,uint64,uint64)" \
-  0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255 \
+  0x6574c8cc5e4ca438a061eb83708582b10658d3a1a7334a8d94b6f6a1960dcb37 \
   0x72db032c0dFB6E7502e16A73fabdab31712dc706 \
   0x72db032c0dFB6E7502e16A73fabdab31712dc706 \
   0x72db032c0dFB6E7502e16A73fabdab31712dc706 \
@@ -667,17 +668,28 @@ There is no deployed public URL for the dashboard — run it locally.
   transaction link in this README to close a path that is already unreachable
   there — but the bytecode at those addresses is the old bytecode, and that is
   worth knowing before reading them as reference implementations.
-- **The live demo agent is the weakest agent in this repo, and deliberately so.**
-  Agent `0x6b7f61f1…5255` — the one the dashboard and the ENS name point at —
-  has all four of its roles held by a *single* address
-  (`0x72db032c…c706`), and its registry `estate` field is an EOA
-  (`0xDE3207F4…2337`, codesize 0), not an `Estate` contract. Its plan is locked,
-  so neither can be changed. What that means concretely: flipping the live demo
-  proves the payment destination changes, and nothing more — there is no
-  waterfall behind it and no separation of powers in it. The agent that proves
-  those is agent 3 at the top of this README, which has four distinct keys and a
-  real `Estate` at `0xD52b37AD…7C5F`. The subgraph exposes the distinction
-  directly as `Agent.estateIsContract`, which is `false` for this one.
+- **The live demo agent's `estate` field is an EOA, not the `Estate` contract —
+  and it has to be.** Agent `0x6574c8cc…cb37`, the one
+  `executor-hackathon-demo.eth` resolves to, names `0xDE3207F4…2337` as its
+  estate. That address has no code. This is not an oversight: the x402 gateway
+  maps a payment destination to a Hedera account through the mirror node, and
+  `/api/v1/accounts/0xD52b37AD…7C5F` — the Sepolia `Estate` *contract* — returns
+  no account at all. Pointing the registry's `estate` field at the contract
+  would break settlement the moment the agent flipped. So the registry's
+  `estate` is the Hedera-mapped payout account for the revenue rail, and the
+  `Estate` contract is the claims venue on Sepolia; they are different addresses
+  on purpose, and `docs/ARCHITECTURE.md` covers the split.
+
+  What follows honestly from that: **flipping the live demo agent proves the
+  payment destination changes, and not that a waterfall runs.** The agent that
+  proves the waterfall is agent 3 at the top of this README, whose `estate` *is*
+  a real `Estate` contract at `0xD52b37AD…7C5F` — because agent 3 was driven
+  entirely on Sepolia and never had to satisfy the Hedera rail. The subgraph
+  exposes the distinction directly as `Agent.estateIsContract`.
+
+  The live agent does now have real separation of powers — owner, heartbeat
+  signer, trustee and recovery authority are four distinct keys. An earlier
+  demo agent held all four on one address; the name was moved off it.
 - **The `planLocked` freeze is one-way and covers only the plan fields.**
   `ExecutorRegistry.updatePlan` is a real setter for the treasury, the estate,
   the trustee, the recovery authority, the heartbeat signer and the timing;

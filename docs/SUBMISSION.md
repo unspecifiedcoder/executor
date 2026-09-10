@@ -89,7 +89,7 @@ while keeping `SET_RESOLVER` — a genuine one-way narrowing of its own authorit
 verifiable with `hasRoles`. That name now *decides where money goes*: the
 gateway reads `getResolver` → `addr(node, 60)` and pays what it gets, with no
 branch that reads the registry directly instead. The resolver
-(`ExecutorResolver`, `0xa5a6d10E…4C5b`) stores no address — it derives `addr()`
+(`ExecutorResolver`, `0x52fccD0B…7E43`) stores no address — it derives `addr()`
 from `ExecutorRegistry` at call time — so the record cannot go stale and
 misroute an agent's revenue.
 
