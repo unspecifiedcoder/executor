@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getNameState, getAgentPlan, getPaymentDestination, type AgentPlan } from "../../lib/ens";
 import FlowPanel from "../components/FlowPanel";
+import SelfServeFlip from "../components/SelfServeFlip";
 import BootSequence from "./BootSequence";
 
 const DEMO_LABEL = "executor-hackathon-demo";
@@ -38,6 +39,9 @@ export default function VitalsPage() {
   const [adminTx, setAdminTx] = useState<string | null>(null);
   const [toast, setToast] = useState<{ label: string; state: "pending" | "confirmed"; hash?: string } | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  /** Set when the server key can't serve this click but the visitor's own
+   * wallet can - see SelfServeFlip. */
+  const [selfServe, setSelfServe] = useState<string | null>(null);
   const [visibleActions, setVisibleActions] = useState(0);
   const [flash, setFlash] = useState(false);
   const phaseRef = useRef<Phase>("loading");
@@ -221,7 +225,13 @@ export default function VitalsPage() {
     try {
       const res = await fetch("/api/actions/enter-administration", { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "enterAdministration failed");
+      if (!res.ok) {
+        // The demo's own key is throttled, out of budget, or low on gas. None
+        // of that blocks the visitor: enterAdministration is permissionless, so
+        // offer the wallet path rather than presenting this as a dead end.
+        if (data.selfServe) setSelfServe(data.error || "The demo's key is unavailable right now.");
+        throw new Error(data.error || "enterAdministration failed");
+      }
 
       if (data.alreadyInState) {
         const freshPlan = await refreshPlan();
@@ -386,10 +396,28 @@ export default function VitalsPage() {
             )}
           </div>
 
+          {selfServe && (
+            <div className="self-serve-offer">
+              <p className="self-serve-reason mono">{selfServe}</p>
+              <SelfServeFlip
+                onConfirmed={async (hash) => {
+                  setAdminTx(hash);
+                  setSelfServe(null);
+                  setErrorMsg(null);
+                  await refreshPlan();
+                  setPhase("administration");
+                  setFlash(true);
+                  setTimeout(() => setFlash(false), 700);
+                }}
+              />
+            </div>
+          )}
+
           <p className="disclosure mono">
-            This is a shared, live demo agent on Sepolia testnet. Clicking these buttons submits real
-            transactions from a server-held operator key with worthless testnet funds - not a
-            simulation.
+            This is a shared, live demo agent on Sepolia testnet. These buttons submit real
+            transactions with worthless testnet funds - not a simulation. The failure trigger runs
+            from a server-held operator key by default; if that key is throttled or out of gas you
+            can run the same permissionless call from your own wallet instead.
           </p>
         </div>
 
@@ -561,6 +589,21 @@ export default function VitalsPage() {
         }
         .actions li.shown .check {
           transform: scale(1);
+        }
+        .self-serve-offer {
+          margin-top: 20px;
+          padding: 16px;
+          border: 1px dashed var(--border-strong);
+          border-radius: 6px;
+          max-width: 440px;
+          animation: row-in 320ms var(--ease-settle);
+        }
+        .self-serve-reason {
+          margin: 0;
+          font-size: 11px;
+          line-height: 1.6;
+          color: var(--administration);
+          text-align: center;
         }
         .action-zone {
           margin-top: 40px;
