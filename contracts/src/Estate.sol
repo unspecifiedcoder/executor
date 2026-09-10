@@ -13,6 +13,7 @@ interface IERC20 {
 /// actually needs so the two contracts stay loosely coupled.
 interface IExecutorRegistry {
     function getStatus(bytes32 agentId) external view returns (uint8);
+    function getPaymentDestination(bytes32 agentId) external view returns (address);
 }
 
 /// @notice Holds a failed agent's estate and pays its creditors out by priority
@@ -86,6 +87,7 @@ contract Estate {
     /// @dev Mirrors ExecutorRegistry.Status. Administration (1) and Active (0)
     /// are deliberately absent from the payout gate; the full set is spelled
     /// out so the mapping is auditable.
+    uint8 internal constant STATUS_ACTIVE = 0;
     uint8 internal constant STATUS_LIQUIDATION = 2;
     uint8 internal constant STATUS_RESOLVED = 3;
 
@@ -142,6 +144,7 @@ contract Estate {
     event PayoutClaimed(address indexed creditor, uint256 amount);
     event PlanExecuted(bytes32 indexed planHash, uint256 totalPaid, uint256 shortfall);
     event SurplusSwept(address indexed to, uint256 amount);
+    event ReturnedToTreasury(address indexed treasury, uint256 amount);
 
     error NotTrustee();
     error PlanMismatch();
@@ -154,6 +157,7 @@ contract Estate {
     error TransferFailed();
     error NothingToClaim();
     error ClaimsOutstanding(uint256 outstanding);
+    error AgentNotActive(uint8 status);
     error TooManyClaims();
     error Reentrancy();
 
@@ -387,6 +391,42 @@ contract Estate {
             revert TransferFailed();
         }
         emit PayoutClaimed(msg.sender, amount);
+    }
+
+    /// @notice Sends the estate's balance back to the agent's treasury, once
+    /// the agent has actually recovered.
+    ///
+    /// This exists because "Administration is recoverable" was only half true.
+    /// `enterAdministration` redirects revenue here immediately, and it is
+    /// permissionless by design - so a single slow heartbeat on a healthy agent
+    /// is enough for a stranger to start routing its income into this contract.
+    /// `restoreActive` then puts the *status* back, but every unit that arrived
+    /// during the window stayed here: `executePlan` refuses to run while
+    /// Active, and `sweepSurplus` now requires a terminal status. The money was
+    /// stranded until someone liquidated an agent that had recovered, which is
+    /// a perverse incentive to point at a protocol whose whole claim is that a
+    /// missed heartbeat is not insolvency.
+    ///
+    /// Permissionless, like `executePlan`, and for the same reason: it moves
+    /// money to an address the registry names, not to one the caller chooses.
+    /// Gated on `STATUS_ACTIVE` so it can never be used to drain an estate that
+    /// is actually resolving - and because `getPaymentDestination` only returns
+    /// the treasury while Active, the gate and the destination are the same
+    /// fact, read from the same call. Escrowed payouts are excluded: a creditor
+    /// who was owed money from a previous administration keeps their claim on
+    /// it through `distributable()`.
+    function returnToTreasury() external nonReentrant returns (uint256 amount) {
+        uint8 status = IExecutorRegistry(registry).getStatus(agentId);
+        if (status != STATUS_ACTIVE) revert AgentNotActive(status);
+
+        address treasury = IExecutorRegistry(registry).getPaymentDestination(agentId);
+        if (treasury == address(0)) revert ZeroCreditor();
+
+        amount = distributable();
+        if (amount == 0) revert NothingToDistribute();
+
+        if (!_tryTransfer(treasury, amount)) revert TransferFailed();
+        emit ReturnedToTreasury(treasury, amount);
     }
 
     /// @notice Returns whatever is left once every claim is settled in full.

@@ -7,13 +7,24 @@ import {MockUSDC} from "./mocks/MockUSDC.sol";
 
 contract MockRegistry {
     uint8 public status;
+    address public destination;
 
     function setStatus(uint8 s) external {
         status = s;
     }
 
+    function setDestination(address d) external {
+        destination = d;
+    }
+
     function getStatus(bytes32) external view returns (uint8) {
         return status;
+    }
+
+    /// Mirrors the real registry: the treasury while Active, the estate
+    /// otherwise. Tests that care set it explicitly.
+    function getPaymentDestination(bytes32) external view returns (address) {
+        return destination;
     }
 }
 
@@ -864,5 +875,75 @@ contract EstateTest is Test {
         uint256 swept = estate.sweepSurplus(trustee);
         assertEq(swept, 42_000);
         assertEq(usdc.balanceOf(trustee), 42_000);
+    }
+
+    // --- returnToTreasury: administration has to be recoverable for the money,
+    // not just for the status ------------------------------------------------
+
+    function test_returnToTreasury_sendsFundsBackOnceAgentRecovers() public {
+        address treasury = makeAddr("treasury");
+        registry.setDestination(treasury);
+
+        // revenue arrives during a (permissionlessly triggered) administration
+        registry.setStatus(ADMINISTRATION);
+        usdc.mint(address(estate), 750_000);
+
+        // ...the agent turns out to be fine and is restored
+        registry.setStatus(ACTIVE);
+        uint256 returned = estate.returnToTreasury();
+
+        assertEq(returned, 750_000);
+        assertEq(usdc.balanceOf(treasury), 750_000, "revenue follows the agent back");
+        assertEq(usdc.balanceOf(address(estate)), 0);
+    }
+
+    function test_returnToTreasury_revertsWhileInAdministration() public {
+        registry.setDestination(makeAddr("treasury"));
+        usdc.mint(address(estate), 100_000);
+        registry.setStatus(ADMINISTRATION);
+        vm.expectRevert(abi.encodeWithSelector(Estate.AgentNotActive.selector, ADMINISTRATION));
+        estate.returnToTreasury();
+    }
+
+    /// The important negative: this must never become a way to empty an estate
+    /// that is actually resolving.
+    function test_returnToTreasury_revertsInLiquidationAndResolved() public {
+        registry.setDestination(makeAddr("treasury"));
+        usdc.mint(address(estate), 100_000);
+
+        registry.setStatus(LIQUIDATION);
+        vm.expectRevert(abi.encodeWithSelector(Estate.AgentNotActive.selector, LIQUIDATION));
+        estate.returnToTreasury();
+
+        registry.setStatus(RESOLVED);
+        vm.expectRevert(abi.encodeWithSelector(Estate.AgentNotActive.selector, RESOLVED));
+        estate.returnToTreasury();
+
+        assertEq(usdc.balanceOf(address(estate)), 100_000, "a resolving estate keeps its funds");
+    }
+
+    /// A creditor who could not be paid in an earlier round has money booked to
+    /// them here. Returning "the balance" must not include it.
+    function test_returnToTreasury_cannotTakeEscrowedPayouts() public {
+        address blocked = makeAddr("blocked");
+        address treasury = makeAddr("treasury");
+        registry.setDestination(treasury);
+
+        _claim(bytes32(uint256(7)), blocked, 50_000, Estate.PriorityClass.Secured);
+        bytes32 planHash = _approveCurrent();
+        usdc.mint(address(estate), 50_000);
+        usdc.setBlocked(blocked, true);
+        registry.setStatus(LIQUIDATION);
+        estate.executePlan(planHash);
+        assertEq(estate.withdrawable(blocked), 50_000, "payout escrowed, not sent");
+
+        // agent recovers; the escrowed payout is not the treasury's to take
+        registry.setStatus(ACTIVE);
+        vm.expectRevert(Estate.NothingToDistribute.selector);
+        estate.returnToTreasury();
+
+        usdc.mint(address(estate), 9_000); // fresh revenue on top of the escrow
+        assertEq(estate.returnToTreasury(), 9_000, "only the unescrowed part moves");
+        assertEq(estate.withdrawable(blocked), 50_000, "creditor keeps their booked payout");
     }
 }

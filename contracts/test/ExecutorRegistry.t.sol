@@ -518,4 +518,86 @@ contract ExecutorRegistryTest is Test {
         vm.prank(trustee);
         registry.enterLiquidation(AGENT);
     }
+
+    // --- zero-address plan fields -------------------------------------------
+    //
+    // Each of these is unrecoverable once `lockPlan` runs, so the check belongs
+    // at registration rather than in a UI.
+
+    function test_registerAgent_revertsOnZeroRecoveryAuthority() public {
+        vm.expectRevert(ExecutorRegistry.ZeroAddress.selector);
+        registry.registerAgent(
+            keccak256("zero-recovery"),
+            heartbeatSigner,
+            trustee,
+            address(0),
+            treasury,
+            estate,
+            60,
+            30
+        );
+    }
+
+    function test_registerAgent_revertsOnZeroEstate() public {
+        vm.expectRevert(ExecutorRegistry.ZeroAddress.selector);
+        registry.registerAgent(
+            keccak256("zero-estate"),
+            heartbeatSigner,
+            trustee,
+            recoveryAuthority,
+            treasury,
+            address(0),
+            60,
+            30
+        );
+    }
+
+    function test_registerAgent_revertsOnZeroHeartbeatSigner() public {
+        vm.expectRevert(ExecutorRegistry.ZeroAddress.selector);
+        registry.registerAgent(
+            keccak256("zero-signer"),
+            address(0),
+            trustee,
+            recoveryAuthority,
+            treasury,
+            estate,
+            60,
+            30
+        );
+    }
+
+    function test_registerAgent_revertsOnZeroTrustee() public {
+        vm.expectRevert(ExecutorRegistry.ZeroAddress.selector);
+        registry.registerAgent(
+            keccak256("zero-trustee"),
+            heartbeatSigner,
+            address(0),
+            recoveryAuthority,
+            treasury,
+            estate,
+            60,
+            30
+        );
+    }
+
+    function test_registerAgent_revertsOnZeroTreasury() public {
+        vm.expectRevert(ExecutorRegistry.ZeroAddress.selector);
+        registry.registerAgent(
+            keccak256("zero-treasury"),
+            heartbeatSigner,
+            trustee,
+            recoveryAuthority,
+            address(0),
+            estate,
+            60,
+            30
+        );
+    }
+
+    /// An amend must not reach a state registration refuses.
+    function test_updatePlan_revertsOnZeroAddress() public {
+        vm.prank(owner);
+        vm.expectRevert(ExecutorRegistry.ZeroAddress.selector);
+        registry.updatePlan(AGENT, heartbeatSigner, trustee, address(0), treasury, estate, 60, 30);
+    }
 }

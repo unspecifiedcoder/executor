@@ -1,13 +1,4 @@
-import {
-  createPublicClient,
-  http,
-  numberToHex,
-  parseEventLogs,
-  toEventSelector,
-  type Address,
-  type Hex,
-  type Log,
-} from "viem";
+import { createPublicClient, http, type Address, type Hex } from "viem";
 import { sepolia } from "viem/chains";
 
 /**
@@ -251,91 +242,22 @@ export const EXECUTOR_REGISTRY_ABI = [
 
 /** Block ExecutorRegistry was deployed at on Sepolia - found by bisecting
  * cast code against the address, since the deploy tx wasn't recorded. */
-export const EXECUTOR_REGISTRY_DEPLOY_BLOCK = 11669841n;
-
-/** publicnode caps eth_getLogs at 50,000 blocks per request, so this is the
- * size of one *chunk*, not the size of the history we are willing to show.
+/** The shape the dashboard renders history in. Now produced by `lib/subgraph.ts`.
  *
- * An earlier version used it as a sliding window ending at the chain head. That
- * meant the deploy block fell out of range roughly 45,000 blocks (~6 days on
- * Sepolia) after deployment, and from then on the history panel would render
- * empty with no error - the worst possible failure for a panel labelled `live`.
- * The scan now always starts at the deploy block and walks forward in chunks,
- * so this number can only change how many requests are made, never which events
- * are found. */
-export const MAX_LOG_RANGE = 45000n;
-
-/** topic0 of every event ExecutorRegistry emits. Passing these as the first
- * topic slot (an OR-match) plus the agentId as the second means the RPC does
- * the filtering, instead of us downloading every agent's logs and filtering in
- * JS. Every event on this contract has `agentId` as its only indexed
- * parameter, which is what makes the single combined query possible. */
-const EXECUTOR_EVENT_TOPICS: Hex[] = EXECUTOR_REGISTRY_ABI.filter(
-  (item): item is Extract<(typeof EXECUTOR_REGISTRY_ABI)[number], { type: "event" }> =>
-    item.type === "event",
-).map((event) => toEventSelector(event));
-
+ * The chunked `eth_getLogs` reader that used to fill this lived here and has
+ * been deleted rather than left behind a flag. It paged backwards from the
+ * chain head in 45,000-block windows because that is the public RPC's cap, and
+ * an earlier revision of it let the registry's deploy block age out of range -
+ * rendering an empty history, with no error, on a panel labelled `live`. Keeping
+ * it as an unreferenced fallback would preserve exactly that failure for
+ * whoever wired it back up. Git history has it.
+ */
 export interface AgentEvent {
   name: string;
   blockNumber: bigint;
   transactionHash: Hex;
   timestamp: number;
   args: Record<string, unknown>;
-}
-
-/**
- * Reads this agent's on-chain history.
- *
- * Throws on RPC failure rather than returning `[]` - callers must render the
- * difference, because "the RPC is down" and "this agent has no history" look
- * identical otherwise and the panel is labelled `live`.
- */
-export async function getAgentEvents(agentId: Hex = AGENT_ID): Promise<AgentEvent[]> {
-  const latest = await client.getBlockNumber();
-
-  // Always anchored at the deploy block - no event this contract has ever
-  // emitted can fall outside the scan. Chunked only to respect the RPC's
-  // per-request block-range cap.
-  const rawLogs: unknown[] = [];
-  for (let from = EXECUTOR_REGISTRY_DEPLOY_BLOCK; from <= latest; from += MAX_LOG_RANGE) {
-    const to = from + MAX_LOG_RANGE - 1n;
-    const chunk = await client.request({
-      method: "eth_getLogs",
-      params: [
-        {
-          address: EXECUTOR_REGISTRY,
-          fromBlock: numberToHex(from),
-          toBlock: numberToHex(to > latest ? latest : to),
-          topics: [EXECUTOR_EVENT_TOPICS, agentId],
-        },
-      ],
-    });
-    rawLogs.push(...(chunk as unknown[]));
-  }
-
-  const logs = parseEventLogs({
-    abi: EXECUTOR_REGISTRY_ABI,
-    logs: rawLogs as unknown as Log[],
-  });
-
-  const uniqueBlocks = Array.from(new Set(logs.map((l) => l.blockNumber)));
-  const timestamps = new Map<bigint, number>(
-    await Promise.all(
-      uniqueBlocks.map(
-        async (bn) => [bn, Number((await client.getBlock({ blockNumber: bn })).timestamp)] as const,
-      ),
-    ),
-  );
-
-  return logs
-    .map((log) => ({
-      name: log.eventName as string,
-      blockNumber: log.blockNumber,
-      transactionHash: log.transactionHash as Hex,
-      timestamp: timestamps.get(log.blockNumber) ?? 0,
-      args: log.args as Record<string, unknown>,
-    }))
-    .sort((a, b) => (a.blockNumber > b.blockNumber ? -1 : a.blockNumber < b.blockNumber ? 1 : 0));
 }
 
 export async function getAgentStatus(agentId: Hex = AGENT_ID): Promise<AgentStatus> {

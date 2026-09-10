@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AGENT_ID } from "../../lib/ens";
 
+// Derived from AGENT_ID rather than pasted, so repointing the dashboard at a
+// different agent cannot leave a stale id on screen claiming to be the one
+// being read.
 const LINES = [
   "$ resolving executor-hackathon-demo.eth (ENSv2 · sepolia)",
   "$ connecting sepolia-rpc.publicnode.com",
-  "$ reading ExecutorRegistry.plans(0x6b7f61f1…)",
+  `$ reading ExecutorRegistry.plans(${AGENT_ID.slice(0, 10)}…)`,
   "$ getPaymentDestination() → resolving…",
 ];
 

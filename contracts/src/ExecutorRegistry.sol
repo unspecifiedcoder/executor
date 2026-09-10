@@ -51,6 +51,7 @@ contract ExecutorRegistry {
     error AgentAlreadyRegistered();
     error TooEarly();
     error WrongStatus(Status current);
+    error ZeroAddress();
 
     modifier onlyOwner(bytes32 agentId) {
         if (msg.sender != plans[agentId].owner) revert NotOwner();
@@ -70,6 +71,7 @@ contract ExecutorRegistry {
         uint64 gracePeriod
     ) external {
         if (plans[agentId].owner != address(0)) revert AgentAlreadyRegistered();
+        _requireNoZeroAddress(heartbeatSigner, trustee, recoveryAuthority, treasury, estate);
 
         plans[agentId] = AgentPlan({
             owner: msg.sender,
@@ -87,6 +89,36 @@ contract ExecutorRegistry {
 
         emit AgentRegistered(agentId, treasury, estate);
         emit PaymentDestinationChanged(agentId, treasury, Status.Active);
+    }
+
+    /// @dev None of the five plan addresses may be zero, and the reasons are
+    /// not symmetrical:
+    ///
+    ///   * a zero `estate` burns the agent's revenue the moment it flips - the
+    ///     payment destination becomes address(0) and every payer sends there;
+    ///   * a zero `recoveryAuthority` makes `restoreActive` permanently
+    ///     unreachable, because it compares against `msg.sender` and no one can
+    ///     transact as address(0). Combined with `lockPlan`, that is an agent
+    ///     which can never come back from a missed heartbeat;
+    ///   * a zero `heartbeatSigner` is an agent that can never prove liveness,
+    ///     so it lapses into Administration once and stays there;
+    ///   * a zero `trustee` removes the only party who can declare Liquidation,
+    ///     stranding creditors in the one state that never pays out;
+    ///   * a zero `treasury` burns revenue while the agent is perfectly healthy.
+    ///
+    /// Every one of those is unrecoverable after `lockPlan`, which is why this
+    /// is a revert at registration rather than something a UI warns about.
+    function _requireNoZeroAddress(
+        address heartbeatSigner,
+        address trustee,
+        address recoveryAuthority,
+        address treasury,
+        address estate
+    ) private pure {
+        if (
+            heartbeatSigner == address(0) || trustee == address(0)
+                || recoveryAuthority == address(0) || treasury == address(0) || estate == address(0)
+        ) revert ZeroAddress();
     }
 
     /// @notice Amends an unlocked plan. This function is what gives `lockPlan`
@@ -107,6 +139,9 @@ contract ExecutorRegistry {
     ) external onlyOwner(agentId) {
         AgentPlan storage plan = plans[agentId];
         if (plan.planLocked) revert PlanIsLocked();
+        // Same rule as registration: an amend must not be a way to reach a
+        // state registration refuses.
+        _requireNoZeroAddress(heartbeatSigner, trustee, recoveryAuthority, treasury, estate);
 
         plan.heartbeatSigner = heartbeatSigner;
         plan.trustee = trustee;
