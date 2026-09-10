@@ -124,6 +124,26 @@ Treasury `0.0.10423643` ↔ EVM `0x7ea7f6e97E24F1ad03Db0bd544A0AeF4A1f07330`,
 estate `0.0.10423647` ↔ EVM `0xDE3207F493fE4600DeEc424e0875ec943d712337` — the
 two addresses stored in the agent's plan.
 
+> **Read this before treating the table as proof of the current deployment.**
+> Those three payments were made while `gateway.ts` was pointed at the
+> **previous** registry, `0x99AB8C07C0082CBdD0306B30BC52eA15e6dB2521`. The
+> registry has since been redeployed at
+> [`0x2946B46c2EB5Ec532093877223Ef043b13729e39`](https://sepolia.etherscan.io/address/0x2946B46c2EB5Ec532093877223Ef043b13729e39)
+> and `gateway.ts` now reads that address. The payments themselves are real,
+> still on the Hedera mirror node, and still show one client account landing in
+> two different destinations without the endpoint, the price or the agent id
+> changing — that is the mechanism, and it is unaffected by which registry
+> instance was consulted.
+>
+> What they do **not** prove is that the gateway reads `0x2946…9e39`. That is a
+> claim about the current source, checkable by reading
+> `packages/agent-debtor/src/gateway.ts` (the address is a single named
+> constant) — not by these transaction IDs. The flip has not been re-run
+> against the new registry: doing so means broadcasting a Sepolia
+> `enterAdministration` and fresh HBAR payments, and we would rather label the
+> existing artifacts honestly than quietly let them imply an address they
+> predate.
+
 > `packages/agent-debtor/src/server-hedera.ts` is a stub whose `startServer`
 > only logs "would listen on…". It is not part of this claim; `gateway.ts` is
 > the real server.
@@ -153,14 +173,52 @@ destination is a function of `ExecutorRegistry` status:
 - `Administration` / `Liquidation` → estate
 
 The supporting contract is `contracts/src/ExecutorRegistry.sol`
-([`0x99AB8C07C0082CBdD0306B30BC52eA15e6dB2521`](https://sepolia.etherscan.io/address/0x99AB8C07C0082CBdD0306B30BC52eA15e6dB2521),
-Sepolia), covered by 25 tests in `contracts/test/ExecutorRegistry.t.sol`.
-`getPaymentDestination` — the function the gateway calls on every request — is
-tested in all four statuses plus the unregistered case.
+([`0x2946B46c2EB5Ec532093877223Ef043b13729e39`](https://sepolia.etherscan.io/address/0x2946B46c2EB5Ec532093877223Ef043b13729e39),
+Sepolia, block 11669841), covered by 37 tests in
+`contracts/test/ExecutorRegistry.t.sol`. `getPaymentDestination` — the function
+the gateway calls on every request — is tested in all four statuses plus the
+unregistered case.
+
+Where the redirected money is meant to end up is also deployed, on the other
+settlement rail: `contracts/src/Estate.sol` is live at
+[`0xD67a10D5466d311C2f995744937c7b9e1734286f`](https://sepolia.etherscan.io/address/0xD67a10D5466d311C2f995744937c7b9e1734286f)
+([deploy tx](https://sepolia.etherscan.io/tx/0xf234c5ff5a0f31b56ebdb43ae813f7f3920ec5fcf5d504d2ccdb1d77cb049362)),
+constructor-bound to Circle's real Sepolia USDC
+[`0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`](https://sepolia.etherscan.io/address/0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238)
+(`symbol()` is `"USDC"`, `decimals()` is `6`). It reads the same registry via
+`getStatus` and refuses to distribute until Liquidation. Its 34 tests cover
+priority classes, pro-rata splitting, pull-payment escrow and repeat rounds.
+It is deployed and readable; it holds no USDC and no claims yet, and
+`executePlan` has never run at that address — the waterfall itself is exercised
+on anvil by `scripts/e2e-local.sh`.
+
+Note that the plan's `estate` *field* is `0xDE32…2337`, the Hedera-mapped
+payout account, **not** the `Estate` contract. Two rails settle the same
+failure: x402 revenue on Hedera, USDC creditor claims on Sepolia. See
+`docs/ARCHITECTURE.md` for why, and for what does not bridge between them.
 
 The transition is permissionless and time-triggered: once
 `lastHeartbeat + heartbeatInterval + gracePeriod` has passed, anyone can call
-`enterAdministration`. Transactions on Sepolia:
+`enterAdministration`.
+
+**On the current registry `0x2946…9e39`,** the plan was written in the order
+that makes the lock mean something:
+
+| Event | Transaction |
+|---|---|
+| contract deployed (block 11669841) | [`0xe0975d0b…a49129e`](https://sepolia.etherscan.io/tx/0xe0975d0b2bf4590cf72d3eb84f057c2da49a0d60162916c930402439ca49129e) |
+| `AgentRegistered` (placeholder estate) | [`0x0b6fc415…9fb58bd9`](https://sepolia.etherscan.io/tx/0x0b6fc41588b58f2ac70108bd00150af983fb8ac54e7dfbca40331dc09fb58bd9) |
+| `PlanUpdated` — `updatePlan` amending the estate to `0xDE32…2337` | [`0xa6e85bec…0eb6953c`](https://sepolia.etherscan.io/tx/0xa6e85bec3c4334659cb2b84aab274b48e9e75026a4947e3cee5ee2020eb6953c) |
+| `PlanLocked` | [`0xff0d4257…e83f414c0`](https://sepolia.etherscan.io/tx/0xff0d42572a2565280a8a8500840c7d3f80f81085d4e02cbf735c7cde83f414c0) |
+
+The lock is load-bearing there, not declarative: an `eth_call` of the same
+`updatePlan` from the plan owner now returns `0x96cb9f37` = `PlanIsLocked()`.
+The copy-pasteable command is in the README.
+
+**On the previous registry `0x99AB…2521`,** which these docs cited until the
+redeploy, the lifecycle flip was demonstrated end to end. Kept because it is
+the only recorded `Active -> Administration -> Active` round trip, and labelled
+so nobody mistakes it for the current address:
 
 | Event | Transaction |
 |---|---|
@@ -168,5 +226,9 @@ The transition is permissionless and time-triggered: once
 | `PlanLocked` | [`0xf0b97ba5…ad7d31`](https://sepolia.etherscan.io/tx/0xf0b97ba514204322b011744f660c7b8d4d6562ca2402bc34fada3c2bd7ad7d31) |
 | `StatusChanged` → Administration | [`0xf5bdb57a…839efd`](https://sepolia.etherscan.io/tx/0xf5bdb57acea6609007827ec07fb23cb7f2a2c2c71dda9f99812ee8cedb839efd) |
 | `StatusChanged` → Active (restore) | [`0x69e3324b…6d13794`](https://sepolia.etherscan.io/tx/0x69e3324b5562cd8c956ac82bec60755a29a1dfdc98f44b96fd90becaf6d13794) |
+
+That earlier build had no `updatePlan` and no `resolve`; the current one has
+both, which is why the redeploy happened. The demo agent on `0x2946…9e39` is
+`Active` and has not been flipped there yet.
 
 Agent id `0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255`.

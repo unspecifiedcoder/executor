@@ -22,7 +22,33 @@ import {
 
 let inFlight = false;
 
-const MIN_BALANCE_WEI = 1_000_000_000_000_000n; // 0.001 ETH - enough for a few more actions
+/**
+ * Reserve floor. Checked against real chain state on every call, which makes it
+ * the only limit here that survives horizontal scaling: the counters below live
+ * in a single process's memory, and a serverless deployment runs many of those,
+ * so they bound one instance rather than the wallet. This one bounds the wallet.
+ * Raised from 0.001 once the dashboard became publicly reachable - a hosted demo
+ * where anyone can spend the operator's gas needs the floor to leave enough for
+ * the operator's own recovery transaction, not just "a few more actions".
+ */
+const MIN_BALANCE_WEI = 2_000_000_000_000_000n; // 0.002 ETH
+
+/**
+ * Best-effort throttle on server-funded writes.
+ *
+ * Honest about what this is: `lastActionAt` and `spentToday` are per-process, so
+ * on Vercel they throttle one lambda instance, not the deployment. They stop the
+ * common case - one person leaning on the button, one page in a retry loop - and
+ * do nothing against a distributed caller. The real protections are the balance
+ * floor above (chain-checked) and the fact that the expensive path,
+ * enterAdministration, is permissionless and so doesn't need this key at all.
+ */
+const COOLDOWN_MS = 45_000;
+const DAILY_BUDGET = 40;
+
+let lastActionAt = 0;
+let spentToday = 0;
+let budgetWindowStart = Date.now();
 
 function getWalletClient() {
   const key = process.env.OPERATOR_PRIVATE_KEY;
@@ -66,6 +92,26 @@ export class TransactionRevertedError extends Error {
   }
 }
 
+/** Server-funded writes are throttled; the caller should wait or, better,
+ * trigger the permissionless path from their own wallet. */
+export class CooldownError extends Error {
+  constructor(public readonly retryAfterSeconds: number) {
+    super(
+      `This shared demo agent throttles server-funded transactions - retry in ${retryAfterSeconds}s, ` +
+        `or connect a wallet and call enterAdministration() yourself (it is permissionless).`,
+    );
+  }
+}
+
+export class DailyBudgetExhaustedError extends Error {
+  constructor() {
+    super(
+      "The demo's daily gas budget is spent. enterAdministration() is permissionless - " +
+        "connect a wallet to trigger it yourself without waiting for a top-up.",
+    );
+  }
+}
+
 /**
  * Holds the lock for the transaction's full lifetime, not just submission.
  * writeContract() resolves as soon as the tx is broadcast, long before it's
@@ -78,13 +124,33 @@ export class TransactionRevertedError extends Error {
  */
 async function withLock<T>(fn: () => Promise<T>): Promise<T> {
   if (inFlight) throw new ActionInFlightError();
+
+  const now = Date.now();
+  if (now - budgetWindowStart > 24 * 60 * 60 * 1000) {
+    budgetWindowStart = now;
+    spentToday = 0;
+  }
+  if (spentToday >= DAILY_BUDGET) throw new DailyBudgetExhaustedError();
+
+  const sinceLast = now - lastActionAt;
+  if (lastActionAt !== 0 && sinceLast < COOLDOWN_MS) {
+    throw new CooldownError(Math.ceil((COOLDOWN_MS - sinceLast) / 1000));
+  }
+
   inFlight = true;
   try {
     const balance = await sepoliaPublicClient.getBalance({
       address: getWalletClient().account.address,
     });
     if (balance < MIN_BALANCE_WEI) throw new LowBalanceError();
-    return await fn();
+
+    const result = await fn();
+    // Counted only on a write that actually reached the chain. Charging the
+    // budget for a call that bounced off AlreadyInStateError would let a
+    // no-op request burn a slot the wallet never paid for.
+    lastActionAt = Date.now();
+    spentToday += 1;
+    return result;
   } finally {
     inFlight = false;
   }

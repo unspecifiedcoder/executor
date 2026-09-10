@@ -13,7 +13,7 @@ import { sepolia } from "viem/chains";
  * has been declared. Same endpoint, same identity, different money destination.
  */
 
-const REGISTRY_ADDRESS = "0x99ab8c07c0082cbdd0306b30bc52ea15e6db2521" as const;
+const REGISTRY_ADDRESS = "0x2946b46c2eb5ec532093877223ef043b13729e39" as const;
 const AGENT_ID = "0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255" as const;
 
 const MIRROR_NODE_URL = "https://testnet.mirrornode.hedera.com";

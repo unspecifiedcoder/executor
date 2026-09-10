@@ -20,7 +20,7 @@ type Phase =
 const ACTIONS = [
   "Operations frozen",
   "Receiver role activated (ROLE_SET_RESOLVER)",
-  "Revenue redirection pending — Estate not yet deployed",
+  "Revenue redirection armed — Estate live on Sepolia",
 ];
 
 function etherscanTx(hash: string): string {

@@ -4,9 +4,9 @@ pragma solidity ^0.8.26;
 import {Test} from "forge-std/Test.sol";
 import {ExecutorRegistry} from "../src/ExecutorRegistry.sol";
 
-/// @notice Tests for the one contract in this repo that is actually deployed
-/// (Sepolia 0x99AB8C07C0082CBdD0306B30BC52eA15e6dB2521). Everything the x402
-/// gateway and the dashboard depend on is exercised here:
+/// @notice Tests for the registry the x402 gateway and the dashboard read on
+/// Sepolia (0x2946B46c2EB5Ec532093877223Ef043b13729e39, block 11669841).
+/// Everything those two depend on is exercised here:
 /// `getPaymentDestination` is read on every paid request, and the
 /// Active -> Administration flip is the entire demo.
 contract ExecutorRegistryTest is Test {

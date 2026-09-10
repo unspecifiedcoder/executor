@@ -5,6 +5,8 @@ import {
   LowBalanceError,
   AlreadyInStateError,
   TransactionRevertedError,
+  CooldownError,
+  DailyBudgetExhaustedError,
 } from "../../../../lib/chain-actions.server";
 
 export async function POST() {
@@ -18,8 +20,20 @@ export async function POST() {
     if (err instanceof ActionInFlightError) {
       return NextResponse.json({ error: err.message }, { status: 409 });
     }
+    // Both of these mean "not from our key" - and for this particular call
+    // that is recoverable client-side, because enterAdministration() is
+    // permissionless. `selfServe` tells the UI to offer the wallet path.
+    if (err instanceof CooldownError) {
+      return NextResponse.json(
+        { error: err.message, selfServe: true, retryAfter: err.retryAfterSeconds },
+        { status: 429, headers: { "Retry-After": String(err.retryAfterSeconds) } },
+      );
+    }
+    if (err instanceof DailyBudgetExhaustedError) {
+      return NextResponse.json({ error: err.message, selfServe: true }, { status: 429 });
+    }
     if (err instanceof LowBalanceError) {
-      return NextResponse.json({ error: err.message }, { status: 503 });
+      return NextResponse.json({ error: err.message, selfServe: true }, { status: 503 });
     }
     if (err instanceof TransactionRevertedError) {
       return NextResponse.json({ error: err.message, txHash: err.txHash }, { status: 502 });

@@ -5,6 +5,8 @@ import {
   LowBalanceError,
   AlreadyInStateError,
   TransactionRevertedError,
+  CooldownError,
+  DailyBudgetExhaustedError,
 } from "../../../../lib/chain-actions.server";
 
 export async function POST() {
@@ -18,6 +20,18 @@ export async function POST() {
     }
     if (err instanceof ActionInFlightError) {
       return NextResponse.json({ error: err.message }, { status: 409 });
+    }
+    // No `selfServe` hint here, unlike enterAdministration: restoreActive is
+    // gated to the recoveryAuthority, so a visitor's own wallet cannot stand
+    // in for the operator's. Throttling this one genuinely means "wait".
+    if (err instanceof CooldownError) {
+      return NextResponse.json(
+        { error: err.message, retryAfter: err.retryAfterSeconds },
+        { status: 429, headers: { "Retry-After": String(err.retryAfterSeconds) } },
+      );
+    }
+    if (err instanceof DailyBudgetExhaustedError) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
     }
     if (err instanceof LowBalanceError) {
       return NextResponse.json({ error: err.message }, { status: 503 });

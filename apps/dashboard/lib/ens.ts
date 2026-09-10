@@ -112,7 +112,7 @@ export async function hasRole(tokenId: bigint, roleBitmap: bigint, account: Addr
 }
 
 /** The ExecutorRegistry deployment - the real payTo-flip primitive, not the ENSv2 registry above. */
-export const EXECUTOR_REGISTRY = "0x99ab8c07c0082cbdd0306b30bc52ea15e6db2521" as const;
+export const EXECUTOR_REGISTRY = "0x2946b46c2eb5ec532093877223ef043b13729e39" as const;
 export const AGENT_ID = "0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255" as const;
 
 export const AGENT_STATUS_LABEL = ["active", "administration", "liquidation", "resolved"] as const;
@@ -247,7 +247,7 @@ export const EXECUTOR_REGISTRY_ABI = [
 
 /** Block ExecutorRegistry was deployed at on Sepolia - found by bisecting
  * cast code against the address, since the deploy tx wasn't recorded. */
-export const EXECUTOR_REGISTRY_DEPLOY_BLOCK = 11661800n;
+export const EXECUTOR_REGISTRY_DEPLOY_BLOCK = 11669841n;
 
 /** publicnode caps eth_getLogs at 50,000 blocks per request, so this is the
  * size of one *chunk*, not the size of the history we are willing to show.

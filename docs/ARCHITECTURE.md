@@ -9,7 +9,7 @@ built, see "The superseded design" at the bottom — kept because
 ```
                                   ┌──────────────────────────────────┐
                                   │  ExecutorRegistry (Sepolia)      │
-  heartbeatSigner ──heartbeat()──►│  0x99AB…2521                     │
+  heartbeatSigner ──heartbeat()──►│  0x2946…9e39                     │
                                   │                                  │
   anyone ──enterAdministration()─►│  Active ──► Administration ──► Liquidation
        (only after the deadline)  │     ▲            │                 │
@@ -32,6 +32,19 @@ built, see "The superseded design" at the bottom — kept because
                                    estate   0.0.10423647
 ```
 
+The registry's `estate` field feeds that Hedera rail. The *other* rail — USDC
+creditor claims — hangs off the same registry but settles on Sepolia:
+
+```
+   ExecutorRegistry (Sepolia)  ──getStatus(agentId)──►  Estate (Sepolia)
+   0x2946…9e39                                          0xD67a…286f
+                                                        USDC 0x1c7D…7238
+   Liquidation / Resolved  ─────unlocks────────────►    executePlan()
+                                                        │
+                                                        ▼
+                                              creditors, by priority class
+```
+
 The dashboard (`apps/dashboard`) reads the same contract over public RPC and
 writes to it through two API routes.
 
@@ -39,18 +52,32 @@ writes to it through two API routes.
 
 | Chain | Thing | Responsibility |
 |---|---|---|
-| Sepolia | `ExecutorRegistry` `0x99AB…2521` | Liveness clock, status machine, payment-destination resolution |
+| Sepolia | [`ExecutorRegistry` `0x2946…9e39`](https://sepolia.etherscan.io/address/0x2946B46c2EB5Ec532093877223Ef043b13729e39) | Liveness clock, status machine, payment-destination resolution |
 | Sepolia | ENSv2 `PermissionedRegistry` `0x67b7…4b43` | Identity: `executor-hackathon-demo.eth`, resolver-admin role revoked |
 | Hedera testnet | (no contract) | Settlement rail. Payments are native HBAR to plain accounts |
-| local anvil only | `Estate` | Creditor claims and the distribution waterfall. **No public deployment** |
+| Sepolia | [`Estate` `0xD67a…286f`](https://sepolia.etherscan.io/address/0xD67a10D5466d311C2f995744937c7b9e1734286f) | Creditor claims, trustee-approved plan hash, USDC distribution waterfall |
+| Sepolia | Circle USDC `0x1c7D…7238` | The single ERC-20 the waterfall settles. `symbol()` `"USDC"`, `decimals()` `6` |
 
-There is no second chain holding funds and no cross-chain messaging. The
-registry is the only contract this project deployed to a public network — and
-the Sepolia address runs an *earlier build* of it than `contracts/src/` holds:
-`updatePlan` and `resolve` do not exist on that bytecode, and both selectors
-revert with empty data against it. `Estate` exists in source, is covered by 34
-unit tests, and runs end to end in `scripts/e2e-local.sh` against a local chain.
-It has no address anyone can read.
+There is no cross-chain messaging. Both contracts sit on Sepolia and the
+deployed registry bytecode is the same build `contracts/src/` holds —
+`updatePlan` and `resolve` included, and both demonstrated on-chain (see
+README). Off-chain services on other chains read Sepolia over RPC.
+
+**Two rails, one failure.** Note that the plan's `estate` *field* holds
+`0xDE3207F493fE4600DeEc424e0875ec943d712337`, which is not the `Estate`
+contract. That address has no code on Sepolia — it is the EVM form of the
+Hedera account `0.0.10423647`, and it is where x402 revenue is redirected when
+the agent fails. The `Estate` contract at `0xD67a…286f` is the separate,
+Sepolia-side rail that pays USDC creditor claims, and it finds the agent's
+status by calling `getStatus` on the registry rather than by being pointed at
+from it. Same failure event, two destinations, two asset types. Nothing
+automatically moves value from the Hedera rail into the `Estate` contract — a
+trustee would have to bridge it, and that bridge is not implemented.
+
+What the `Estate` deployment does *not* prove: it holds no USDC, has no
+registered claims, and `executePlan` has never run at that address. The
+waterfall behaviour is covered by 34 unit tests and by `scripts/e2e-local.sh`
+end to end on anvil against a real ERC-20.
 
 ## Why one contract instead of two
 
@@ -99,9 +126,20 @@ power away: afterwards `updatePlan` reverts `PlanIsLocked`, permanently.
 `test_lockPlan_makesUpdatePlanRevert` asserts it, and `scripts/e2e-local.sh`
 asserts it on-chain against the 4-byte error selector.
 
-One caveat, in the wrong direction: the Sepolia deployment predates
-`updatePlan`. On `0x99AB…2521` the flag is set to true with nothing for it to
-stop. The enforcement is real in the source and unverifiable at that address.
+This is verifiable on the live deployment, not only in tests. On
+`0x2946…9e39` the demo plan was registered with a placeholder estate, amended
+by `updatePlan`
+([`0xa6e85bec…`](https://sepolia.etherscan.io/tx/0xa6e85bec3c4334659cb2b84aab274b48e9e75026a4947e3cee5ee2020eb6953c)),
+then locked
+([`0xff0d4257…`](https://sepolia.etherscan.io/tx/0xff0d42572a2565280a8a8500840c7d3f80f81085d4e02cbf735c7cde83f414c0)).
+An `eth_call` of that same `updatePlan` from the owner now returns
+`0x96cb9f37` — `PlanIsLocked()`. The exact copy-pasteable command is in the
+README.
+
+What `lockPlan` does not freeze: the status machine. `enterAdministration`,
+`restoreActive`, `enterLiquidation` and `resolve` all still work on a locked
+plan. The lock covers the plan's parties and timing, which is the part
+creditors need pre-committed.
 
 ## Things that are weaker than they look
 
@@ -157,13 +195,14 @@ the files still in `contracts/src/` and `packages/`:
 
 **Most of it was not built, and one clause of it was.** Taking them apart:
 
-- **Built, local only.** `Estate.sol`'s claims registry and payout waterfall —
+- **Built and deployed.** `Estate.sol`'s claims registry and payout waterfall —
   `registerClaim`, a trustee-approved plan hash covering the exact claim terms,
   `executePlan` paying by priority class with pro-rata splitting inside a class,
   pull-payment escrow for refused transfers, and repeatable rounds for late
-  funds. 34 unit tests, plus `scripts/e2e-local.sh` end to end on anvil. Not on
-  Arc, not on any testnet, no address to read. The trustee here is an EOA
-  calling `approvePlan`, not the agent described above.
+  funds. 34 unit tests, plus `scripts/e2e-local.sh` end to end on anvil, plus a
+  live Sepolia deployment at `0xD67a…286f` bound to Circle USDC. Not on Arc,
+  and not yet holding funds or claims. The trustee here is an EOA calling
+  `approvePlan`, not the agent described above.
 - **Not built.** The Chainlink CRE TEE workflow, the DON-signed solvency report,
   the trustee *agent*, the subgraph, and the CCTP v2 sweep.
   `packages/cre-workflow`, `packages/subgraph`, `packages/sweep`,
