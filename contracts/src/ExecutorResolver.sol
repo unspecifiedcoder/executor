@@ -117,8 +117,8 @@ contract ExecutorResolver {
     /// @notice ERC-165. `0x3b3b57de` = addr(bytes32), `0xf1cb7e06` =
     /// addr(bytes32,uint256), `0x59d1d43c` = text(bytes32,string).
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
-        return interfaceId == 0x01ffc9a7 || interfaceId == 0x3b3b57de
-            || interfaceId == 0xf1cb7e06 || interfaceId == 0x59d1d43c;
+        return interfaceId == 0x01ffc9a7 || interfaceId == 0x3b3b57de || interfaceId == 0xf1cb7e06
+            || interfaceId == 0x59d1d43c;
     }
 
     function _toHex(bytes32 value) private pure returns (string memory) {

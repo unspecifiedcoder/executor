@@ -393,10 +393,33 @@ contract Estate {
     /// Without this, an estate that is paid up but still receiving late x402
     /// revenue accumulates funds no one can ever move.
     ///
-    /// Gated on `totalOutstanding() == 0` so it can never be used to jump the
-    /// waterfall: while any creditor is short, the only way money leaves this
-    /// contract is `executePlan` or `claimPayout`.
+    /// Three gates, because `totalOutstanding() == 0` alone is not one.
+    ///
+    /// That check sums over `claimIds`, so it is trivially satisfied by an
+    /// *empty* claim set - which is the state every estate starts in. On its
+    /// own it therefore permits exactly the thing it was written to prevent: a
+    /// trustee sweeping the balance out before registering a single claim, and
+    /// only then curating the creditors who will find nothing left. Ordering
+    /// must not be a way to decide creditors get nothing.
+    ///
+    /// So this also requires an approved plan, and the same terminal-status
+    /// gate `executePlan` uses. The status gate matters independently: without
+    /// it a trustee could empty the estate while the agent was still Active and
+    /// healthy, or during the Administration window the protocol promises is
+    /// recoverable - funds that arrive during a false-positive administration
+    /// have to survive `restoreActive`, and they cannot survive it if one
+    /// address can move them out first.
+    ///
+    /// What is left is the case this function exists for: late revenue landing
+    /// after every creditor has been paid in full.
     function sweepSurplus(address to) external onlyTrustee nonReentrant returns (uint256 amount) {
+        if (approvedPlanHash == bytes32(0)) revert NoPlanApproved();
+
+        uint8 status = IExecutorRegistry(registry).getStatus(agentId);
+        if (status != STATUS_LIQUIDATION && status != STATUS_RESOLVED) {
+            revert AgentNotInLiquidation(status);
+        }
+
         uint256 outstanding = totalOutstanding();
         if (outstanding != 0) revert ClaimsOutstanding(outstanding);
 

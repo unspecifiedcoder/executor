@@ -84,6 +84,18 @@ contract EstateTest is Test {
         estate.registerClaim(id, creditor, amount, class);
     }
 
+    /// An estate with an approved plan whose every claim is paid in full, left
+    /// at Liquidation. The starting point for testing the gates that are not
+    /// about outstanding claims.
+    function _settledEstateAtLiquidation() internal {
+        _claim(bytes32(uint256(0xfeed)), makeAddr("settled"), 1_000, Estate.PriorityClass.Secured);
+        bytes32 planHash = _approveCurrent();
+        usdc.mint(address(estate), 1_000);
+        registry.setStatus(LIQUIDATION);
+        estate.executePlan(planHash);
+        require(estate.totalOutstanding() == 0, "helper: claim not settled");
+    }
+
     function _approveCurrent() internal returns (bytes32 planHash) {
         planHash = estate.currentPlanHash();
         vm.prank(trustee);
@@ -245,6 +257,7 @@ contract EstateTest is Test {
     /// And on the sweep path, where a lying token would otherwise emit
     /// `SurplusSwept` for money that never left.
     function test_sweepSurplus_revertsAgainstALyingToken() public {
+        _settledEstateAtLiquidation();
         usdc.mint(address(estate), 500);
         usdc.setLieOnTransfer(true);
         vm.prank(trustee);
@@ -789,5 +802,67 @@ contract EstateTest is Test {
         assertLe(usdc.balanceOf(a), claimA, "never pays a creditor more than its allowed claim");
         assertLe(usdc.balanceOf(b), claimB, "never pays a creditor more than its allowed claim");
         assertLe(usdc.balanceOf(a) + usdc.balanceOf(b), pot, "never distributes more than it holds");
+    }
+
+    // --- sweepSurplus: the door that had no lock -----------------------------
+    //
+    // `sweepSurplus` is gated on `totalOutstanding() == 0`, and the comment
+    // above it claims that means "while any creditor is short, the only way
+    // money leaves this contract is executePlan or claimPayout". That guard is
+    // vacuous before any claim exists: `totalOutstanding()` sums over
+    // `claimIds`, so an empty claim set makes it 0 and the gate passes. Without
+    // a status check as well, a trustee could move the entire balance out at
+    // any point in the agent's life - including while it was Active and
+    // healthy, or in the Administration window it is supposed to be able to
+    // recover from.
+
+    function test_sweepSurplus_revertsWhileAgentIsActive() public {
+        _settledEstateAtLiquidation();
+        usdc.mint(address(estate), 500_000);
+        registry.setStatus(ACTIVE);
+        vm.prank(trustee);
+        vm.expectRevert(abi.encodeWithSelector(Estate.AgentNotInLiquidation.selector, ACTIVE));
+        estate.sweepSurplus(trustee);
+        assertEq(usdc.balanceOf(address(estate)), 500_000, "estate must keep the funds");
+    }
+
+    function test_sweepSurplus_revertsDuringRecoverableAdministration() public {
+        _settledEstateAtLiquidation();
+        usdc.mint(address(estate), 1_000_000);
+        registry.setStatus(ADMINISTRATION);
+        vm.prank(trustee);
+        vm.expectRevert(
+            abi.encodeWithSelector(Estate.AgentNotInLiquidation.selector, ADMINISTRATION)
+        );
+        estate.sweepSurplus(trustee);
+        assertEq(usdc.balanceOf(address(estate)), 1_000_000, "administration is recoverable");
+    }
+
+    /// The waterfall-jumping case: sweep first, register claims afterwards.
+    /// Ordering alone must not let the trustee decide creditors get nothing.
+    function test_sweepSurplus_revertsBeforeAnyPlanIsApproved() public {
+        usdc.mint(address(estate), 300_000);
+        registry.setStatus(LIQUIDATION);
+        vm.prank(trustee);
+        vm.expectRevert(Estate.NoPlanApproved.selector);
+        estate.sweepSurplus(trustee);
+        assertEq(usdc.balanceOf(address(estate)), 300_000, "an empty claim set is not a paid one");
+    }
+
+    /// What the function is actually for: late revenue arriving after every
+    /// creditor has been paid in full. That still works.
+    function test_sweepSurplus_stillWorksOnceEveryClaimIsSettled() public {
+        _claim(bytes32(uint256(1)), makeAddr("c1"), 100_000, Estate.PriorityClass.Secured);
+        bytes32 planHash = _approveCurrent();
+        usdc.mint(address(estate), 100_000);
+        registry.setStatus(LIQUIDATION);
+        estate.executePlan(planHash);
+        assertEq(estate.totalOutstanding(), 0, "creditor paid in full");
+
+        usdc.mint(address(estate), 42_000); // late revenue
+        vm.prank(trustee);
+        uint256 swept = estate.sweepSurplus(trustee);
+        assertEq(swept, 42_000);
+        assertEq(usdc.balanceOf(trustee), 42_000);
     }
 }

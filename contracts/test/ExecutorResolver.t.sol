@@ -119,9 +119,7 @@ contract ExecutorResolverTest is Test {
         );
         // Asserted against the live registry address rather than a literal, so
         // this test cannot pass while pointing at the wrong contract.
-        assertEq(
-            resolver.text(NODE, "executor:registry"), _toHexAddress(address(registry))
-        );
+        assertEq(resolver.text(NODE, "executor:registry"), _toHexAddress(address(registry)));
     }
 
     function test_bindNode_onlyAdmin() public {
