@@ -1271,3 +1271,15 @@ main {
 .live-strip.proofmode b{color:var(--lapsed)}
 .live-strip.proofmode a{color:var(--succession);text-decoration:none}
 .live-strip.proofmode a:hover{text-decoration:underline}
+
+/* ── revenue row ─────────────────────────────────────────────────────────────
+   The money path starts where the money is earned. One line, linked, above the
+   primitive that decides where it goes. */
+.revenue{display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap;
+  font-size:var(--t2);letter-spacing:.06em;color:var(--dim);
+  text-decoration:none;padding-bottom:var(--s2)}
+.revenue:hover{color:var(--text)}
+.revenue-tag{font-size:var(--t1);font-weight:600;letter-spacing:.2em;color:var(--bg);
+  background:var(--succession);border-radius:3px;padding:2px var(--s2)}
+.revenue-receipt{font-size:var(--t1);color:var(--faint);letter-spacing:.04em;
+  padding-bottom:var(--s4);border-bottom:1px solid var(--border);margin-bottom:var(--s4)}

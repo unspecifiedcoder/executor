@@ -47,6 +47,24 @@ export default function FlowRack({
 
   return (
     <div className="rack" data-phase={phase}>
+      {/* Where the money comes from. Without this the page shows revenue
+          arriving with no visible reason anyone would send it - and the Hedera
+          track is about what is being sold, not only about where it lands.
+          Deliberately not a live call: a generated answer fetched on Overview is
+          a 502 waiting to happen mid-recording. */}
+      <a
+        className="revenue mono"
+        href="https://executor-gateway.vercel.app/research?q=What%20is%20ENSv2%3F"
+        target="_blank"
+        rel="noreferrer"
+      >
+        <span className="revenue-tag">REVENUE</span>
+        GET /research · x402 · 0.01 HBAR · Hedera · Blocky402 ↗
+      </a>
+      <div className="revenue-receipt mono">
+        last settlement 0.0.7162784@1789030132 · paid, answered, and routed by the rule below
+      </div>
+
       <div className="q mono">{entryLabel}</div>
       <p className={`answer mono ${toEstate ? "e" : "t"}`}>
         → <b>{toEstate ? "estate" : "treasury"}</b>
