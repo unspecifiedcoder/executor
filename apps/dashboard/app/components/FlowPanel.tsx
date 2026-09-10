@@ -128,7 +128,7 @@ export default function FlowPanel({
       const dotColor =
         getComputedStyle(document.documentElement)
           .getPropertyValue(isActive ? "--active" : "--administration")
-          .trim() || "#9cff57";
+          .trim() || "#35f0c0";
       ctx!.fillStyle = dotColor;
       for (let i = 0; i < positions.length; i++) {
         if (!reduced) {

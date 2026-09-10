@@ -54,8 +54,8 @@ export default function FlipBurst() {
     function onFlip(e: Event) {
       const { fromRect, toRect, toEstate } = (e as CustomEvent<FlipEventDetail>).detail;
       const color = toEstate
-        ? getComputedStyle(document.documentElement).getPropertyValue("--administration").trim() || "#ffbd59"
-        : getComputedStyle(document.documentElement).getPropertyValue("--active").trim() || "#9cff57";
+        ? getComputedStyle(document.documentElement).getPropertyValue("--administration").trim() || "#ffb545"
+        : getComputedStyle(document.documentElement).getPropertyValue("--active").trim() || "#35f0c0";
 
       if (reduced) {
         // Still give a signal, just not a moving one.

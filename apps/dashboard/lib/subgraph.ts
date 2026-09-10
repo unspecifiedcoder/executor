@@ -107,6 +107,9 @@ export interface AgentVitals {
   medianGapSeconds: number | null;
   longestGapSeconds: number | null;
   currentGapSeconds: number | null;
+  /** The most recent gaps, oldest first. This is the agent's actual cadence -
+   * the trace drawn from it is real telemetry, not a decorative waveform. */
+  recentGaps: number[];
 }
 
 function median(values: number[]): number | null {
@@ -139,6 +142,7 @@ export async function getAgentHistory(agentId: Hex): Promise<AgentHistory> {
         medianGapSeconds: null,
         longestGapSeconds: null,
         currentGapSeconds: null,
+        recentGaps: [],
       },
     };
   }
@@ -195,6 +199,9 @@ export async function getAgentHistory(agentId: Hex): Promise<AgentHistory> {
       longestGapSeconds: gaps.length ? Math.max(...gaps) : null,
       currentGapSeconds:
         lastHeartbeat === null ? null : Math.max(0, Math.floor(Date.now() / 1000) - lastHeartbeat),
+      // `heartbeats` came back newest-first; the trace reads left-to-right in
+      // time, so reverse the slice rather than the whole series.
+      recentGaps: gaps.slice(0, 40).reverse(),
     },
   };
 }

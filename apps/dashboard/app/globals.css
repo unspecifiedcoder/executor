@@ -1,27 +1,39 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Michroma&display=swap");
 
 :root {
-  /* Terminal-dark palette, ported from the ETHOnline UI pass: a punchier
-     acid-green "alive" signal reads better on a black ground than the old
-     mint, and Inter/DM Mono earns the bigger hero scale below. Variable
-     names are unchanged so every component that already reads them
-     (FlowPanel, EventTimeline, SiteChrome, the .tag/.status system)
-     re-themes for free. */
-  --bg: #070807;
-  --raised: #0f1210;
-  --border: rgba(255, 255, 255, 0.09);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --text: #f2f4ef;
-  --dim: #8d948d;
-  --faint: #565d56;
+  /* Instrument palette. The subject is a machine's vital signs and the
+     disposition of its money when they stop, so the page is dressed as
+     telemetry rather than as a website: a cold blue-black ground, a graticule,
+     and one signal colour that means "this thing is alive right now".
 
-  --active: #9cff57;
-  --administration: #ffbd59;
-  --liquidation: #ff625c;
-  --succession: #77aaff;
+     The ground is blue-biased rather than neutral grey, and the greys are
+     biased with it - a pure mid-grey next to a cyan signal reads as
+     unconsidered. The signal is a cold mint-cyan, deliberately not the
+     acid-green-on-black that every agent dashboard defaults to.
 
-  --sans: "Inter", -apple-system, "Segoe UI", sans-serif;
-  --mono: "DM Mono", "SF Mono", Consolas, monospace;
+     Variable names are unchanged, so FlowPanel, EventTimeline, SiteChrome and
+     the .tag/.status system re-theme without touching them. */
+  --bg: #04060b;
+  --raised: #090e18;
+  --border: rgba(150, 190, 235, 0.11);
+  --border-strong: rgba(150, 190, 235, 0.2);
+  --text: #e6edf7;
+  --dim: #7c8ba3;
+  --faint: #3d4a60;
+
+  --active: #35f0c0;
+  --administration: #ffb545;
+  --liquidation: #ff5470;
+  --succession: #6ea8ff;
+
+  /* Archivo carries the headline at heavy weights and tight tracking - an
+     industrial voice rather than the geometric sans every AI page reaches for.
+     Michroma is the futuristic note and is rationed to the wordmark and the
+     status annunciator: it is a display face and collapses at paragraph size.
+     IBM Plex Mono holds every number, because instrument readouts are mono. */
+  --sans: "Archivo", -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", "SF Mono", Consolas, monospace;
+  --display: "Michroma", "Archivo", sans-serif;
 
   /* Motion vocabulary - three curves, each with one job.
      - settle: something new arriving and coming to rest. Fast start, no
@@ -379,4 +391,111 @@ main {
   line-height: 1.6;
   color: var(--dim, #5b6b80);
   max-width: 78ch;
+}
+
+/* ── The liveness monitor ────────────────────────────────────────────────────
+   An instrument, not an illustration. The graticule, the mono readouts and the
+   fixed-height trace window are what make a reader treat the numbers as
+   measured rather than styled. */
+.monitor {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background:
+    radial-gradient(120% 140% at 50% 0%, rgba(53, 240, 192, 0.06), transparent 60%),
+    var(--raised);
+  padding: 16px 18px 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.monitor[data-alive="no"] {
+  background:
+    radial-gradient(120% 140% at 50% 0%, rgba(255, 181, 69, 0.07), transparent 60%),
+    var(--raised);
+}
+
+.monitor-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.monitor-title {
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.monitor-readout {
+  font-size: 12px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.monitor-canvas {
+  display: block;
+  width: 100%;
+  height: 92px;
+}
+
+.monitor-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--faint);
+  letter-spacing: 0.04em;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.monitor-warn {
+  color: var(--administration);
+}
+
+.monitor-note {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--dim);
+  max-width: 62ch;
+}
+
+/* The wordmark and the status annunciator are the only places the display face
+   is allowed. Everything else stays Archivo or Plex Mono. */
+.brand-word,
+.hero-status-label {
+  font-family: var(--display);
+  letter-spacing: 0.14em;
+}
+
+.hero h1,
+.hero-copy h1 {
+  font-family: var(--sans);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+/* Time to the deadline the contract will actually enforce. A bar closing on a
+   hard edge makes the mechanism felt; the same number as text does not. */
+.monitor-deadline {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(150, 190, 235, 0.1);
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.monitor-deadline-fill {
+  height: 100%;
+  background: var(--active);
+  transition: width 1s linear;
+}
+
+.monitor-deadline-fill[data-near="yes"] {
+  background: var(--administration);
 }

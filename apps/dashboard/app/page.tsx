@@ -12,6 +12,7 @@ import {
 import type { AgentEvent } from "../lib/ens";
 import { getAgentHistory, getIndexMeta } from "../lib/subgraph";
 import FlowPanel from "./components/FlowPanel";
+import LivenessMonitor from "./components/LivenessMonitor";
 import EventTimeline from "./components/EventTimeline";
 
 const DEMO_LABEL = "executor-hackathon-demo";
@@ -115,6 +116,7 @@ export default async function OverviewPage() {
 
           <div className="hero-panel">
             {plan.ok && destination.ok ? (
+              <>
               <FlowPanel
                 treasury={plan.value.treasury}
                 estate={plan.value.estate}
@@ -126,6 +128,17 @@ export default async function OverviewPage() {
                 gracePeriod={plan.value.gracePeriod}
                 planLocked={plan.value.planLocked}
               />
+              {vitals && (
+                <LivenessMonitor
+                  gaps={vitals.recentGaps}
+                  lastHeartbeat={vitals.lastHeartbeat}
+                  deadlineSeconds={
+                    Number(plan.value.heartbeatInterval) + Number(plan.value.gracePeriod)
+                  }
+                  status={plan.value.status}
+                />
+              )}
+              </>
             ) : (
               <div className="panel-error mono">
                 <strong>Could not read the registry.</strong>
@@ -162,7 +175,11 @@ export default async function OverviewPage() {
         </div>
         <hr className="hr" />
         <div className="row row-animated" style={{ ["--i" as string]: 1 }}>
-          <span className="label">Owner</span>
+          {/* The ENS name's owner, not the agent's. Sitting under a bare
+              "Owner" label next to the agent row, it read as the agent's owner -
+              which would flatly contradict the four-distinct-authorities claim,
+              since the agent's owner is a different key entirely. */}
+          <span className="label">ENS name owner</span>
           <span className="value">
             {name.ok ? (
               <>

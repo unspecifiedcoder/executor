@@ -110,7 +110,13 @@ export default function VitalsPage() {
       samples.shift();
 
       ctx!.clearRect(0, 0, width, height);
-      ctx!.strokeStyle = alive ? "#9cff57" : "#ffbd59";
+      // Read the palette rather than restating it. This line was the one place
+      // the waveform's colour was a literal, so a re-theme changed the whole
+      // dashboard except the ECG on the page whose subject is the ECG.
+      const root = getComputedStyle(document.documentElement);
+      ctx!.strokeStyle = alive
+        ? root.getPropertyValue("--active").trim() || "#35f0c0"
+        : root.getPropertyValue("--administration").trim() || "#ffb545";
       ctx!.lineWidth = 1.5;
       ctx!.setLineDash(alive ? [] : [6, 6]);
       ctx!.beginPath();
