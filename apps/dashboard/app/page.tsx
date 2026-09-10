@@ -14,6 +14,7 @@ import { getAgentHistory, getIndexMeta } from "../lib/subgraph";
 import FlowPanel from "./components/FlowPanel";
 import LivenessMonitor from "./components/LivenessMonitor";
 import LifecycleReplay from "./components/LifecycleReplay";
+import RoleSockets from "./components/RoleSockets";
 import EventTimeline from "./components/EventTimeline";
 
 const DEMO_LABEL = "executor-hackathon-demo";
@@ -129,6 +130,14 @@ export default async function OverviewPage() {
                 gracePeriod={plan.value.gracePeriod}
                 planLocked={plan.value.planLocked}
               />
+              {plan.ok && (
+                <RoleSockets
+                  owner={plan.value.owner}
+                  heartbeatSigner={plan.value.heartbeatSigner}
+                  trustee={plan.value.trustee}
+                  recoveryAuthority={plan.value.recoveryAuthority}
+                />
+              )}
               {vitals && (
                 <LivenessMonitor
                   gaps={vitals.recentGaps}

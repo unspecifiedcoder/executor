@@ -273,6 +273,8 @@ export async function getAgentStatus(agentId: Hex = AGENT_ID): Promise<AgentStat
 export interface AgentPlan {
   owner: Address;
   heartbeatSigner: Address;
+  trustee: Address;
+  recoveryAuthority: Address;
   treasury: Address;
   estate: Address;
   status: AgentStatus;
@@ -296,6 +298,12 @@ export async function getAgentPlan(agentId: Hex = AGENT_ID): Promise<AgentPlan> 
   return {
     owner: plan[0],
     heartbeatSigner: plan[1],
+    // Read out of the same tuple the other fields come from. These were being
+    // fetched and discarded, which meant the dashboard could assert "four
+    // separate authorities" in prose without ever showing whether they were
+    // four separate addresses.
+    trustee: plan[2],
+    recoveryAuthority: plan[3],
     treasury: plan[4],
     estate: plan[5],
     status: AGENT_STATUS_LABEL[plan[9]],
