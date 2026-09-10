@@ -1,13 +1,22 @@
 # Prize pointers
 
-Three tracks: **ENS**, **Hedera**, **x402**. Every claim below points at a file
-that runs and, where the claim is about state, an on-chain artifact you can
+Three tracks: **ENS**, **Hedera**, **The Graph**. Every claim below points at a
+file that runs and, where the claim is about state, an on-chain artifact you can
 check yourself without trusting us.
 
-Nothing else is filed. Earlier drafts of this file listed Circle/Arc, The
-Graph, Uniswap, World, Key Ring, Bazantic and Chainlink CRE. None of those
-were built — the directories they pointed at contain stubs — so the claims
-have been withdrawn rather than reworded.
+x402 is how the payment rail works and is described throughout, but it is not a
+standalone track at this event, so that work is claimed under Hedera rather than
+as a fourth filing.
+
+Nothing else is filed. Earlier drafts of this file listed Circle/Arc, Uniswap,
+World, Key Ring, Bazantic and Chainlink CRE. None of those were built — the
+directories they pointed at contained stubs — so the claims were withdrawn
+rather than reworded.
+
+The Graph was on that withdrawn list too, for the same reason: `packages/subgraph`
+was a stub and got deleted with the rest. It is filed now because a real
+subgraph was built, deployed and made load-bearing — not because the claim was
+softened.
 
 ---
 
@@ -340,13 +349,12 @@ curl -s "https://testnet.mirrornode.hedera.com/api/v1/transactions/0.0.7162784-1
 ```
 
 > **Deployment state, stated plainly.** Everything above is verified against the
-> gateway running from this source tree, plus live Sepolia and Hedera testnet
-> state. The hosted gateway at `https://executor-gateway.vercel.app/research` is
-> still the **previous** build: it serves the old fixed string and has no
-> `/payto`. It needs a redeploy and a `GROQ_API_KEY` environment variable before
-> the hosted URL matches what is described here. The on-chain half — the
-> resolver, the `setResolver`, the ENS records — is live now and independent of
-> that redeploy.
+> **hosted** gateway, plus live Sepolia and Hedera testnet state.
+> `https://executor-gateway.vercel.app/payto` reports `registryCrossCheck:
+> passed` with a `payTo` equal to what `getPaymentDestination` returns on
+> Sepolia for the same agent, and `/research?q=...` returns a 402 whose challenge
+> is assembled from ENS at request time. A request with no `?q=` is refused
+> free, before the payment middleware runs.
 
 The supporting contract is `contracts/src/ExecutorRegistry.sol`
 ([`0x2946B46c2EB5Ec532093877223Ef043b13729e39`](https://sepolia.etherscan.io/address/0x2946B46c2EB5Ec532093877223Ef043b13729e39),
@@ -441,3 +449,71 @@ authority on where it is right now.
 
 Demo agent id `0x6b7f61f16d01348d0b80bac1e63e0abb99eb377294a49d1f22181e912daf5255`.
 Agent 2 id `0x3bb9846eddba2c5c78b94bbc2be970db97c11731d2588aa86d375e281183cc67`.
+
+
+---
+
+## The Graph
+
+**Claim:** the dashboard's history and liveness statistics come from a subgraph,
+not from RPC. This is a replacement, not an addition — the `eth_getLogs` scan it
+displaced is gone from the read path.
+
+| | |
+|---|---|
+| Endpoint | `https://api.studio.thegraph.com/query/1760047/executor/v0.1.1` (public, no key) |
+| Source | [`subgraph/`](../subgraph) — `schema.graphql`, `subgraph.yaml`, `src/registry.ts`, `src/estate.ts` |
+| Network | Sepolia, from the registry's deploy block 11669841 |
+
+### Why an index and not an RPC call
+
+`apps/dashboard/lib/ens.ts` used to page `eth_getLogs` in 50,000-block windows,
+because that is the public RPC's per-request cap. Its cost grew with the chain,
+it spent a round trip per window, and an earlier revision of it used the window
+as a *sliding* one ending at the head — so roughly six days after deployment the
+deploy block fell out of range and the history panel rendered empty, with no
+error, on a panel labelled `live`.
+
+Two things the index answers that no `eth_call` can:
+
+- **`Heartbeat.gapFromPrevious`** — computed during ingestion, in the unit the
+  protocol's own deadline is expressed in. The dashboard shows a median and a
+  longest gap, which are aggregates over the entire series; from RPC that means
+  fetching every heartbeat and reducing them on each page load.
+- **`StatusChange.caller`** — `transaction.from`, which does not appear in the
+  event at all. `enterAdministration` is permissionless, so the interesting fact
+  about a transition is usually that whoever triggered it held no role. On agent
+  3 this is directly visible: administration was triggered by
+  `0x72db032c…c706`, which holds none of that agent's four roles, while the
+  trustee took only the two steps that are the trustee's.
+
+### Composition, and the honest boundary
+
+Estates are deployed per agent, so their addresses cannot be in the manifest.
+They arrive in `AgentRegistered`/`PlanUpdated` and are picked up with a **dynamic
+data source template**, with the agent id passed through the template context —
+`Estate`'s events carry a `claimId` and a creditor but no `agentId`, so without
+it every payout row would be an orphan.
+
+`Agent.estateIsContract` is deliberately separate from `Agent.estate`. The
+registry lets a plan name an EOA, and the live demo agent does exactly that, so
+the flag is set only once that address has actually emitted an `Estate` event.
+"This agent has an estate" and "this agent has an estate that can run a
+waterfall" are different claims and only the second is provable here.
+
+**What this is not.** The gap figures are observability, not proof of liveness.
+A steady cadence is trivial to manufacture — anyone holding the signer key can
+beat on a timer — and no index can distinguish that from an agent doing real
+work. Reading the cadence as authenticity would be claiming a security property
+the design does not have.
+
+### Verify it
+
+```bash
+curl -s https://api.studio.thegraph.com/query/1760047/executor/v0.1.1 \
+  -H 'content-type: application/json' \
+  -d '{"query":"{ agent(id:\"0x96abf3c7f8f72fdf248e91137fb471a442dccf3fcece378b2065616cb68c36d4\"){ status heartbeatCount executions{ totalPaid shortfall } claims{ priorityClass allowedAmount amountPaid } statusChanges(orderBy:blockNumber){ from to caller } } }"}'
+```
+
+Returns the agent's entire life in one request, and every number in it can be
+cross-checked against the transaction table at the top of the README.

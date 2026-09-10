@@ -628,8 +628,9 @@ There is no deployed public URL for the dashboard — run it locally.
 
 ## Honest limitations
 
-- **The estate has settled one insolvency, for 1 USDC.** That is a real
-  distribution with real money on a public chain, and it is also a small one.
+- **The estate has settled two insolvencies, for about 1.2 USDC in total.**
+  Those are real distributions with real money on a public chain, and they are
+  also small ones.
   It exercised strict priority, pro-rata splitting, truncation-remainder
   recovery, repeat rounds and post-`resolve` execution. It did not exercise the
   pull-payment escrow branch (nobody here can get an address blacklisted by
@@ -652,10 +653,18 @@ There is no deployed public URL for the dashboard — run it locally.
   the claim array several times per priority class and an unbounded array is a
   gas-limit brick waiting to happen. Larger estates need to be split across
   several `Estate` contracts.
-- **The paid resource is a hardcoded JSON string**, not an inference service.
-  `GET /research` returns a fixed object; the point of the demo is where the
-  payment lands, not what is being sold.
 - **Payments are native HBAR**, not USDC.
+- **The live demo agent is the weakest agent in this repo, and deliberately so.**
+  Agent `0x6b7f61f1…5255` — the one the dashboard and the ENS name point at —
+  has all four of its roles held by a *single* address
+  (`0x72db032c…c706`), and its registry `estate` field is an EOA
+  (`0xDE3207F4…2337`, codesize 0), not an `Estate` contract. Its plan is locked,
+  so neither can be changed. What that means concretely: flipping the live demo
+  proves the payment destination changes, and nothing more — there is no
+  waterfall behind it and no separation of powers in it. The agent that proves
+  those is agent 3 at the top of this README, which has four distinct keys and a
+  real `Estate` at `0xD52b37AD…7C5F`. The subgraph exposes the distinction
+  directly as `Agent.estateIsContract`, which is `false` for this one.
 - **The `planLocked` freeze is one-way and covers only the plan fields.**
   `ExecutorRegistry.updatePlan` is a real setter for the treasury, the estate,
   the trustee, the recovery authority, the heartbeat signer and the timing;
