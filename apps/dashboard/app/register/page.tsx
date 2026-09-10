@@ -70,6 +70,26 @@ function SeparationNote({
   );
 }
 
+/**
+ * A known-good four-key set, so the *correct* configuration is one click.
+ *
+ * Before this the easy path (prefill everything with the connected wallet) made
+ * the agent the overview draws as a fault, and the correct path meant typing
+ * four addresses by hand. That is the incentive backwards: the shape we
+ * recommend should be the shape that takes least effort.
+ *
+ * Treasury and estate are the Hedera-mapped pair the x402 gateway resolves
+ * against, so an agent built this way works on the payment rail too and not
+ * only on Sepolia.
+ */
+const DEMO_KEYS = {
+  heartbeatSigner: "0xC63adec9161CabA36935138b262267489D2d62D0",
+  trustee: "0x108efe0989d08d3BCF49ca1A3A35548543CbA310",
+  recoveryAuthority: "0x86A85D90e605B6661808f7Cbe37565dCa49f323E",
+  treasury: "0x7ea7f6e97E24F1ad03Db0bd544A0AeF4A1f07330",
+  estate: "0xDE3207F493fE4600DeEc424e0875ec943d712337",
+} as const;
+
 export default function RegisterPage() {
   const [step, setStep] = useState<Step>("connect");
   const [account, setAccount] = useState<Address | null>(null);
@@ -249,25 +269,38 @@ export default function RegisterPage() {
                 placeholder="my-research-agent.eth"
               />
             </label>
+            <div className="fillrow">
+              <button
+                type="button"
+                className="btn fillbtn"
+                onClick={() => setFields((f) => ({ ...f, ...DEMO_KEYS }))}
+              >
+                Use four distinct keys
+              </button>
+              <span className="fillnote mono">
+                fills the five fields below with a working set — or paste your own
+              </span>
+            </div>
+
             <label>
               Heartbeat signer
-              <input value={fields.heartbeatSigner} onChange={(e) => set("heartbeatSigner", e.target.value)} />
+              <input value={fields.heartbeatSigner} onChange={(e) => set("heartbeatSigner", e.target.value)} placeholder="0xC63adec9161CabA36935138b262267489D2d62D0" spellCheck={false} />
             </label>
             <label>
               Trustee
-              <input value={fields.trustee} onChange={(e) => set("trustee", e.target.value)} />
+              <input value={fields.trustee} onChange={(e) => set("trustee", e.target.value)} placeholder="0x108efe0989d08d3BCF49ca1A3A35548543CbA310" spellCheck={false} />
             </label>
             <label>
               Recovery authority
-              <input value={fields.recoveryAuthority} onChange={(e) => set("recoveryAuthority", e.target.value)} />
+              <input value={fields.recoveryAuthority} onChange={(e) => set("recoveryAuthority", e.target.value)} placeholder="0x86A85D90e605B6661808f7Cbe37565dCa49f323E" spellCheck={false} />
             </label>
             <label>
               Treasury (paid while active)
-              <input value={fields.treasury} onChange={(e) => set("treasury", e.target.value)} />
+              <input value={fields.treasury} onChange={(e) => set("treasury", e.target.value)} placeholder="0x7ea7f6e97E24F1ad03Db0bd544A0AeF4A1f07330" spellCheck={false} />
             </label>
             <label>
               Estate (paid under administration)
-              <input value={fields.estate} onChange={(e) => set("estate", e.target.value)} />
+              <input value={fields.estate} onChange={(e) => set("estate", e.target.value)} placeholder="0xDE3207F493fE4600DeEc424e0875ec943d712337" spellCheck={false} />
             </label>
 
             {/* Connecting a wallet prefills all five fields with that one

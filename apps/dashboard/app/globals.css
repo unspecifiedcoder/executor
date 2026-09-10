@@ -1359,3 +1359,10 @@ main {
 .sepnote.ok b{color:var(--alive)}
 .sepnote.warn{border-color:rgba(255,181,69,.35)}
 .sepnote.warn b{color:var(--lapsed)}
+
+/* One click to a correct agent. Typing five addresses is a wall, and the wall
+   was in front of the *recommended* configuration rather than the sloppy one. */
+.register .fillrow{display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap;margin-bottom:var(--s2)}
+.register .fillbtn{padding:var(--s2) var(--s4);font-size:var(--t2)}
+.register .fillnote{font-size:var(--t2);color:var(--faint)}
+.register input::placeholder{color:rgba(150,190,235,.22)}
