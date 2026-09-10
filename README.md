@@ -565,7 +565,7 @@ Directories that run:
   `test/Estate.t.sol` (40), `test/ExecutorRegistry.t.sol` (37),
   `test/ExecutorResolver.t.sol` (14), `test/LivingWill.t.sol` (9, ENSv2 role
   semantics) and `test/Receiver.t.sol` (4, for the superseded contract) cover
-  them — **108 in total**, all passing.
+  them — **122 in total**, all passing.
 - `packages/agent-debtor/src/gateway.ts` — the x402 resource server.
   `pay-for-research.ts` — the matching paying client.
 - `apps/dashboard` — the Next.js dashboard. Current state comes from contract
@@ -610,7 +610,7 @@ exists, is tested, and is deployed — on Sepolia, not on Arc.
 pnpm install
 cd contracts && forge install
 
-forge test                                    # 108 tests
+forge test                                    # 122 tests
 pnpm -C apps/dashboard exec tsc --noEmit
 pnpm -C apps/dashboard dev                    # dashboard on :3000
 
@@ -655,30 +655,53 @@ There is no deployed public URL for the dashboard — run it locally.
   gas-limit brick waiting to happen. Larger estates need to be split across
   several `Estate` contracts.
 - **Payments are native HBAR**, not USDC.
-- **The deployed `Estate` bytecode predates the `sweepSurplus` fix.** An
-  adversarial review found that `sweepSurplus` was gated only on
-  `totalOutstanding() == 0`, which is vacuously true before any claim is
-  registered, and had no status check at all — so a trustee could have emptied
-  an estate before curating its creditors, or during the Administration window
-  the protocol calls recoverable. Source and tests are fixed (three gates now;
-  four tests written red first, 104 → 108). **Neither deployed estate is
-  exposed:** `0xD52b37AD…7C5F` and `0x83f447FA…fC7F` both hold 0 USDC and both
-  still report non-zero `totalOutstanding`, so `ClaimsOutstanding` blocks the
-  path on each. They are not redeployed because doing so would invalidate every
-  transaction link in this README to close a path that is already unreachable
-  there — but the bytecode at those addresses is the old bytecode, and that is
-  worth knowing before reading them as reference implementations.
-- **The live demo agent's `estate` field is an EOA, not the `Estate` contract —
-  and it has to be.** Agent `0x6574c8cc…cb37`, the one
+- **None of the recent contract fixes are on chain.** Adversarial review found
+  several real bugs; all are fixed in source and pinned by tests, and the
+  deployed bytecode predates every one of them. Concretely, on the live
+  Sepolia deployments:
+
+  | fix | in source | deployed |
+  |---|---|---|
+  | `sweepSurplus` gated on status, approved plan and a non-empty claim set | yes | **no** |
+  | `approvePlan` validates the hash instead of storing any 32 bytes | yes | **no** |
+  | `returnToTreasury()` — recovers estate funds after `restoreActive` | yes | **absent entirely** |
+  | `registerAgent`/`updatePlan` reject zero addresses | yes | **no** |
+
+  You can check the last one in one call: `registerAgent` with an all-zero
+  trustee, estate and recovery authority still succeeds against the deployed
+  registry. And `cast call <estate> "returnToTreasury()"` reverts on both live
+  estates, because the function does not exist there.
+
+  **What is actually at risk:** nothing, on the `sweepSurplus` path — both live
+  estates (`0xD52b37AD…7C5F`, `0x83f447FA…fC7F`) hold 0 USDC with non-zero
+  `totalOutstanding`, so `ClaimsOutstanding` blocks it on each. The stranded-funds
+  problem `returnToTreasury` solves *is* live and unmitigated on chain: an agent
+  that lapsed, took revenue, and then recovered would have no way to get that
+  revenue back out of a deployed estate. No agent is currently in that state.
+
+  These are not redeployed because doing so would invalidate every transaction
+  link in this README, and the agent-3 lifecycle those links prove is the
+  strongest artifact here. That is a deliberate trade, not an oversight, and
+  this table is the price of making it.
+- **The live demo agent's `estate` field is an EOA, not the `Estate` contract.** Agent `0x6574c8cc…cb37`, the one
   `executor-hackathon-demo.eth` resolves to, names `0xDE3207F4…2337` as its
   estate. That address has no code. This is not an oversight: the x402 gateway
   maps a payment destination to a Hedera account through the mirror node, and
   `/api/v1/accounts/0xD52b37AD…7C5F` — the Sepolia `Estate` *contract* — returns
-  no account at all. Pointing the registry's `estate` field at the contract
-  would break settlement the moment the agent flipped. So the registry's
-  `estate` is the Hedera-mapped payout account for the revenue rail, and the
-  `Estate` contract is the claims venue on Sepolia; they are different addresses
-  on purpose, and `docs/ARCHITECTURE.md` covers the split.
+  no account at all. Pointing this agent's `estate` field at the contract would
+  break settlement the moment it flipped. So the registry's `estate` is the
+  Hedera-mapped payout account for the revenue rail, and the `Estate` contract
+  is the claims venue on Sepolia; `docs/ARCHITECTURE.md` covers the split.
+
+  **This is a design limitation, not a law of nature, and it is worth being
+  precise about which.** The registry stores *one* address that has to be both a
+  Sepolia contract and a Hedera account, and no address is both. Two fields — an
+  `estatePayout` for the rail and an `estateContract` for the claims — would
+  dissolve it entirely. Agent 2 shows the other side of the same coin: it points
+  `estate` straight at its `Estate` contract, so its flip and its waterfall land
+  on the same address, because it never had to satisfy the Hedera rail. What is
+  actually unfixable is the *retrofit*: this agent's plan is locked, and the
+  registry is deployed.
 
   What follows honestly from that: **flipping the live demo agent proves the
   payment destination changes, and not that a waterfall runs.** The agent that
@@ -690,6 +713,14 @@ There is no deployed public URL for the dashboard — run it locally.
   The live agent does now have real separation of powers — owner, heartbeat
   signer, trustee and recovery authority are four distinct keys. An earlier
   demo agent held all four on one address; the name was moved off it.
+
+  Two more things a reader should not have to discover for themselves. The
+  retired agent and the current one **share a treasury and an estate EOA**, so
+  if both were flipped their revenue would commingle in one Hedera account with
+  no on-chain attribution. And nothing automatically moves value from the Hedera
+  rail into an `Estate` contract — a trustee would have to bridge it, and that
+  bridge is not implemented. The ENS-mediated flip and the priority waterfall
+  are two mechanisms this repo proves separately and does not join.
 - **The `planLocked` freeze is one-way and covers only the plan fields.**
   `ExecutorRegistry.updatePlan` is a real setter for the treasury, the estate,
   the trustee, the recovery authority, the heartbeat signer and the timing;

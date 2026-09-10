@@ -158,6 +158,7 @@ contract Estate {
     error NothingToClaim();
     error ClaimsOutstanding(uint256 outstanding);
     error AgentNotActive(uint8 status);
+    error NoClaimsRegistered();
     error TooManyClaims();
     error Reentrancy();
 
@@ -230,8 +231,18 @@ contract Estate {
         return keccak256(abi.encode(claimIds, creditors, amounts, classes));
     }
 
+    /// @notice Commits the trustee to the exact claim set currently registered.
+    ///
+    /// The hash argument is checked against `currentPlanHash()` rather than
+    /// stored blindly. Storing it blindly made `approvedPlanHash` satisfiable
+    /// with any 32 bytes at all, which turned every downstream "a plan has been
+    /// approved" check into a check that the trustee had called this function
+    /// once - not that they had committed to anything. `executePlan` was immune
+    /// because it re-derives the hash before paying, but a guard that only one
+    /// of its callers can rely on is not a guard.
     function approvePlan(bytes32 planHash) external onlyTrustee {
         if (executed) revert AlreadyExecuted();
+        if (planHash != currentPlanHash()) revert PlanMismatch();
         approvedPlanHash = planHash;
         emit PlanApproved(planHash, trustee);
     }
@@ -419,12 +430,29 @@ contract Estate {
         uint8 status = IExecutorRegistry(registry).getStatus(agentId);
         if (status != STATUS_ACTIVE) revert AgentNotActive(status);
 
+        // Claims can be registered while an agent is in Administration, and
+        // `restoreActive` does not remove them. Returning the balance while any
+        // allowed claim is still short would strip the creditors' backing - and
+        // because this function is permissionless, anyone at all could do it.
+        // The estate keeps the money until those claims are settled or the
+        // agent is wound up.
+        uint256 outstanding = totalOutstanding();
+        if (outstanding != 0) revert ClaimsOutstanding(outstanding);
+
         address treasury = IExecutorRegistry(registry).getPaymentDestination(agentId);
         if (treasury == address(0)) revert ZeroCreditor();
 
         amount = distributable();
         if (amount == 0) revert NothingToDistribute();
 
+        // Reverts rather than escrowing, unlike `executePlan`. The escrow
+        // branch exists so that one blacklisted *creditor* cannot freeze a
+        // distribution owed to everyone else - there is no such shared fate
+        // here, because a single address is both the only recipient and the
+        // party that chose itself. A blacklisted treasury blocks only its own
+        // recovery, and booking a withdrawable balance to it would not help:
+        // `claimPayout` would hit the same blacklist. The agent's owner can set
+        // a different treasury and retry, unless the plan is locked.
         if (!_tryTransfer(treasury, amount)) revert TransferFailed();
         emit ReturnedToTreasury(treasury, amount);
     }
@@ -454,6 +482,14 @@ contract Estate {
     /// after every creditor has been paid in full.
     function sweepSurplus(address to) external onlyTrustee nonReentrant returns (uint256 amount) {
         if (approvedPlanHash == bytes32(0)) revert NoPlanApproved();
+        // An estate with no claims has `totalOutstanding() == 0` and a
+        // perfectly valid `currentPlanHash()` - the hash of three empty arrays.
+        // So neither of those checks can tell "every creditor has been paid"
+        // apart from "no creditor has been named yet", and only the first is a
+        // reason to let money leave. Sweeping before curation is the whole
+        // attack: empty the estate, then register the creditors who will find
+        // nothing left.
+        if (claimIds.length == 0) revert NoClaimsRegistered();
 
         uint8 status = IExecutorRegistry(registry).getStatus(agentId);
         if (status != STATUS_LIQUIDATION && status != STATUS_RESOLVED) {

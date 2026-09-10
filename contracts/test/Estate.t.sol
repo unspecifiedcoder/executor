@@ -946,4 +946,90 @@ contract EstateTest is Test {
         assertEq(estate.returnToTreasury(), 9_000, "only the unescrowed part moves");
         assertEq(estate.withdrawable(blocked), 50_000, "creditor keeps their booked payout");
     }
+
+    // --- the two holes round 2 of review found -------------------------------
+
+    /// Round 1's surviving drain, verbatim. Every step below is available to a
+    /// single trustee key: administration is permissionless, `enterLiquidation`
+    /// is trustee-only, `approvePlan` used to take any 32 bytes, and an estate
+    /// with no claims registered reports nothing outstanding. Four calls and
+    /// the balance was gone before a single creditor existed.
+    function test_sweepSurplus_cannotSweepBeforeCuratingCreditors() public {
+        usdc.mint(address(estate), 1_000_000);
+        registry.setStatus(LIQUIDATION);
+
+        // an arbitrary hash no longer satisfies approvePlan at all
+        vm.prank(trustee);
+        vm.expectRevert(Estate.PlanMismatch.selector);
+        estate.approvePlan(bytes32(uint256(0xdeadbeef)));
+
+        // and approving the (valid) empty claim set does not unlock a sweep.
+        // Resolve the hash first: `vm.prank` applies to the next call, and an
+        // inline `estate.currentPlanHash()` would consume it.
+        bytes32 emptyPlan = estate.currentPlanHash();
+        vm.prank(trustee);
+        estate.approvePlan(emptyPlan);
+        vm.prank(trustee);
+        vm.expectRevert(Estate.NoClaimsRegistered.selector);
+        estate.sweepSurplus(trustee);
+
+        assertEq(usdc.balanceOf(address(estate)), 1_000_000, "estate keeps every unit");
+
+        // the creditor registered afterwards still has the money behind them
+        _claim(bytes32(uint256(1)), makeAddr("c1"), 1_000_000, Estate.PriorityClass.Secured);
+        bytes32 planHash = _approveCurrent();
+        estate.executePlan(planHash);
+        assertEq(usdc.balanceOf(makeAddr("c1")), 1_000_000, "paid in full");
+    }
+
+    /// The hole the *fix* for the above opened, on the function next door.
+    /// Claims can be registered during Administration and `restoreActive` does
+    /// not remove them, so a permissionless return-to-treasury could wipe the
+    /// backing out from under a registered creditor - callable by anyone.
+    function test_returnToTreasury_cannotStripRegisteredCreditors() public {
+        address treasury = makeAddr("treasury");
+        address creditor = makeAddr("creditor");
+        registry.setDestination(treasury);
+
+        registry.setStatus(ADMINISTRATION);
+        _claim(bytes32(uint256(9)), creditor, 1_000_000, Estate.PriorityClass.Secured);
+        usdc.mint(address(estate), 1_000_000);
+
+        registry.setStatus(ACTIVE);
+        vm.prank(makeAddr("anyone"));
+        vm.expectRevert(abi.encodeWithSelector(Estate.ClaimsOutstanding.selector, 1_000_000));
+        estate.returnToTreasury();
+
+        assertEq(usdc.balanceOf(address(estate)), 1_000_000, "creditor keeps their backing");
+        assertEq(usdc.balanceOf(treasury), 0);
+    }
+
+    /// ...but a recovered agent with nothing owed still gets its revenue back.
+    function test_returnToTreasury_stillReturnsWhenNothingIsOwed() public {
+        address treasury = makeAddr("treasury");
+        registry.setDestination(treasury);
+        registry.setStatus(ADMINISTRATION);
+        usdc.mint(address(estate), 400_000);
+        registry.setStatus(ACTIVE);
+
+        assertEq(estate.returnToTreasury(), 400_000);
+        assertEq(usdc.balanceOf(treasury), 400_000);
+    }
+
+    /// A settled creditor does not block the return either - `totalOutstanding`
+    /// is what is still short, not what was ever claimed.
+    function test_returnToTreasury_worksOnceClaimsAreSettled() public {
+        address treasury = makeAddr("treasury");
+        registry.setDestination(treasury);
+        _claim(bytes32(uint256(11)), makeAddr("paid"), 100_000, Estate.PriorityClass.Secured);
+        bytes32 planHash = _approveCurrent();
+        usdc.mint(address(estate), 100_000);
+        registry.setStatus(LIQUIDATION);
+        estate.executePlan(planHash);
+
+        registry.setStatus(ACTIVE);
+        usdc.mint(address(estate), 25_000);
+        assertEq(estate.returnToTreasury(), 25_000);
+        assertEq(usdc.balanceOf(treasury), 25_000);
+    }
 }

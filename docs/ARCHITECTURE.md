@@ -89,7 +89,7 @@ that matters given `Resolved` is one-way and unordered with respect to
 `executePlan`. `0xD67a…286f` has done
 none of that and never will; it predates the `ZeroCreditor` fix. Everything
 neither deployment exercised — the pull-payment escrow branch, the 200-claim
-ceiling, reentrancy — is covered by 40 unit tests and by
+ceiling, reentrancy — is covered by 52 unit tests and by
 `scripts/e2e-local.sh` end to end on anvil against a real ERC-20.
 
 ## Why one contract instead of two
@@ -131,6 +131,29 @@ plumbing, not a trust assumption the contract has to solve.
   mechanical and must not depend on the trustee staying online.
 - `Estate.claimPayout()` — the creditor themselves, for a payout the token
   refused to accept at distribution time.
+- `Estate.returnToTreasury()` — **permissionless**, and only while the registry
+  reports the agent `Active`. Sends the estate's distributable balance back to
+  the treasury after a recovery.
+
+  This exists because "Administration is recoverable" was only half true.
+  `enterAdministration` redirects revenue to the estate immediately and anyone
+  can call it, so one slow heartbeat on a healthy agent is enough for a stranger
+  to start routing its income here. `restoreActive` put the status back and the
+  money stayed: `executePlan` refuses to run while Active, and `sweepSurplus`
+  requires a terminal status. Funds were stranded until somebody liquidated an
+  agent that had recovered — a perverse incentive inside a protocol whose whole
+  claim is that a missed heartbeat is not insolvency.
+
+  Two things it will not do. It reverts while any allowed claim is still short,
+  because claims can be registered during Administration and `restoreActive`
+  does not remove them — returning the balance then would strip a creditor's
+  backing, and since the call is permissionless, anyone could do it. And it
+  cannot take escrowed payouts, because `distributable()` excludes them.
+
+  It sends to the address `getPaymentDestination` names rather than one the
+  caller passes, which is what makes permissionless safe here: while the agent
+  is Active that call returns the treasury, so the gate and the destination are
+  the same fact read from the same call.
 
 ## `planLocked`, and what it actually stops
 
@@ -217,7 +240,7 @@ the files still in `contracts/src/` and `packages/`:
   waterfall — `registerClaim`, a trustee-approved plan hash covering the exact
   claim terms, `executePlan` paying by priority class with pro-rata splitting
   inside a class, pull-payment escrow for refused transfers, and repeatable
-  rounds for late funds. 40 unit tests, plus `scripts/e2e-local.sh` end to end
+  rounds for late funds. 52 unit tests, plus `scripts/e2e-local.sh` end to end
   on anvil, plus a live Sepolia deployment at `0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F`
   bound to Circle USDC that has settled an insolvent estate across two
   distribution rounds — see the README. Not on Arc. The trustee here is an EOA

@@ -359,7 +359,7 @@ curl -s "https://testnet.mirrornode.hedera.com/api/v1/transactions/0.0.7162784-1
 
 The supporting contract is `contracts/src/ExecutorRegistry.sol`
 ([`0x2946B46c2EB5Ec532093877223Ef043b13729e39`](https://sepolia.etherscan.io/address/0x2946B46c2EB5Ec532093877223Ef043b13729e39),
-Sepolia, block 11669841), covered by 37 tests in
+Sepolia, block 11669841), covered by 43 tests in
 `contracts/test/ExecutorRegistry.t.sol`. `getPaymentDestination` — the function
 the gateway calls on every request — is tested in all four statuses plus the
 unregistered case.
@@ -371,7 +371,7 @@ settlement rail: `contracts/src/Estate.sol` is live at
 constructor-bound to Circle's real Sepolia USDC
 [`0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`](https://sepolia.etherscan.io/address/0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238)
 (`symbol()` is `"USDC"`, `decimals()` is `6`). It reads the same registry via
-`getStatus` and refuses to distribute until Liquidation. Its 40 tests cover
+`getStatus` and refuses to distribute until Liquidation. Its 52 tests cover
 priority classes, pro-rata splitting, pull-payment escrow and repeat rounds.
 
 **That contract has now run on Sepolia, with real Circle USDC.** Not at

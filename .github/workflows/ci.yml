@@ -28,6 +28,11 @@ jobs:
       - run: forge fmt --check
       - run: forge build --sizes
       - run: forge test -vvv
+      # The test count in the README and the submission copy was wrong in three
+      # consecutive review rounds. Hand-editing it kept failing; checking it
+      # does not.
+      - name: docs agree with the repo
+        run: ./scripts/check-docs.sh
 
   dashboard:
     name: tsc + next build
