@@ -1,6 +1,12 @@
 import express from "express";
 import { paymentMiddleware, x402ResourceServer } from "@x402/express";
 import { HTTPFacilitatorClient } from "@x402/core/server";
+import type {
+  PaymentPayload,
+  PaymentRequirements,
+  SupportedResponse,
+  VerifyResponse,
+} from "@x402/core";
 // `DynamicPayTo` lives on the `/http` entrypoint, not `/server`. Importing it
 // from `/server` typechecked as an error but ran fine, because a type-only
 // import is erased before Node ever sees it - the kind of breakage that only
@@ -380,7 +386,63 @@ async function runResearchQuery(query: string): Promise<ResearchResult> {
 
 const app = express();
 
-const facilitatorClient = new HTTPFacilitatorClient({
+/**
+ * The facilitator, with retries on the calls that are safe to retry.
+ *
+ * `getSupported()` is called while building the 402 challenge, and a single
+ * slow response from the facilitator therefore fails the request before a price
+ * has even been quoted - observed in practice as
+ * `Facilitator supported request timed out after 30000ms`, roughly one request
+ * in four during one sampling. The library already retries this on HTTP 429 but
+ * not on timeout, and a demo that is a coin flip is not a demo.
+ *
+ * **`settle` is deliberately NOT retried.** It moves money. Without an
+ * idempotency key from the facilitator there is no way to distinguish "the
+ * settlement never happened" from "the settlement happened and the response was
+ * lost", and retrying the second case pays twice. A failed settle surfaces as a
+ * failed request, which is the honest outcome: the caller can retry the whole
+ * payment, which is idempotent at the payload level because the payment payload
+ * is signed once and replay-protected by the facilitator.
+ *
+ * `verify` and `getSupported` are reads and carry no such hazard.
+ */
+class RetryingFacilitatorClient extends HTTPFacilitatorClient {
+  private static readonly ATTEMPTS = 3;
+
+  private async retryRead<T>(label: string, call: () => Promise<T>): Promise<T> {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= RetryingFacilitatorClient.ATTEMPTS; attempt++) {
+      try {
+        return await call();
+      } catch (err) {
+        lastError = err;
+        if (attempt === RetryingFacilitatorClient.ATTEMPTS) break;
+        // 400ms, then 1200ms. Short enough that a caller waiting on a 402 does
+        // not give up, long enough to clear a transient facilitator stall.
+        const backoffMs = 400 * 3 ** (attempt - 1);
+        console.warn(
+          `[gateway] facilitator ${label} attempt ${attempt} failed, retrying in ${backoffMs}ms:`,
+          err instanceof Error ? err.message : err,
+        );
+        await new Promise((resolve) => setTimeout(resolve, backoffMs));
+      }
+    }
+    throw lastError;
+  }
+
+  override getSupported(): Promise<SupportedResponse> {
+    return this.retryRead("getSupported", () => super.getSupported());
+  }
+
+  override verify(
+    paymentPayload: PaymentPayload,
+    paymentRequirements: PaymentRequirements,
+  ): Promise<VerifyResponse> {
+    return this.retryRead("verify", () => super.verify(paymentPayload, paymentRequirements));
+  }
+}
+
+const facilitatorClient = new RetryingFacilitatorClient({
   url: "https://api.testnet.blocky402.com",
 });
 
