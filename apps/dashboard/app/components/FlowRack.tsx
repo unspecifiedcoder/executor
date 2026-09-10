@@ -7,24 +7,18 @@ import type { Phase } from "../../lib/proof";
  * Answers the judge question: "where does the money go, and why did that
  * change?"
  *
- * One rack, two sources. It renders live registry state on the overview, and
- * the agent-3 replay drives the same component with historical state - so the
- * thing a judge sees in the video is literally the thing on the site, not a
- * recording-only mock.
+ * This is the peak frame of the whole submission, so it gets the only two
+ * borders on the page. Everything else is a plane divided by hairlines — the
+ * treasury and the estate are the only objects in the composition, which is why
+ * the eye lands on them.
  *
- * The destination hopper is the peak frame of the whole submission. It uses a
- * shared `layoutId` so the lit face physically travels between hoppers rather
- * than one fading out while another fades in: a cross-fade reads as two
- * unrelated states, a move reads as a mechanism.
+ * The packet always launches aimed at the treasury, because the payer never
+ * knows: `route-payment.sh` takes an agent id and no destination. When the
+ * treasury is sealed the packet reaches it, recoils, and the protocol sends it
+ * across to the estate. That deflection is the argument — a cross-fade between
+ * two highlighted boxes would read as a slide change rather than as money being
+ * redirected by a rule.
  */
-
-const CLASS_FOR: Record<Phase, string> = {
-  active: "active",
-  administration: "administration",
-  liquidation: "liquidation",
-  resolved: "resolved",
-};
-
 export default function FlowRack({
   phase,
   destination,
@@ -32,146 +26,116 @@ export default function FlowRack({
   estate,
   entryLabel,
   entryValue,
-  resolverLabel,
-  resolverValue,
+  sealed,
   packet,
-  compact = false,
+  treasuryFunded,
+  estateFunded,
 }: {
   phase: Phase;
   destination: "treasury" | "estate";
   treasury: string;
   estate: string;
-  /** What a payer starts from. The ENS name on the live agent; the agent id on
-   * the replay, because the name has never resolved to agent 3 and showing it
-   * there would imply a link that does not exist. */
   entryLabel: string;
   entryValue: string;
-  resolverLabel: string;
-  resolverValue: string;
-  /** A payment in flight, if one should be shown travelling the rail. */
+  /** The treasury is no longer the destination — drawn as physically shut. */
+  sealed: boolean;
   packet?: { amount: number; to: "treasury" | "estate"; id: string } | null;
-  compact?: boolean;
+  treasuryFunded: boolean;
+  estateFunded: boolean;
 }) {
   const toEstate = destination === "estate";
 
   return (
-    <div className={`rack ${compact ? "rack-compact" : ""}`} data-phase={phase}>
-      {/* the name is the entry point: a payer knows this and nothing else */}
-      <div className="rack-node rack-name">
-        <span className="rack-label">{entryLabel}</span>
-        <span className="rack-value mono">{entryValue}</span>
-      </div>
+    <div className="rack" data-phase={phase}>
+      <div className="q mono">{entryLabel}</div>
+      <p className={`answer mono ${toEstate ? "e" : "t"}`}>
+        → <b>{toEstate ? "estate" : "treasury"}</b>
+      </p>
+      <div className="agentid mono">{entryValue}</div>
 
-      <Conduit />
-
-      <div className="rack-node">
-        <span className="rack-label">
-          {resolverLabel}
-          <span className="rack-derived">derived, no stored address</span>
-        </span>
-        <span className="rack-value mono">{resolverValue}</span>
-      </div>
-
-      <Conduit />
-
-      <div className="rack-node rack-primitive">
-        <span className="rack-label">getPaymentDestination(agentId)</span>
-        <span className="rack-value mono" data-dest={destination}>
-          → {destination}
-        </span>
-      </div>
-
-      {/* the rail the packet travels, and the fork it resolves to */}
-      <div className="rack-rail">
-        <div className="rack-rail-line" />
+      <div className="stage">
         <AnimatePresence>
           {packet && (
             <motion.div
               key={packet.id}
-              layoutId="usdc-packet"
-              className="rack-packet"
-              initial={{ left: "2%", opacity: 0 }}
-              animate={{
-                left: packet.to === "treasury" ? "26%" : "74%",
-                opacity: 1,
+              className="packet mono"
+              initial={{ left: "7%", top: 0, opacity: 0, scale: 0.72, rotate: 0 }}
+              animate={
+                packet.to === "treasury"
+                  ? { left: "26%", top: [0, 0, 34], opacity: [0, 1, 1, 0], scale: 1, rotate: 0 }
+                  : {
+                      // out to the treasury, recoil off the seal, then across
+                      left: ["7%", "26%", "26%", "74%", "74%"],
+                      top: [0, 0, -7, 0, 34],
+                      rotate: [0, 0, -11, 5, 0],
+                      opacity: [0, 1, 1, 1, 0],
+                      scale: 1,
+                    }
+              }
+              exit={{ opacity: 0 }}
+              transition={{
+                duration: packet.to === "treasury" ? 1.9 : 3.2,
+                times:
+                  packet.to === "treasury" ? [0, 0.18, 0.75, 1] : [0, 0.36, 0.46, 0.8, 1],
+                ease: "easeInOut",
               }}
-              exit={{ opacity: 0, transition: { duration: 0.25 } }}
-              transition={{ type: "spring", stiffness: 90, damping: 18 }}
             >
-              <span className="rack-packet-amount mono">{packet.amount.toLocaleString()}</span>
-              <span className="rack-packet-unit mono">USDC</span>
+              {packet.amount.toLocaleString()}
+              <s>USDC</s>
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
 
-      <div className="rack-hoppers">
-        <Hopper
-          name="Treasury"
-          sub="paid while the agent is alive"
-          addr={treasury}
-          lit={!toEstate}
-          phase={phase}
-        />
-        <Hopper
-          name="Estate"
-          sub="claims venue, once it is not"
-          addr={estate}
-          lit={toEstate}
-          phase={phase}
-        />
+        <div className="vaults">
+          <Vault
+            name="Treasury"
+            addr={treasury}
+            lit={!toEstate}
+            sealed={sealed}
+            funded={treasuryFunded}
+            state={sealed ? "Sealed — no longer the destination" : "Receiving"}
+          />
+          <Vault
+            name="Estate"
+            addr={estate}
+            lit={toEstate}
+            sealed={false}
+            funded={estateFunded}
+            state={toEstate ? "Receiving" : "Closed"}
+          />
+        </div>
       </div>
-
-      <p className="rack-foot mono">
-        Same client, same price, same command. The destination is late-bound to on-chain liveness.
-      </p>
     </div>
   );
 }
 
-function Conduit() {
-  return (
-    <div className="rack-conduit" aria-hidden="true">
-      <span />
-    </div>
-  );
-}
-
-function Hopper({
+function Vault({
   name,
-  sub,
   addr,
   lit,
-  phase,
+  sealed,
+  funded,
+  state,
 }: {
   name: string;
-  sub: string;
   addr: string;
   lit: boolean;
-  phase: Phase;
+  sealed: boolean;
+  funded: boolean;
+  state: string;
 }) {
   return (
-    <div className={`hopper ${lit ? "hopper-lit" : ""}`} data-phase={CLASS_FOR[phase]}>
-      {/* The lit face is one element shared between hoppers. Moving it is the
-          animation; fading two copies would be a cross-dissolve, which reads as
-          a slide change rather than as money being routed. */}
-      {lit && (
-        <motion.div
-          layoutId="hopper-lit-face"
-          className="hopper-face"
-          transition={{ type: "spring", stiffness: 220, damping: 26 }}
-        />
-      )}
-      <div className="hopper-body">
-        <span className="hopper-name">{name}</span>
-        <span className="hopper-addr mono">{shorten(addr)}</span>
-        <span className="hopper-sub">{sub}</span>
+    <motion.div
+      className={`vault ${lit ? "on" : ""} ${sealed ? "shut" : ""} ${name === "Treasury" ? "t" : "e"}`}
+      animate={funded ? { y: [0, 8, -2, 0] } : { y: 0 }}
+      transition={{ duration: 0.58, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <h3>{name}</h3>
+      <div className="addr mono">
+        {addr.slice(0, 6)}…{addr.slice(-4)}
       </div>
-    </div>
+      <span className="state mono">{state}</span>
+      <div className={`bal mono ${funded ? "on" : ""}`}>+200,000 USDC</div>
+    </motion.div>
   );
-}
-
-function shorten(a: string): string {
-  if (!a || a.length < 12) return a;
-  return `${a.slice(0, 6)}…${a.slice(-4)}`;
 }

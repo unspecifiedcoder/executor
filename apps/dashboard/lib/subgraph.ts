@@ -205,3 +205,66 @@ export async function getAgentHistory(agentId: Hex): Promise<AgentHistory> {
     },
   };
 }
+
+
+/** A settled claim as the index has it. */
+export interface IndexedClaim {
+  creditor: string;
+  priorityClass: string;
+  allowed: number;
+  paid: number;
+}
+
+export interface SettledEstate {
+  claims: IndexedClaim[];
+  totalPaid: number;
+  shortfall: number;
+}
+
+/**
+ * The waterfall an agent's estate actually ran.
+ *
+ * Read from the index rather than written into the page, so the numbers on
+ * screen are the numbers the chain settled. If the claim set is edited on
+ * chain, this follows; a hardcoded copy would quietly diverge and the first
+ * person to notice would be a judge cross-checking against Etherscan.
+ */
+export async function getSettledEstate(agentId: string): Promise<SettledEstate | null> {
+  const data = await query<{
+    agent: {
+      claims: { creditor: string; priorityClass: string; allowedAmount: string; amountPaid: string }[];
+      executions: { totalPaid: string; shortfall: string }[];
+    } | null;
+  }>(
+    `query Settled($id: ID!) {
+       agent(id: $id) {
+         claims(first: 50) { creditor priorityClass allowedAmount amountPaid }
+         executions(first: 1, orderBy: blockNumber, orderDirection: desc) { totalPaid shortfall }
+       }
+     }`,
+    { id: agentId.toLowerCase() },
+  );
+
+  const agent = data.agent;
+  if (!agent || agent.claims.length === 0) return null;
+
+  const ORDER = ["Secured", "Administrative", "Unsecured"];
+  const claims = agent.claims
+    .map((c) => ({
+      creditor: c.creditor,
+      priorityClass: c.priorityClass,
+      allowed: Number(c.allowedAmount),
+      paid: Number(c.amountPaid),
+    }))
+    // Priority order is the whole point of a waterfall, and the index returns
+    // claims in insertion order. Sorting here rather than in the component
+    // keeps the ordering rule in one place.
+    .sort((a, b) => ORDER.indexOf(a.priorityClass) - ORDER.indexOf(b.priorityClass));
+
+  const exec = agent.executions[0];
+  return {
+    claims,
+    totalPaid: exec ? Number(exec.totalPaid) : 0,
+    shortfall: exec ? Number(exec.shortfall) : 0,
+  };
+}

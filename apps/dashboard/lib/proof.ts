@@ -29,6 +29,15 @@ export interface ProofStep {
   packet?: { amount: number; to: "treasury" | "estate" };
   /** Seconds this step holds in the replay. */
   hold: number;
+  /** Countdown shown on the clock at this step. */
+  clock: string;
+  /** How full the deadline gauge is, 0-100. */
+  gauge: number;
+  /** The heartbeat is faltering / has stopped. */
+  dying?: boolean;
+  dead?: boolean;
+  /** The waterfall has run. */
+  pour?: boolean;
 }
 
 export const AGENT3_ID =
@@ -51,6 +60,8 @@ export const PROOF_STEPS: ProofStep[] = [
     phase: "active",
     destination: "treasury",
     actor: "owner",
+    clock: "07:00",
+    gauge: 4,
     hold: 2.4,
   },
   {
@@ -61,6 +72,8 @@ export const PROOF_STEPS: ProofStep[] = [
     phase: "active",
     destination: "treasury",
     actor: "owner",
+    clock: "06:56",
+    gauge: 6,
     hold: 2.4,
   },
   {
@@ -71,6 +84,8 @@ export const PROOF_STEPS: ProofStep[] = [
     phase: "active",
     destination: "treasury",
     actor: "signer",
+    clock: "06:31",
+    gauge: 16,
     hold: 3.2,
   },
   {
@@ -83,6 +98,8 @@ export const PROOF_STEPS: ProofStep[] = [
     destination: "treasury",
     actor: "payer",
     packet: { amount: 200000, to: "treasury" },
+    clock: "06:12",
+    gauge: 21,
     hold: 4,
   },
   {
@@ -92,6 +109,9 @@ export const PROOF_STEPS: ProofStep[] = [
     phase: "active",
     destination: "treasury",
     actor: null,
+    clock: "01:41",
+    gauge: 78,
+    dying: true,
     hold: 2.6,
   },
   {
@@ -103,6 +123,9 @@ export const PROOF_STEPS: ProofStep[] = [
     phase: "administration",
     destination: "estate",
     actor: "stranger",
+    clock: "00:00",
+    gauge: 100,
+    dead: true,
     hold: 4,
   },
   {
@@ -115,6 +138,9 @@ export const PROOF_STEPS: ProofStep[] = [
     destination: "estate",
     actor: "payer",
     packet: { amount: 200000, to: "estate" },
+    clock: "00:00",
+    gauge: 100,
+    dead: true,
     hold: 4.5,
   },
   {
@@ -125,6 +151,9 @@ export const PROOF_STEPS: ProofStep[] = [
     phase: "liquidation",
     destination: "estate",
     actor: "trustee",
+    clock: "00:00",
+    gauge: 100,
+    dead: true,
     hold: 3,
   },
   {
@@ -135,6 +164,10 @@ export const PROOF_STEPS: ProofStep[] = [
     phase: "liquidation",
     destination: "estate",
     actor: "stranger",
+    clock: "00:00",
+    gauge: 100,
+    dead: true,
+    pour: true,
     hold: 5,
   },
   {
@@ -145,6 +178,10 @@ export const PROOF_STEPS: ProofStep[] = [
     phase: "resolved",
     destination: "estate",
     actor: "trustee",
+    clock: "00:00",
+    gauge: 100,
+    dead: true,
+    pour: true,
     hold: 3,
   },
 ];
