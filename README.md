@@ -41,7 +41,22 @@ less than half of what it owed.
 | **16** | **`executePlan` — the waterfall, round 1** | *anyone* | [**`0xd5c45ef3…f7f65b327f`**](https://sepolia.etherscan.io/tx/0xd5c45ef3d20a67beb6e9bbc94a25f11380147af580c0682e516ecdf7f65b327f) |
 | 17 | `resolve` — terminal state, **before** the estate is finished | **trustee** | [`0xff2d9200…692760e6179`](https://sepolia.etherscan.io/tx/0xff2d9200ac65ff3a8a4bf95db8d12aa1cdf1fbe79ee5a9fb02dd3692760e6179) |
 | 18 | late revenue: another 0.5 USDC arrives | operator | [`0x7477e4dd…49d3a6ca5d8f`](https://sepolia.etherscan.io/tx/0x7477e4dde3e2b0afd731b61d72ecfaee86c43c63ff20b640f53149d3a6ca5d8f) |
-| **19** | **`executePlan` — round 2, on a Resolved agent** | *anyone* | [**`0xae50be9a…6f2f495521`**](https://sepolia.etherscan.io/tx/0xae50be9a3ce584a0952e3a51f590b94bdd247d04687f0b60d429ca6f2f495521) |
+| **19** | **`executePlan` — round 2, run while the agent is Resolved** | *anyone* | [**`0xae50be9a…6f2f495521`**](https://sepolia.etherscan.io/tx/0xae50be9a3ce584a0952e3a51f590b94bdd247d04687f0b60d429ca6f2f495521) |
+
+**What steps 17–19 do and do not prove.** Round 2 was *funded* by step 18 — the
+fresh 0.5 USDC — and by nothing else. `resolve()` moved no money and unlocked
+no money; reading the table as "`resolve()` enabled round 2" gets the causality
+backwards, and the ordering alone would be a coincidence worth nothing. The
+property actually demonstrated is stronger than a sequence: **reaching the
+terminal `Resolved` state does not brick the estate.** `Resolved` is one-way
+and nothing in the protocol orders `resolve()` against `executePlan()`, so a
+trustee who winds the agent up first would, on a naive implementation, strand
+every creditor still owed money and every unit of late revenue permanently.
+Step 19 is the live proof that this deployment is not that implementation:
+called at a point of no return, on an agent the registry reports as `Resolved`,
+the waterfall still ran and still paid. `Estate.executePlan` accepts status 2
+*and* status 3 for exactly this reason, and
+`test_executePlan_stillRunsOnceResolved` pins it.
 
 The whole of it renders in the dashboard, which reads any agent id, not just
 the demo one: `pnpm -C apps/dashboard dev`, then
@@ -245,7 +260,32 @@ kept open precisely so these guards stay callable. It was checked live against
    registry `0x99AB…2521`; the gateway now reads `0x2946…9e39`. What they prove
    and what they don't is spelled out in `docs/PRIZES.md`.
 
-4. **The ENS succession lock, verifiable without a wallet** — the operator of
+4. **ENS decides where the money goes** — the gateway never reads the payout
+   address from `ExecutorRegistry`. It asks ENS, and pays what ENS says:
+
+   ```bash
+   RPC=https://ethereum-sepolia-rpc.publicnode.com
+
+   # the name's resolver, from the ENSv2 registry (argument is the label string)
+   cast call 0x67b728a792e789a8978b30cf1b3b641f19354b43 \
+     "getResolver(string)(address)" "executor-hackathon-demo" --rpc-url $RPC
+   # -> 0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b
+
+   # the addr record it serves - this is the address the 402 challenge quotes
+   cast call 0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b \
+     "addr(bytes32,uint256)(bytes)" \
+     0xebf5950ce1cd24d4bc0f0cabcc987510f64e6d4ec76005b69b500203c6a5e63d 60 \
+     --rpc-url $RPC
+   ```
+
+   `ExecutorResolver` stores no address — `addr()` reads
+   `getPaymentDestination()` at the block it is called in — so ENS and the
+   registry cannot disagree, and there is no stale record that could silently
+   misroute an agent's revenue. The gateway cross-checks anyway and refuses to
+   sell on mismatch. `docs/PRIZES.md` has the full walkthrough, including
+   resolution through ENS's own `UniversalResolverV2`.
+
+5. **The ENS succession lock, verifiable without a wallet** — the operator of
    `executor-hackathon-demo.eth` burned its own `ROLE_SET_RESOLVER_ADMIN`:
 
    ```bash
@@ -271,9 +311,10 @@ Five pieces:
 |---|---|---|---|
 | `ExecutorRegistry` | `contracts/src/ExecutorRegistry.sol` | One agent's resolution plan: heartbeat clock, status machine, `updatePlan`/`lockPlan`, `resolve`, and `getPaymentDestination()` | Sepolia [`0x2946…9e39`](https://sepolia.etherscan.io/address/0x2946B46c2EB5Ec532093877223Ef043b13729e39) |
 | `Estate` | `contracts/src/Estate.sol` | Creditor claims, a trustee-approved plan hash, and a priority-class distribution waterfall with pull-payment fallback | Sepolia [`0x83f4…fC7F`](https://sepolia.etherscan.io/address/0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F) (agent 2 — **has run**, twice), and the earlier [`0xD67a…286f`](https://sepolia.etherscan.io/address/0xD67a10D5466d311C2f995744937c7b9e1734286f) (demo agent — never used). Both bound to Circle USDC |
-| x402 gateway | `packages/agent-debtor/src/gateway.ts` | A real x402 resource server on Hedera testnet whose `payTo` is re-read from the registry on every request | Runs locally against Hedera testnet |
+| x402 gateway | `packages/agent-debtor/src/gateway.ts` | A real x402 resource server on Hedera testnet selling a genuine LLM query, whose `payTo` is resolved through ENS on every request | Runs locally against Hedera testnet |
+| `ExecutorResolver` | `contracts/src/ExecutorResolver.sol` | The ENS resolver in the money path. Derives `addr()` from `ExecutorRegistry` at call time, so the record cannot go stale | Sepolia [`0xa5a6…4C5b`](https://sepolia.etherscan.io/address/0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b) |
 | Dashboard | `apps/dashboard` | Next.js app doing live chain reads, plus two write routes that call `enterAdministration` / `restoreActive` | Runs locally |
-| ENSv2 name | `executor-hackathon-demo.eth` | Identity, with the resolver-admin role irreversibly revoked | Sepolia |
+| ENSv2 name | `executor-hackathon-demo.eth` | The payment destination the gateway resolves before every quote, with the resolver-admin role irreversibly revoked | Sepolia |
 
 ### What is deployed, and what each deployment proves
 
@@ -438,7 +479,7 @@ exists, is tested, and is deployed — on Sepolia, not on Arc.
 pnpm install
 cd contracts && forge install
 
-forge test                                    # 90 tests
+forge test                                    # 104 tests
 pnpm -C apps/dashboard exec tsc --noEmit
 pnpm -C apps/dashboard dev                    # dashboard on :3000
 

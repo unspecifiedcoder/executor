@@ -158,12 +158,13 @@ Don't oversell here. Judges have seen forty projects overclaim today; being
 the one team that draws its own line is worth more than another feature.
 
 > "What's real: the registry, the flip, the hosted x402 gateway, the payments,
-> the ENSv2 role lock, and the estate. 84 tests, CI, and every address in the
+> the ENSv2 role lock, ENS in the payment path, and the estate. 104 tests, CI,
+> and every address in the
 > README is verifiable with one cast call.
 >
-> What isn't: the resource behind the paywall is a demo endpoint, and a human
-> trustee still curates the claims — because a contract can't decide whether a
-> debt is real. That part is deliberate."
+> What isn't: a human trustee still curates the claims — because a contract
+> can't decide whether a debt is real. And the ENS succession lock isn't
+> permanent; it lapses if the name expires. That part is deliberate."
 
 **End on the dashboard URL on screen for the last three seconds.**
 

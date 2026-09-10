@@ -53,7 +53,8 @@ writes to it through two API routes.
 | Chain | Thing | Responsibility |
 |---|---|---|
 | Sepolia | [`ExecutorRegistry` `0x2946…9e39`](https://sepolia.etherscan.io/address/0x2946B46c2EB5Ec532093877223Ef043b13729e39) | Liveness clock, status machine, payment-destination resolution |
-| Sepolia | ENSv2 `PermissionedRegistry` `0x67b7…4b43` | Identity: `executor-hackathon-demo.eth`, resolver-admin role revoked |
+| Sepolia | ENSv2 `PermissionedRegistry` `0x67b7…4b43` | Identity **and payment path**: `executor-hackathon-demo.eth`, resolver-admin role revoked |
+| Sepolia | [`ExecutorResolver` `0xa5a6…4C5b`](https://sepolia.etherscan.io/address/0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b) | The name's ENS resolver. Derives `addr()` from `ExecutorRegistry` at call time — no stored address, so no stale record |
 | Hedera testnet | (no contract) | Settlement rail. Payments are native HBAR to plain accounts |
 | Sepolia | [`Estate` `0x83f4…fC7F`](https://sepolia.etherscan.io/address/0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F) | Agent 2's estate. Creditor claims, trustee-approved plan hash, USDC distribution waterfall — **has run, twice** |
 | Sepolia | [`Estate` `0xD67a…286f`](https://sepolia.etherscan.io/address/0xD67a10D5466d311C2f995744937c7b9e1734286f) | The demo agent's estate. Same contract, pre-`ZeroCreditor`-fix build; never funded, never used |
@@ -80,8 +81,12 @@ trustee would have to bridge it, and that bridge is not implemented.
 
 What the `Estate` deployments do and do not prove: `0x83f4…fC7F` has held real
 Circle USDC, taken four trustee-registered claims across three priority
-classes, and run `executePlan` twice — once while insolvent by 0.9 USDC, once
-after `resolve()` had already made the agent terminal. `0xD67a…286f` has done
+classes, and run `executePlan` twice — once while insolvent by 0.9 USDC, and
+once *while the agent was already `Resolved`*. That second round was funded by
+a fresh deposit, not by `resolve()`, which moves no money; what it demonstrates
+is that the terminal state does not brick the estate, which is the property
+that matters given `Resolved` is one-way and unordered with respect to
+`executePlan`. `0xD67a…286f` has done
 none of that and never will; it predates the `ZeroCreditor` fix. Everything
 neither deployment exercised — the pull-payment escrow branch, the 200-claim
 ceiling, reentrancy — is covered by 40 unit tests and by
@@ -94,8 +99,11 @@ Arc). Collapsing them removed the only hard problem in the system that had
 nothing to do with the idea: keeping a mirror of liveness state in sync across
 chains, and answering "was the mirror current when the payment was quoted".
 
-Because the registry lives on Sepolia next to ENSv2 and is read directly by
-off-chain services, a payment quote is a function of state read at quote time.
+Because the registry lives on Sepolia next to ENSv2, the ENS resolver can read
+it in the same call — `ExecutorResolver.addr()` *is* a registry read, wrapped in
+the ENS interface — so a payment quote is a function of state read at quote
+time, with no mirror to keep in sync and no window in which the name and the
+registry disagree.
 Services on other chains reading Sepolia over RPC is ordinary multi-chain
 plumbing, not a trust assumption the contract has to solve.
 
@@ -225,6 +233,7 @@ the files still in `contracts/src/` and `packages/`:
 - **Superseded.** `Receiver.sol` compiles and has unit tests but was never
   deployed; `ExecutorRegistry.sol` took over its role.
   `contracts/src/adapters/EnsAdapter.sol` targets an ENSv2 interface
-  (`authorizeAddrRoles`, `revokeAdminRole`) that does not exist in ENSv2 at all.
+  (`authorizeAddrRoles`, `revokeAdminRole`) that does not exist in ENSv2 at all;
+  `ExecutorResolver.sol` is what the payment path actually uses.
 
 The description above is recorded as history, not as a roadmap or a claim.

@@ -14,7 +14,19 @@ import { PrivateKey } from "@hiero-ledger/sdk";
 /** Points at the hosted gateway when GATEWAY_URL is set, so the same script
  * proves the flip against a service a judge can reach rather than one only
  * running on this laptop. Falls back to local for development. */
-const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://localhost:3200/research";
+const GATEWAY_BASE = process.env.GATEWAY_URL ?? "http://localhost:3200/research";
+
+/** The prompt being bought. `/research` runs this through an LLM at request
+ * time, so a different `RESEARCH_QUERY` buys a different, genuinely generated
+ * answer - which is the point of paying at all. Overridable so the demo can be
+ * run twice with different questions and show the answers differ. */
+const RESEARCH_QUERY =
+  process.env.RESEARCH_QUERY ?? "What is ENSv2 and how does it differ from ENSv1?";
+
+/** The query must be on the URL for both the 402 probe and the paid retry: the
+ * x402 resource identity includes the full URL, so probing one URL and paying
+ * against another would not settle. */
+const GATEWAY_URL = `${GATEWAY_BASE}?q=${encodeURIComponent(RESEARCH_QUERY)}`;
 const CLIENT_HEDERA_ACCOUNT_ID = "0.0.10423620";
 
 async function main(): Promise<void> {
@@ -37,6 +49,7 @@ async function main(): Promise<void> {
   const client = new x402HTTPClient(coreClient);
 
   console.log(`[client] GET ${GATEWAY_URL}`);
+  console.log(`[client] query: ${RESEARCH_QUERY}`);
   const response = await fetch(GATEWAY_URL);
 
   if (response.status !== 402) {
