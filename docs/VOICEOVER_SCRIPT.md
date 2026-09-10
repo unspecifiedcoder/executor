@@ -1,6 +1,6 @@
 # Voiceover script — timestamped to the silent recording
 
-The recording is **`media/executor-demo-silent.mp4`** — 1920×1080, 25fps, 3:00,
+The recording is **`media/executor-demo-silent.mp4`** — 1920×1080, 25fps, **3:20**,
 **no audio track at all**. Every segment below is cut to a fixed length, so
 these timestamps are exact: read each line inside its window and the picture
 will match.
@@ -9,7 +9,7 @@ will match.
 
 | rule | this video |
 |---|---|
-| 2–4 minutes | 3:00 ✅ |
+| 2–4 minutes | 3:20 ✅ |
 | ≥720p | 1080p ✅ |
 | **human voice — TTS and AI voiceover are explicitly prohibited** | that is why you are reading this and not me |
 | do not speed the video up | recorded at real time ✅ |
@@ -63,14 +63,18 @@ column of real heartbeats arriving every 30 seconds)*
 ---
 
 ## 0:45 – 1:08 · It was genuinely alive
-*(on screen: eighteen Heartbeat events, block numbers, a steady 96-second gap)*
+*(on screen: a GraphQL query to our subgraph returning eighteen heartbeats with
+their gaps)*
 
 > This is a different agent — one whose whole life already ran, start to finish.
 >
-> Here's its heartbeat history. Eighteen transactions, one every ninety-six
-> seconds, for twenty-seven minutes. A signer proving liveness on an interval —
-> and that signer is a different key from the owner, the trustee, and the
-> recovery authority. Four separate authorities, on purpose.
+> Here's its heartbeat history, out of our subgraph. Eighteen transactions, one
+> every ninety-six seconds, for twenty-seven minutes. A signer proving liveness
+> on an interval — and that signer is a different key from the owner, the
+> trustee, and the recovery authority. Four separate authorities, on purpose.
+>
+> The gap column is an indexed field. It's a number the index computed while
+> ingesting, not something the chain will hand you.
 
 ---
 
@@ -134,12 +138,33 @@ stacked — treasury above, estate below)*
 
 ---
 
-## 2:40 – 3:00 · Close, honestly
+## 2:40 – 3:00 · The whole life, one query
+*(on screen: one GraphQL request returning status, claims, execution, and every
+status change)*
+
+> Everything you just watched, in one request.
+>
+> The status. Every claim with what it was allowed and what it was actually
+> paid. The execution, with its shortfall. And every status change — with who
+> called it.
+>
+> That last column isn't in the event. It's the transaction sender, recovered
+> while indexing. It's how you can see that a stranger moved this agent into
+> administration, and the trustee only did the two steps that are actually the
+> trustee's to make.
+>
+> This is what the dashboard reads. It replaced a log scan that paged the chain
+> fifty thousand blocks at a time.
+
+---
+
+## 3:00 – 3:20 · Close, honestly
 *(on screen: back to the live dashboard)*
 
 > What's real: the registry, the flip, a hosted x402 service settling on Hedera,
-> an ENS name that decides where money goes, and a settled estate — one agent,
-> one life, all of it on a public chain. A hundred and four tests.
+> an ENS name that decides where money goes, a subgraph the dashboard actually
+> depends on, and a settled estate — one agent, one life, all of it on a public
+> chain. A hundred and four tests.
 >
 > What isn't: a human trustee still curates the claims, because a contract can't
 > decide whether a debt is real. That part is deliberate.
@@ -173,8 +198,12 @@ on a scene change, so joins are invisible.
 | enterLiquidation, block 11672934 | tx `0x8a5121bb95318a52a292ebe4df962d5a04262634bdfc2ec7de69677e90a39242` |
 | executePlan, secured paid 200000 | tx `0xb693dbab092d82cb70379969b7880bc3103874498bafe48682d0882e9a8bafc8` |
 | resolve, terminal | tx `0xba2355020125ac12cfd06af36f0e6c3593281dcdfbfd81151a660149b2bceda9` |
+| every number in the two Graph segments | one `curl` to the subgraph endpoint below |
 
 Agent `0x96abf3c7f8f72fdf248e91137fb471a442dccf3fcece378b2065616cb68c36d4`,
 estate `0xD52b37AD931F221A902fC7F43A9ed2D87Ce07C5F`, registry
 `0x2946B46c2EB5Ec532093877223Ef043b13729e39`, USDC
 `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` — all Sepolia.
+
+Subgraph: `https://api.studio.thegraph.com/query/1760047/executor/v0.1.1` —
+public, no key required.

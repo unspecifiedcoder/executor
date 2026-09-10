@@ -13,7 +13,7 @@ typed by hand**. The pipeline is:
    that would have to be lying.
 2. **`build.py`** assembles those captured outputs into the scene list, cut to
    the exact segment lengths published in `docs/VOICEOVER_SCRIPT.md`
-   (22 / 23 / 23 / 22 / 22 / 22 / 26 / 20 seconds = 3:00).
+   (22 / 23 / 23 / 22 / 22 / 22 / 26 / 20 / 20 seconds = 3:20).
 3. **`console.html`** replays them on a fixed clock, so each segment ends on its
    boundary regardless of how long anything took to render.
 4. **`record.mjs`** drives headless Chrome at 1920×1080 and records the whole

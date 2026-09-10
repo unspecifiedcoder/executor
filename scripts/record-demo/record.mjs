@@ -7,8 +7,8 @@ const CONSOLE_URL = 'file://' + path.resolve('console.built.html');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const OPEN_S = 22;    // 0:00 - 0:22  the problem
-const MID_S  = 138;   // 0:22 - 2:40  the loop
-const CLOSE_S= 20;    // 2:40 - 3:00  the close
+const MID_S  = 158;   // 0:22 - 3:00  the loop, and the index
+const CLOSE_S= 20;   // 3:00 - 3:20  the close
 
 const browser = await chromium.launch({
   executablePath: '/opt/google/chrome/chrome',

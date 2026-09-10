@@ -30,10 +30,8 @@ header{display:flex;align-items:baseline;gap:18px;flex:0 0 auto;padding-bottom:2
 @keyframes bl{50%{opacity:0}}
 #bar{flex:0 0 auto;height:2px;background:var(--line);margin:26px 0 0;position:relative}
 #fill{position:absolute;left:0;top:0;bottom:0;background:var(--live);width:0}
-#ticks{flex:0 0 auto;height:30px;position:relative}
-.tick{position:absolute;top:8px;font-family:Inter,sans-serif;font-size:11px;color:#2b3849;
-  letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
-.tick.last{transform:translateX(-100%)}
+#ticks{flex:0 0 auto;height:12px;position:relative}
+.tick{position:absolute;top:-6px;width:1px;height:7px;background:#243044}
 mark{background:none;color:var(--live);font-weight:700}
 mark.f{color:var(--flip)}
 mark.w{color:var(--warn)}
@@ -52,9 +50,7 @@ const term=document.getElementById('term'), chap=document.getElementById('chap')
       fill=document.getElementById('fill'), ticks=document.getElementById('ticks');
 let acc=0;
 SCENES.forEach(s=>{const d=document.createElement('div');d.className='tick';
-  d.style.left=(acc/TOTAL*100)+'%';d.textContent=s.title;
-  if(acc+s.dur>=TOTAL){d.classList.add('last');d.style.left='100%';}
-  ticks.appendChild(d);acc+=s.dur;});
+  d.style.left=(acc/TOTAL*100)+'%';ticks.appendChild(d);acc+=s.dur;});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 // colourise real output without altering a single character of it
 function paint(t){

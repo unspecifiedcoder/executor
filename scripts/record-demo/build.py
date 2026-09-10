@@ -22,8 +22,10 @@ scenes = [
        rd("status_alive")+"     <- Active"),
  ]},
  {"id":"alive","title":"It was genuinely alive","dur":23,"blocks":[
-   blk("cast logs --address $REGISTRY \"Heartbeat(bytes32,uint64)\" "+A3+" "+RPC, hb,
-       "a signer proving liveness every 96 seconds, for 27 minutes"),
+   blk("curl -s $SUBGRAPH -d '{ agent(id: \"0x96abf3c7…c36d4\") {\n"
+       "      heartbeatCount  heartbeats(orderBy: blockNumber) { blockNumber timestamp gapFromPrevious }\n"
+       "    } }'",
+       hb, "the gap is an indexed field, not a number computed for this slide"),
  ]},
  {"id":"paid","title":"A real payment, while alive","dur":22,"blocks":[
    blk("./scripts/route-payment.sh "+A3+"   # destination is never an argument",
@@ -65,6 +67,22 @@ scenes = [
        "  unsecured        0x356895DE…810b   paid       0\n"
        "  estate balance   0xD52b37AD…7C5F           0   drained",
        "strict priority. insolvent on purpose - that is the normal case."),
+ ]},
+ {"id":"index","title":"The whole life, one query","dur":20,"blocks":[
+   blk("curl -s $SUBGRAPH -d '{ agent(id: \"0x96abf3c7…c36d4\") {\n"
+       "      status  claims { priorityClass allowedAmount amountPaid }\n"
+       "      executions { totalPaid shortfall }\n"
+       "      statusChanges { from to caller }\n"
+       "    } }'",
+       "status            Resolved\n\n"
+       "claims            Secured         250000 allowed   200000 paid\n"
+       "                  Administrative  200000 allowed        0 paid\n"
+       "                  Unsecured       400000 allowed        0 paid\n\n"
+       "executions        totalPaid 200000   shortfall 650000\n\n"
+       "statusChanges     Active         -> Administration  by 0x72db032c…c706\n"
+       "                  Administration -> Liquidation     by 0x108efe09…a310\n"
+       "                  Liquidation    -> Resolved        by 0x108efe09…a310",
+       "caller is not in the event - it is transaction.from, recovered at index time. it is how you see a stranger moved the agent, and the trustee did not."),
  ]},
 ]
 
