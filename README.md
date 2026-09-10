@@ -683,6 +683,14 @@ There is no deployed public URL for the dashboard — run it locally.
   link in this README, and the agent-3 lifecycle those links prove is the
   strongest artifact here. That is a deliberate trade, not an oversight, and
   this table is the price of making it.
+- **`agentId` is caller-chosen, and that is fine here — stated so it is not
+  mistaken for an oversight.** `registerAgent` checks only that the id is
+  unregistered, so anyone can claim any `bytes32`. It does not reach anything:
+  the registrar is written in as `owner`, so a squatter controls only an id
+  nobody references, and `ExecutorResolver.bindNode` is admin-gated, so a
+  squatted id cannot enter the ENS payment path. The residual cost is griefing a
+  *specific* preferred id, and ids are namehash-shaped, so collisions are not
+  accidental. A namespacing scheme would be the fix if this ever mattered.
 - **The live demo agent's `estate` field is an EOA, not the `Estate` contract.** Agent `0x6574c8cc…cb37`, the one
   `executor-hackathon-demo.eth` resolves to, names `0xDE3207F4…2337` as its
   estate. That address has no code. This is not an oversight: the x402 gateway
