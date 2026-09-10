@@ -1347,3 +1347,15 @@ main {
 .layout .admin-banner{color:var(--lapsed);border-color:var(--lapsed)}
 .layout .error-banner,
 .register .error-banner{color:var(--terminal);border-color:var(--terminal)}
+
+/* The registration form states what it is about to create. Convenience defaults
+   are fine; a convenience default that silently contradicts the overview's own
+   fault condition is not. */
+.sepnote{display:flex;flex-direction:column;gap:var(--s2);padding:var(--s4);
+  border-radius:var(--s2);border:1px solid var(--border);font-size:var(--t2);line-height:1.7}
+.sepnote b{font-weight:600;letter-spacing:.1em}
+.sepnote span{color:var(--dim)}
+.sepnote.ok{border-color:rgba(53,240,192,.35)}
+.sepnote.ok b{color:var(--alive)}
+.sepnote.warn{border-color:rgba(255,181,69,.35)}
+.sepnote.warn b{color:var(--lapsed)}

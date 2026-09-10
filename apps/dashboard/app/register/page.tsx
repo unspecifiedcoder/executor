@@ -33,6 +33,43 @@ function isAddress(v: string): v is Address {
   return /^0x[a-fA-F0-9]{40}$/.test(v);
 }
 
+/** Live read of how many of the four authorities are actually distinct. */
+function SeparationNote({
+  owner,
+  signer,
+  trustee,
+  recovery,
+}: {
+  owner: string;
+  signer: string;
+  trustee: string;
+  recovery: string;
+}) {
+  const all = [owner, signer, trustee, recovery].map((a) => a.trim().toLowerCase()).filter(Boolean);
+  if (all.length < 4) return null;
+  const distinct = new Set(all).size;
+
+  return (
+    <div className={`sepnote mono ${distinct === 4 ? "ok" : "warn"}`}>
+      <b>{distinct} of 4 authorities distinct</b>
+      {distinct === 4 ? (
+        <span>
+          Owner, signer, trustee and recovery are four different keys. This agent has real
+          separation of powers — the owner cannot sign its heartbeats and the trustee cannot
+          restore it.
+        </span>
+      ) : (
+        <span>
+          Fine for a two-minute test, and prefilled that way on purpose. But one key can then drive
+          several transitions at once, so this agent has the state machine without the separation.
+          A real plan uses four keys — the demo agent does, and the one that didn&rsquo;t was
+          retired for it.
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function RegisterPage() {
   const [step, setStep] = useState<Step>("connect");
   const [account, setAccount] = useState<Address | null>(null);
@@ -232,6 +269,20 @@ export default function RegisterPage() {
               Estate (paid under administration)
               <input value={fields.estate} onChange={(e) => set("estate", e.target.value)} />
             </label>
+
+            {/* Connecting a wallet prefills all five fields with that one
+                address, because requiring five funded keys before anyone can
+                try this would stop most people at the door. But the overview
+                renders a same-address role set as a *fault*, and the previous
+                demo agent was retired for exactly that configuration - so the
+                form has to say what you are about to create rather than let the
+                convenience read as an endorsement. */}
+            <SeparationNote
+              signer={fields.heartbeatSigner}
+              trustee={fields.trustee}
+              recovery={fields.recoveryAuthority}
+              owner={account ?? ""}
+            />
             <div className="row2">
               <label>
                 Heartbeat interval (s)
