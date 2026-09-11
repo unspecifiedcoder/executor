@@ -1,6 +1,6 @@
 # Voiceover script — timestamped to the silent recording
 
-The recording is **`media/executor-demo-silent.mp4`** — 1920×1080, 25fps, **3:20**,
+The recording is **`media/executor-demo-silent.mp4`** — 1920×1080, 25fps, **3:34**,
 **no audio track at all**. Every segment below is cut to a fixed length, so
 these timestamps are exact: read each line inside its window and the picture
 will match.
@@ -9,7 +9,7 @@ will match.
 
 | rule | this video |
 |---|---|
-| 2–4 minutes | 3:20 ✅ |
+| 2–4 minutes | 3:34 ✅ |
 | ≥720p | 1080p ✅ |
 | **human voice — TTS and AI voiceover are explicitly prohibited** | that is why you are reading this and not me |
 | do not speed the video up | recorded at real time ✅ |
@@ -34,7 +34,7 @@ look up.
 in order, on public Sepolia, replayed from chain history with each step's
 transaction one click away.
 
-**Nine segments, and the fifth is the one that matters.** At 1:20 the payment
+**Ten segments, and the fifth is the one that matters.** At 1:20 the payment
 leaves aimed at the treasury, finds it sealed, and lands in the estate instead.
 That shot runs 32 seconds — the longest hold in the cut. Do not talk over the
 moment it deflects. Say the line, then stop and let it land.
@@ -147,21 +147,29 @@ stop talking.**)*
 
 ---
 
-## 2:52 – 3:20 · And this one is alive right now
-*(on screen: /vitals — the live agent, heartbeat trace running, countdown ticking)*
+## 2:52 – 3:06 · And this one is alive right now
+*(on screen: /vitals — the live agent, trace running, countdown ticking)*
 
 > That agent is finished. This one isn't.
 >
-> Same registry, same contract, beating right now — and you can register your
-> own beside it, with your own keys, and stop its heartbeat, and watch anyone at
-> all redirect its revenue.
+> Same registry, same contract, beating right now.
+
+---
+
+## 3:06 – 3:34 · And you can make your own
+*(on screen: /register — "One registry. Any agent. Your keys, your plan.")*
+
+> And you can put your own agent on it. Same contract, your wallet, your keys,
+> your gas — we hold nothing that could stop you. Register a plan, keep it
+> alive, then stop, and watch anyone at all redirect its revenue.
 >
 > What's real: the registry, the flip, a hosted x402 service selling LLM queries
 > on Hedera, an ENS name that decides where money goes, and a settled estate.
 > A hundred and twenty-six tests.
 >
 > What isn't: a human trustee still curates the claims, because a contract can't
-> decide whether a debt is real. That part is deliberate.
+> decide whether a debt is real. And a dead agent stops earning — so this matters
+> most where revenue outlives its operator. Both are on the page.
 >
 > Executor. When an agent fails, its obligations don't.
 
