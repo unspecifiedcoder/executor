@@ -729,6 +729,26 @@ There is no deployed public URL for the dashboard — run it locally.
   link in this README, and the agent-3 lifecycle those links prove is the
   strongest artifact here. That is a deliberate trade, not an oversight, and
   this table is the price of making it.
+- **A dead agent stops earning, and that bounds the whole idea.** The protocol
+  reroutes *future* revenue to creditors — but revenue usually stops arriving
+  for the same reason the agent stopped beating. So the estate collects most
+  where income survives its operator: subscriptions, streaming payments, prepaid
+  credit, in-flight settlements, a marketplace still billing on the agent's
+  behalf. For an agent whose income dies with it, the estate is close to empty
+  and the distribution is a well-executed split of very little. This is the
+  sharpest limitation of the design and it is not solvable by writing better
+  contracts.
+- **Nothing forces an agent to register, and the incentive runs the wrong way.**
+  The operator bears the cost of locking a plan; the creditor gets the benefit.
+  Adoption requires creditors with enough leverage to demand it, the way a
+  supplier demands a credit check — which is a market condition, not a feature.
+- **The operator can empty the treasury before the window lapses.** Liveness
+  ends after they know they are in trouble. Only revenue arriving *after* the
+  flip is protected.
+- **A heartbeat proves a key is signing, not that an agent is solvent.** It can
+  beat while broke or die solvent. That is why a lapse only reaches
+  Administration, which is recoverable, and why nothing pays out until a human
+  declares liquidation.
 - **`agentId` is caller-chosen, and that is fine here — stated so it is not
   mistaken for an oversight.** `registerAgent` checks only that the id is
   unregistered, so anyone can claim any `bytes32`. It does not reach anything:
@@ -791,6 +811,13 @@ There is no deployed public URL for the dashboard — run it locally.
   estate, which is correct, but the gateway does not itself trigger or read the
   waterfall. The consumer that does exist is `Estate.executePlan`, which refuses
   to run in Administration.
+
+## The pitch, and the questions it invites
+
+[`docs/PITCH.md`](docs/PITCH.md) — who the customer is (the creditor, not the
+agent), the four-minute structure, and prepared answers to the six questions
+most likely to be asked, including the one that bounds the whole design: a dead
+agent stops earning.
 
 ## How this was built
 
