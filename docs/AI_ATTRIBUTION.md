@@ -8,8 +8,13 @@ would be worth less than none.
 **Short version:** Claude Code (Opus 5) wrote most of the source. The
 architecture, the protocol design, the review method that found the worst bug in
 it, and every judgement call about what to keep and what to withdraw were the
-team's. 44 of 61 commits carry a `Co-Authored-By: Claude Opus 5` trailer, and
-`git log` will confirm every claim below.
+team's.
+
+This document is the disclosure, not the commit trailers. Many commits carry a
+`Co-Authored-By: Claude Opus 5` line and later ones do not — the convention was
+dropped partway through, which is a formatting choice and says nothing about how
+much of any given file was AI-written. Read this table instead; it covers the
+whole repository, and `git log` will confirm every specific claim below.
 
 ---
 
