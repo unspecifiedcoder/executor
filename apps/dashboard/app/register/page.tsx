@@ -393,6 +393,38 @@ export default function RegisterPage() {
               <span className="label">Locked</span>
               <span className="value">{plan.planLocked ? "yes" : "no"}</span>
             </div>
+            {/* Registration used to end here, with a truncated id and some
+                prose. That leaves a reader holding an agent and nowhere to look
+                at it - the monitoring page already reads any agent id, it just
+                was not linked. Everything below closes the loop: watch it, keep
+                it alive, kill it, watch the destination move. */}
+            <div className="next">
+              <div className="nexthead mono">Now watch it live</div>
+              <a className="btn nextbtn" href={`/agent/${agentId}`}>
+                Open your agent&rsquo;s page →
+              </a>
+              <p className="nextnote mono">
+                Live status, payment destination and full heartbeat history, read from chain and
+                the subgraph. Same page as our demo agent&rsquo;s.
+              </p>
+
+              <div className="nexthead mono">Keep it alive</div>
+              <pre className="cmd mono">
+{`AGENT_ID=${agentId} \\
+HEARTBEAT_SIGNER_KEY=0x<your signer key> \\
+BEAT_SECONDS=20 ./scripts/heartbeat.sh`}
+              </pre>
+
+              <div className="nexthead mono">Then kill it</div>
+              <p className="nextnote mono">
+                Stop that script and wait {plan.heartbeatInterval + plan.gracePeriod}s — the
+                interval plus grace you set. After that, <em>anyone</em> can call{" "}
+                <span className="mono">enterAdministration</span> and your payment destination
+                moves from your treasury to your estate. Refresh your agent&rsquo;s page and watch
+                it happen.
+              </p>
+            </div>
+
             <p className="sub">
               Your agent is live on the same contract as our demo. Anyone can read its state with{" "}
               <span className="mono">getPaymentDestination({agentId.slice(0, 10)}…)</span> and build

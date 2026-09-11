@@ -1374,3 +1374,16 @@ main {
 .register .scoping b{font-weight:600;letter-spacing:.16em;text-transform:uppercase;
   font-size:var(--t1);color:var(--dim)}
 .register .scoping span{color:var(--faint)}
+
+/* Register -> watch -> kill. The loop closes on the page rather than in a doc. */
+.register .next{display:flex;flex-direction:column;gap:var(--s2);margin:var(--s5) 0;
+  padding:var(--s5);border:1px solid var(--border);border-radius:var(--s3)}
+.register .nexthead{font-size:var(--t1);font-weight:600;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--alive);margin-top:var(--s4)}
+.register .nexthead:first-child{margin-top:0}
+.register .nextbtn{align-self:flex-start;margin-top:var(--s1);text-decoration:none;
+  border-color:var(--alive);color:var(--alive)}
+.register .nextnote{font-size:var(--t2);line-height:1.8;color:var(--dim);margin:0}
+.register .cmd{margin:var(--s1) 0 0;padding:var(--s3) var(--s4);border-radius:var(--s2);
+  background:rgba(150,190,235,.05);border:1px solid var(--border);
+  font-size:var(--t2);line-height:1.8;color:var(--text);overflow-x:auto;white-space:pre}
