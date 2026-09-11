@@ -6,6 +6,9 @@ somewhere reachable instead of into a dead account.**
 
 ---
 
+**Picking this up mid-flight?** [`docs/STATUS.md`](docs/STATUS.md) — what is
+done, what is left, and the live heartbeat that is not a daemon.
+
 **New here?** [`docs/EXPLAINER.md`](docs/EXPLAINER.md) explains the whole thing
 from scratch — the problem, the one idea, the four states, the waterfall, and a
 section on what it deliberately does not do.
