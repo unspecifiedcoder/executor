@@ -1,5 +1,7 @@
 "use client";
 
+import { usdc } from "../../lib/proof";
+
 import { motion } from "framer-motion";
 import type { IndexedClaim } from "../../lib/subgraph";
 
@@ -53,6 +55,7 @@ export default function WaterfallPour({
             <div key={c.creditor} className="lockbar">
               <span className="mono">{c.priorityClass.toUpperCase()}</span>
               <div className="tank" />
+              <span className="seal mono">SEALED</span>
             </div>
           ))}
         </div>
@@ -65,8 +68,7 @@ export default function WaterfallPour({
       <header className="fallhead">
         <span>Creditor waterfall</span>
         <span>
-          {available.toLocaleString()} available · {owed.toLocaleString()} owed · shortfall{" "}
-          {shortfall.toLocaleString()}
+          {usdc(available)} available · {usdc(owed)} owed · shortfall {usdc(shortfall)}
         </span>
       </header>
 
@@ -92,7 +94,7 @@ export default function WaterfallPour({
             </div>
             <div className="claimfoot mono">
               <span>
-                {c.paid.toLocaleString()} / {c.allowed.toLocaleString()}
+                {usdc(c.paid)} / {usdc(c.allowed)}
               </span>
               <span className={c.paid === 0 ? "none" : undefined}>
                 {!live ? "—" : c.paid === 0 ? "nothing" : "paid to the limit of funds"}

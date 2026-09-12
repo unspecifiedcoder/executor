@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import type { Phase } from "../../lib/proof";
+import { usdc, type Phase } from "../../lib/proof";
 
 /**
  * Answers the judge question: "where does the money go, and why did that
@@ -61,9 +61,6 @@ export default function FlowRack({
         <span className="revenue-tag">REVENUE</span>
         GET /research · x402 · 0.01 HBAR · Hedera · Blocky402 ↗
       </a>
-      <div className="revenue-receipt mono">
-        last settlement 0.0.7162784@1789030132 · paid, answered, and routed by the rule below
-      </div>
 
       <div className="q mono">{entryLabel}</div>
       <p className={`answer mono ${toEstate ? "e" : "t"}`}>
@@ -98,8 +95,7 @@ export default function FlowRack({
                 ease: "easeInOut",
               }}
             >
-              {packet.amount.toLocaleString()}
-              <s>USDC</s>
+              {usdc(packet.amount)}
             </motion.div>
           )}
         </AnimatePresence>
@@ -111,15 +107,19 @@ export default function FlowRack({
             lit={!toEstate}
             sealed={sealed}
             funded={treasuryFunded}
-            state={sealed ? "Sealed — no longer the destination" : "Receiving"}
+            word={sealed ? "Sealed" : "Receiving"}
+            note={sealed ? "no longer the destination" : "live destination"}
           />
+          {/* "Standby", not "Closed": the estate is armed and precommitted, and
+              a word that sounds broken undersells the whole mechanism. */}
           <Vault
             name="Estate"
             addr={estate}
             lit={toEstate}
             sealed={false}
             funded={estateFunded}
-            state={toEstate ? "Receiving" : "Closed"}
+            word={toEstate ? "Receiving" : "Standby"}
+            note={toEstate ? "live destination" : "armed — opens when the window lapses"}
           />
         </div>
       </div>
@@ -133,14 +133,18 @@ function Vault({
   lit,
   sealed,
   funded,
-  state,
+  word,
+  note,
 }: {
   name: string;
   addr: string;
   lit: boolean;
   sealed: boolean;
   funded: boolean;
-  state: string;
+  /** The state, at headline scale. Two addresses that differ only in their
+   *  last characters cannot carry a state change at a glance; two words can. */
+  word: string;
+  note: string;
 }) {
   return (
     <motion.div
@@ -149,11 +153,12 @@ function Vault({
       transition={{ duration: 0.58, ease: [0.16, 1, 0.3, 1] }}
     >
       <h3>{name}</h3>
+      <div className="vword">{word}</div>
       <div className="addr mono">
         {addr.slice(0, 6)}…{addr.slice(-4)}
       </div>
-      <span className="state mono">{state}</span>
-      <div className={`bal mono ${funded ? "on" : ""}`}>+200,000 USDC</div>
+      <span className="state mono">{note}</span>
+      <div className={`bal mono ${funded ? "on" : ""}`}>+{usdc(200000)}</div>
     </motion.div>
   );
 }

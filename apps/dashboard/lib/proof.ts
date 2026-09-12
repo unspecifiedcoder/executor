@@ -38,6 +38,17 @@ export interface ProofStep {
   dead?: boolean;
   /** The waterfall has run. */
   pour?: boolean;
+  /**
+   * An earlier receipt this step must be read against.
+   *
+   * The entire claim of the protocol is that one payer, one amount and one
+   * script produced two different recipients. A judge cannot check that when
+   * the two hashes sit fifty seconds apart in the replay - by the time the
+   * second one appears, the first is a string nobody memorised. Carrying both
+   * on the same frame turns the caption's assertion into two receipts that can
+   * be compared without trusting us.
+   */
+  compare?: { tx: `0x${string}`; to: "treasury" | "estate"; block: number };
 }
 
 export const AGENT3_ID =
@@ -131,9 +142,16 @@ export const PROOF_STEPS: ProofStep[] = [
   {
     title: "Same command → estate",
     caption:
-      "Same payer, same 200000 USDC, same script. The destination changed because the agent's state did.",
+      "Same payer, same 0.2 USDC, same script. The destination changed because the agent's state did.",
     block: 11672932,
     tx: "0x17b0f95681e3fea74423e06978d319ca1d57a20228480191f12c99d8816d37ad",
+    // The treasury payment from step 04, carried forward so both receipts are
+    // on screen at the moment the claim is made.
+    compare: {
+      tx: "0x731319100c29e25cf27270085ef91caaba946f9907cd14dfa67e33ef8ea243c5",
+      to: "treasury",
+      block: 11672895,
+    },
     phase: "administration",
     destination: "estate",
     actor: "payer",
@@ -158,7 +176,8 @@ export const PROOF_STEPS: ProofStep[] = [
   },
   {
     title: "executePlan",
-    caption: "Permissionless. 200000 available against 850000 owed - secured is paid, the rest are not.",
+    caption:
+      "Permissionless. 0.2 USDC available against 0.85 owed - secured is paid, the rest are not.",
     block: 11672939,
     tx: "0xb693dbab092d82cb70379969b7880bc3103874498bafe48682d0882e9a8bafc8",
     phase: "liquidation",
@@ -199,6 +218,14 @@ export const AGENT3_CLAIMS: ProofClaim[] = [
   { creditor: "0xb081dc53…042f", klass: "Administrative", allowed: 200000, paid: 0 },
   { creditor: "0x356895DE…810b", klass: "Unsecured", allowed: 400000, paid: 0 },
 ];
+
+/**
+ * Base units -> the figure an explorer shows. USDC has 6 decimals, so the
+ * contract's 200000 is Etherscan's 0.2 - and a page that prints the raw number
+ * next to a link showing the scaled one reads as two different amounts.
+ */
+export const usdc = (baseUnits: number): string =>
+  `${(baseUnits / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 6 })} USDC`;
 
 export const AGENT3_TOTALS = { available: 200000, owed: 850000, shortfall: 650000 } as const;
 

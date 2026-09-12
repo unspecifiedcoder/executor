@@ -2,11 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import FlowRack from "./FlowRack";
+import StackProof from "./StackProof";
 import WaterfallPour from "./WaterfallPour";
 import BeatTrace from "./BeatTrace";
 import LiveStrip from "./LiveStrip";
 import { PROOF_STEPS, AGENT3, AGENT3_ID, REPLAY_SECONDS } from "../../lib/proof";
 import type { IndexedClaim } from "../../lib/subgraph";
+
+/** Hashes and addresses are shown truncated because the link carries the full
+    value - the point on screen is that two of them differ, not what they are. */
+const shortTx = (tx: string) => `${tx.slice(0, 10)}…${tx.slice(-6)}`;
+const shortAddr = (a: string) => `${a.slice(0, 8)}…${a.slice(-4)}`;
 
 /**
  * The page's spine.
@@ -81,26 +87,27 @@ export default function LifecycleReplay({
   return (
     <>
       <section className="hero">
-        <div>
+        {/* One composition, not a headline competing with a panel. The subject
+            of this page is a routing decision, so the routing decision is the
+            first viewport and everything else is caption. */}
+        {/* Problem, then solution, then proof - in that order. The page used to
+            open on the thesis ("late-bound to on-chain liveness"), which is the
+            mechanism, not the motive: a reader met two labelled boxes before
+            being given any reason to care what was in them. */}
+        <div className="heroline">
+          <p className="eyebrow mono">Resolution protocol for autonomous agents</p>
           <h1>
-            When an agent fails, its obligations <em>don&rsquo;t.</em>
+            An agent dies. Its revenue <em>keeps arriving.</em>
           </h1>
           <p className="thesis">
-            The destination of a payment is late-bound to the payee&rsquo;s on-chain liveness.
-            Same client, same price, same command.
+            It lands in a treasury nobody operates, while the people it owed get nothing.
+            Executor redirects that revenue to the creditors the agent committed to{" "}
+            <strong>while it was still alive</strong> — on-chain, and without anyone&rsquo;s
+            permission.
           </p>
-          <div className="ctas">
-            <button className="cta" onClick={atEnd ? restart : () => setPlaying((p) => !p)}>
-              {atEnd ? "Replay the Sepolia proof ↻" : playing ? "Pause ‖" : "Replay the Sepolia proof ▶"}
-            </button>
-            {/* The protocol is permissionless, so the page should let a reader
-                use it rather than only watch it. Same registry, their keys,
-                their gas, no permission from us. */}
-            <a className="cta cta-2" href="/register">
-              Register your own agent →
-            </a>
-          </div>
         </div>
+
+        <p className="routeq mono">Where its revenue lands right now</p>
 
         <FlowRack
           phase={phase}
@@ -114,6 +121,23 @@ export default function LifecycleReplay({
           treasuryFunded={index >= 3 && step.destination === "treasury"}
           estateFunded={index >= 6}
         />
+
+        {/* Proof in the first viewport, not below the fold: the rack above is
+            our animation, and a reader has no reason to believe it until
+            something they can check agrees with it. */}
+        <StackProof indexLabel={live.index} />
+
+        <div className="ctas">
+          <button className="cta" onClick={atEnd ? restart : () => setPlaying((p) => !p)}>
+            {atEnd ? "Replay the Sepolia proof ↻" : playing ? "Pause ‖" : "Replay the Sepolia proof ▶"}
+          </button>
+          {/* The protocol is permissionless, so the page should let a reader
+              use it rather than only watch it. Same registry, their keys,
+              their gas, no permission from us. */}
+          <a className="cta cta-2" href="/register">
+            Register your own agent →
+          </a>
+        </div>
       </section>
 
       <div className={`replaymark mono ${index > 0 || playing ? "on" : ""}`}>
@@ -150,7 +174,42 @@ export default function LifecycleReplay({
         <div key={index} className="enter">
           <h2>{step.title}</h2>
           <p>{step.caption}</p>
-          {step.tx ? (
+          {/* Two receipts beat one assertion: where a step carries a `compare`,
+              the earlier payment is rendered beside it so the "same payer, same
+              amount, different destination" claim can be checked on the frame
+              where it is made, rather than remembered from fifty seconds ago. */}
+          {step.compare && step.tx ? (
+            <div className="receipts mono">
+              <a
+                className="rrow past"
+                href={`https://sepolia.etherscan.io/tx/${step.compare.tx}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span className="h">{shortTx(step.compare.tx)}</span>
+                <span className="ar">→</span>
+                <span className="dst">{shortAddr(AGENT3[step.compare.to])}</span>
+                <span className="lbl">{step.compare.to}</span>
+                <span className="blk">#{step.compare.block}</span>
+              </a>
+              <a
+                className="rrow now"
+                href={`https://sepolia.etherscan.io/tx/${step.tx}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span className="h">{shortTx(step.tx)}</span>
+                <span className="ar">→</span>
+                <span className="dst">{shortAddr(AGENT3[step.destination])}</span>
+                <span className="lbl">{step.destination}</span>
+                <span className="blk">#{step.block}</span>
+              </a>
+              <div className="same">
+                same payer {shortAddr(AGENT3.payer)} · same 0.2 USDC ·{" "}
+                {step.block - step.compare.block} blocks apart
+              </div>
+            </div>
+          ) : step.tx ? (
             <a
               className="proof mono"
               href={`https://sepolia.etherscan.io/tx/${step.tx}`}
