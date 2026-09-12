@@ -23,7 +23,7 @@ They feel unbearable while recording. They are the best seconds in the video.
 Do not fill them.
 
 | After you say | At about | How long | What is on screen | Why you stop |
-|---|---|---|---|
+|---|---|---|---|---|
 | "One transaction. Sepolia." | 0:40 | ~16s | the signature, then the transaction being mined | a real transaction confirming — talking over it is what people do when they are covering for something |
 | "One hundredth of an HBAR." | 1:42 | ~20s | the terminal printing the settlement | let `settlement: success` land on its own |
 | "Estate." | 2:18 | 3s | the page has flipped to the estate | this is the whole video; words would bury it |
