@@ -1,0 +1,168 @@
+EXECUTOR DEMO — VOICEOVER CUE SHEET (PLAN B, re-timed)
+=========================================================
+
+This cue sheet is fitted to the EXISTING, UNCHANGED silent recording:
+  media/executor-demo-silent.mp4   (213.68s, 1920x1080, no audio track)
+
+Do not re-record or re-time the video. This sheet re-times the VOICE
+to the video, not the other way around.
+
+WHY THIS IS DIFFERENT FROM THE FIRST ATTEMPT
+----------------------------------------------
+The recorder clicks each transition AT the mark time, so every UI
+animation plays in the first ~2 seconds of its slot, then the screen
+is FROZEN (static) until the next mark. The first cue sheet started
+each narration line AT the mark and let it run 10-20s long, so every
+payoff line landed long after the picture had already resolved.
+
+Rule used here: for each beat, the KEY PHRASE lands within about 1
+second of the transition mark. That means most lines START 2-10
+seconds BEFORE their mark (spoken over the outgoing/frozen frame),
+with the payoff word landing on the cut. After the cut, remaining
+exposition is kept short and is delivered over the now-frozen new
+frame; deliberate silence is left rather than racing to fill time.
+
+Measured transition marks used for this timing (seconds):
+  0   rest-state
+  12  heartbeats
+  32  payment -> TREASURY
+  56  window-lapses / SEALED
+  80  THE DEFLECTION (peak; completes ~82)
+  112 liquidation
+  132 waterfall pours
+  156 resolved
+  172 /vitals (live agent)
+  186 /register
+  213.68 end of video
+
+HOW TO USE THIS SHEET
+----------------------
+- IN / OUT are absolute seconds into the (unchanged) video.
+- "MARK" names which transition the KEY PHRASE (marked **like this**)
+  is timed to land on/near.
+- Read at a measured, unhurried pace — slower than the AI reference
+  track if anything. The AI guide track
+  (media/GUIDE-v1-aivoice-DO-NOT-SUBMIT.mp4) is a TIMING REFERENCE
+  ONLY, not for submission (ETHGlobal bans AI voiceover) — record your
+  own voice against it, matching where the bracketed key phrases land.
+- Gaps between OUT and the next IN are intentional silence over a
+  frozen frame. Don't fill them — let the picture sit.
+
+CUE LIST
+========
+
+SEGMENT 1 — Problem  (leads into mark 12; no transition of its own)
+IN  0:00.00   OUT 0:08.52
+  An agent earns and owes money - then it stops, revenue arriving
+  at an idle wallet. **Executor decides where it goes.**
+
+SEGMENT 2 — Alive  (MARK: 12 = heartbeats)
+IN  0:08.72   OUT 0:20.86
+  One agent's lifecycle, replayed from Sepolia. **Heartbeats.**
+  Every ninety-six seconds, signed by a key that's none of the
+  other three roles. One function: get payment destination.
+  [key phrase "Heartbeats" lands at 12.00]
+
+SEGMENT 3 — Payment  (MARK: 32 = payment -> TREASURY)
+IN  0:21.65   OUT 0:37.68
+  The payer never chooses where it lands. It calls get payment
+  destination, and sends to whatever comes back. Two hundred
+  thousand units of real Circle USDC. **Goes to the treasury.**
+  Remember that: the destination isn't an argument you can pass it.
+  [key phrase "Goes to the treasury" lands at 32.00]
+
+SEGMENT 4 — Lapse  (MARK: 56 = window lapses / SEALED)
+IN  0:43.91   OUT 0:58.24
+  Heartbeats stop. Deadline expires. Enter administration is
+  called, by an address holding none of the four roles - the
+  contract checks the deadline, not the caller. **The treasury is
+  sealed.** No longer the destination.
+  [key phrase "sealed" lands at 56.00]
+
+SEGMENT 5 — DEFLECTION (the peak)  (MARK: 80 = deflection; completes ~82)
+IN  1:09.19   OUT 1:31.37
+  Same payer, same amount, same script. It calls get payment
+  destination, aims at the treasury - the treasury is sealed. The
+  answer comes back different. **The payment routes into the
+  estate.** Nothing about the payer changed. The agent's on-chain
+  state did. That's the whole idea: a payment's destination is
+  late-bound, to whether the payee is still alive.
+  [key phrase "routes" lands at 80.00; "...into the estate" resolves ~81.5s]
+
+SEGMENT 6 — Liquidation  (MARK: 112 = liquidation)
+IN  1:35.89   OUT 1:53.98
+  In administration, but no creditor can be paid yet. Deliberate -
+  because an agent in administration might still recover, and
+  paying creditors while recovery is possible, is the worst bug
+  this protocol could have. Only the trustee, declaring
+  **liquidation**, unlocks payouts.
+  [key phrase "liquidation" lands ~112.00; long silence before/after
+  is intentional — this is the calmest, most frozen stretch of the video]
+
+SEGMENT 7 — Waterfall  (MARK: 132 = waterfall pours)
+IN  2:10.95   OUT 2:33.29
+  **The waterfall runs.** And anyone can run it. Two hundred
+  thousand available, against eight hundred fifty thousand owed -
+  insolvent, the normal case. Secured paid first, pro-rata within
+  its class. Administrative and unsecured get nothing. Shortfall:
+  six hundred fifty thousand. Same USDC, that routed in a minute ago.
+  [key phrase "runs" lands at 132.00]
+
+SEGMENT 8 — Resolved  (MARK: 156 = resolved)
+IN  2:35.08   OUT 2:46.12
+  The trustee **resolves** it. Terminal - but the estate can still
+  receive late revenue, and pay it out. Winding up must not strand
+  anyone. Every step links to the one before it.
+  [key phrase "resolves" lands at 156.00]
+
+SEGMENT 9 — Vitals  (MARK: 172 = /vitals, live agent)
+IN  2:47.32   OUT 3:03.31
+  This one's finished. That one isn't. Same registry, same
+  contract - **beating, right now.** The registry. The flip. A
+  paid x402 service on Hedera. An ENS name that decides where
+  money goes. One hundred twenty-six tests.
+  [key phrase "beating" lands ~172.00]
+
+SEGMENT 10 — Register / close  (MARK: 186 = /register; must finish before 213.68)
+IN  3:05.37   OUT 3:22.05
+  **You can register your own.** Your wallet, your keys, no
+  custody held by us. What is not: a human trustee still verifies
+  claims, because a contract cannot judge whether a debt is real.
+  Executor. When an agent fails, its obligations don't.
+  [key phrase "register your own" lands ~186.00; segment ends at
+  3:22.05, ~11.6s before the 213.68s end of video]
+
+SUMMARY TABLE (seconds)
+========================
+Seg  Start     Duration   End        Mark    Landing word
+1    0.000     8.520      8.520      -       "Executor decides where it goes"
+2    8.719     12.144     20.863     12      "Heartbeats"
+3    21.649    16.032     37.681     32      "Goes to the treasury"
+4    43.910    14.328     58.238     56      "sealed"
+5    69.193    22.176     91.369     80      "routes" (...estate ~81.5)
+6    95.888    18.096     113.984    112     "liquidation"
+7    130.950   22.344     153.294    132     "runs"
+8    155.077   11.040     166.117    156     "resolves"
+9    167.324   15.984     183.308    172     "beating"
+10   185.366   16.680     202.046    186     "register your own"
+
+Final line ends at 202.046s, 11.634s before the 213.68s video end.
+
+TRIMS MADE FROM THE APPROVED SCRIPT (content preserved, wording tightened
+only for timing — no new technical claims added)
+--------------------------------------------------------------------------
+- Seg 1: cut "autonomous", "that money ... instead" filler to fit the
+  8.4s available before the mark-12 setup must start.
+- Seg 2: dropped "four separate roles on purpose" and "Alive means the
+  treasury" (redundant with Seg 3's payoff) — the heartbeats/roles
+  window (12-32s) is only 20s wide and had to also fit Seg 3's setup.
+- Seg 3: moved "the destination is not an argument you can pass it"
+  from before the payoff to after it (there's slack in the 32-56s
+  window; none before the mark).
+- Seg 6: kept in full — this window (80-112) and the next (112-132)
+  have the most slack in the whole video, so nothing needed cutting.
+- Seg 8: cut "Ten transactions" and "on a public chain" — the
+  156-172s window is only 16s and also has to fit Seg 9's setup.
+- Seg 9: moved the "what is real" recap list (registry, flip, x402,
+  ENS, 126 tests) here from Seg 10, since Seg 10's post-186s window
+  is only 27.68s and can't fit the full closing pitch plus the recap.

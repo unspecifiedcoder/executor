@@ -164,7 +164,7 @@ cast call $REG "getPaymentDestination(bytes32)(address)" $A3 --rpc-url $RPC # th
 Or query the subgraph for the whole life in one request:
 
 ```bash
-curl -s https://api.studio.thegraph.com/query/1760047/executor/v0.1.1 \
+curl -s https://api.studio.thegraph.com/query/1760047/executor/v0.1.2 \
   -H 'content-type: application/json' -d '{"query":"{ agent(id:\"'$A3'\"){ status heartbeatCount executions{ totalPaid shortfall } claims{ priorityClass allowedAmount amountPaid } statusChanges(orderBy:blockNumber){ from to caller } } }"}'
 ```
 
@@ -625,7 +625,7 @@ Directories that run:
   reads; history and liveness statistics come from the subgraph.
 - `subgraph/` — the Graph subgraph indexing `ExecutorRegistry` and, through a
   dynamic data source template, every `Estate` an agent has pointed at. Live at
-  `https://api.studio.thegraph.com/query/1760047/executor/v0.1.1`.
+  `https://api.studio.thegraph.com/query/1760047/executor/v0.1.2`.
 - `scripts/route-payment.sh` — pays an agent by reading
   `getPaymentDestination` at payment time. Takes an agent id and **no
   destination**, which is what makes rows 6 and 9 above meaningful.

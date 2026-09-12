@@ -14,16 +14,39 @@ the repo; this file is for what is **not** obvious from the code.
 - Subgraph live and load-bearing — the dashboard has no RPC fallback
 - Dashboard deployed, three routes on one design system
 - x402 gateway live on Hedera, ENS in the payment path
-- **Demo video: `media/executor-demo-silent.mp4`** — 3:34, 1920×1080, H.264,
-  **no audio track** (ETHGlobal prohibits TTS/AI voiceover)
-- `docs/VOICEOVER_SCRIPT.md` timed to the video's ten beats
+- **Demo video v2: `media/executor-demo-v2-silent.mp4`** — 3:10, 1920×1080,
+  H.264, **no audio track** (ETHGlobal prohibits TTS/AI voiceover). Supersedes
+  the 3:34 `executor-demo-silent.mp4`, which is kept as a fallback.
+  v2 adds both USDC receipts on the deflection frame and fills the register
+  form on camera.
+- **Claim audit (2026-09-12).** Every claim in `docs/PRIZES.md` was verified
+  against chain state, one track at a time. What it found and fixed:
+  - The Graph: `PlanApproved` fired on-chain but had no handler. Fixed and
+    redeployed as **v0.1.2** — all 8 `Estate.sol` events now indexed.
+  - ENS: the transactions table documented the *superseded* resolver
+    generation. Rewritten with the real current-generation hashes.
+  - Hedera: the section said a fresh payment against the current registry was
+    outstanding; it already existed. Corrected.
+  - `SUBMISSION.md` claimed "44 of 61 commits" carry an AI trailer — the real
+    numbers were 38 of 73, and the doc invited judges to check. Count removed.
+  - The gateway URL in `SUBMISSION.md` returned 400 (it needs `?q=`).
+  - UI said `200000 USDC` where Etherscan says `0.2 USDC`. Now labelled base
+    units.
 
 ## Not done
 
-1. **Record the voiceover.** The only thing on the critical path. Read
-   `docs/VOICEOVER_SCRIPT.md` over the silent video. A phone is fine as a
-   *microphone* — the rule only bans filming on one.
-2. **Submit.** Copy is in `docs/SUBMISSION.md`. Three partner prizes:
+1. **Record the voiceover.** The only thing on the critical path. Use
+   `docs/VOICEOVER_CUES_v2.txt` (fitted to the v2 video, every line timed to
+   land *on* its cut). A phone is fine as a *microphone* — the rule only bans
+   filming on one.
+2. **One ENS claim is still false.** The "both branches on live chain state"
+   demo in `PRIZES.md` tells the reader to run a `cast call` that returns
+   `0x0`, because agent 2 was never bound on the *current* resolver. The fix is
+   one `bindNode` call from the admin key (`PRIVATE_KEY` in `.env` = `0x72db032c…dc706`,
+   which is the resolver's `admin`); the dry run confirms it would return the
+   documented `0x83f447FA…FfC7F`. Not done — it needs an approved on-chain
+   write.
+3. **Submit.** Copy is in `docs/SUBMISSION.md`. Three partner prizes:
    **ENS · Hedera · The Graph**. A partner's multiple tracks count as one
    selection, so tick every track each of them offers.
 
@@ -45,7 +68,7 @@ HEARTBEAT_SIGNER_KEY="$AGENT3_SIGNER_KEY" BEAT_SECONDS=45 ./scripts/heartbeat.sh
 Check it is actually landing — a running process is not proof:
 
 ```bash
-curl -s -X POST https://api.studio.thegraph.com/query/1760047/executor/v0.1.1 \
+curl -s -X POST https://api.studio.thegraph.com/query/1760047/executor/v0.1.2 \
   -H 'content-type: application/json' \
   -d '{"query":"{agent(id:\"0x6574c8cc5e4ca438a061eb83708582b10658d3a1a7334a8d94b6f6a1960dcb37\"){heartbeatCount lastHeartbeat}}"}'
 ```
@@ -82,7 +105,7 @@ ExecutorResolver   0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43   v2, ENS points h
 Estate (agent 3)   0xD52b37AD931F221A902fC7F43A9ed2D87Ce07C5F
 USDC (Circle)      0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238
 ENS name           executor-hackathon-demo.eth  (ENSv2 beta, Sepolia)
-Subgraph           https://api.studio.thegraph.com/query/1760047/executor/v0.1.1
+Subgraph           https://api.studio.thegraph.com/query/1760047/executor/v0.1.2
 Dashboard          https://executor-dashboard.vercel.app
 Gateway            https://executor-gateway.vercel.app/research
 ```

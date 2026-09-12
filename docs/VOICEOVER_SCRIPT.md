@@ -207,5 +207,5 @@ estate `0xD52b37AD931F221A902fC7F43A9ed2D87Ce07C5F`, registry
 `0x2946B46c2EB5Ec532093877223Ef043b13729e39`, USDC
 `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` — all Sepolia.
 
-Subgraph: `https://api.studio.thegraph.com/query/1760047/executor/v0.1.1` —
+Subgraph: `https://api.studio.thegraph.com/query/1760047/executor/v0.1.2` —
 public, no key required.

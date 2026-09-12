@@ -112,10 +112,12 @@ cast call 0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43 \
 ```
 
 **Through ENS's own resolution entry point.** The name also resolves via the
-canonical `UniversalResolverV2` from `ensdomains/contracts-v2`
-(`contracts/deployments/sepolia/UniversalResolverV2.json`,
-`0x85edf8b6b7d4211e2b07aa687506b746357b92cf`), so this is standard ENS
-resolution and not a bespoke read path:
+canonical `UniversalResolverV2` at
+[`0x85edf8b6b7d4211e2b07aa687506b746357b92cf`](https://sepolia.etherscan.io/address/0x85edf8b6b7d4211e2b07aa687506b746357b92cf),
+so this is standard ENS resolution and not a bespoke read path. (That address
+comes from `contracts/deployments/sepolia/UniversalResolverV2.json` in the
+**`ensdomains/contracts-v2`** repository — it is not a file in this one, and the
+path is given here only so the provenance can be checked upstream.)
 
 ```bash
 cast call 0x85edf8b6b7d4211e2b07aa687506b746357b92cf \
@@ -129,8 +131,8 @@ cast call 0x85edf8b6b7d4211e2b07aa687506b746357b92cf \
 Note that the `UpgradableUniversalResolverProxy` at `0xeEeE…EeEe` and the
 `ManagedUniversalResolverProxy` at `0x6d80…e6F1` both **revert** for this name.
 They front an older generation of the ENSv2 beta contracts; three generations
-are live on Sepolia simultaneously and only `deployments/sepolia` on `main`
-matches the registry this project uses. That is a property of the beta, not of
+are live on Sepolia simultaneously, and only the `deployments/sepolia` set on
+`main` of `ensdomains/contracts-v2` matches the registry this project uses. That is a property of the beta, not of
 this name, and it is stated here rather than left for a judge to trip over.
 
 **Both branches of the derivation, on live chain state.** The demo agent is
@@ -151,12 +153,45 @@ disturbing the live demo agent. Only the parent name is resolvable through ENS.
 
 ### Transactions
 
+There are two generations of this resolver on Sepolia. Everything above
+describes the **current** one, `0x52fccD0B…87E43`, so that is what this table
+documents first. An earlier version of this table listed the superseded
+generation's transactions under headings that implied they were the live ones.
+
+**Current generation — `0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43`**
+
+| What | Transaction | Block |
+|---|---|---|
+| `bindNode` (demo agent → the live resolver) | [`0x851c5b7e…2ee52d45`](https://sepolia.etherscan.io/tx/0x851c5b7ef518047feb63f03a480b56ea84470d6b0b1f5137ae814d592ee52d45) | 11673801 |
+| `setResolver`, pointing the name here | [`0x9521a072…0dc8404d`](https://sepolia.etherscan.io/tx/0x9521a072913b1b4ba39b57bca83ceea75ef43d9c415837f5ee6092270dc8404d) | 11673834 |
+
+The contract is at
+[`0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43`](https://sepolia.etherscan.io/address/0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43)
+— Etherscan's "Contract Creator" row there is the deploy. It is cited as an
+address rather than a hash because the address is what every claim on this page
+depends on.
+
+Verify the bind without trusting this table — it is the only `NodeBound` event
+this resolver has ever emitted:
+
+```bash
+cast logs --address 0x52fccD0BaFeFfc0cb85aB50F90a3CFb7fB487E43 \
+  --from-block 11673700 --to-block 11673900 --rpc-url $RPC
+# -> node    0xebf5950c…a5e63d  = namehash("executor-hackathon-demo.eth")
+#    agentId 0x6574c8cc…0dcb37  = the demo agent
+```
+
+**Superseded generation — `0xa5a6d10E765B8A07c0662D204d3d3418E1e74C5b`**
+
+Listed for completeness. The name no longer points here and nothing on the
+payment path reads it.
+
 | What | Transaction |
 |---|---|
-| Deploy `ExecutorResolver` | [`0xf0e3e0ca…702c7c03b`](https://sepolia.etherscan.io/tx/0xf0e3e0ca5387f885f2b043f8ec9e6ca64744ab8a23e5bc9d291a6c0702c7c03b) (block 11672671) |
-| `bindNode` (demo agent) | [`0x43f85d8c…302e6576ea`](https://sepolia.etherscan.io/tx/0x43f85d8cc5847f1cc6fb04fd829ebbf928b6a24087e7f1d886e6ef302e6576ea) |
-| `setResolver` on the ENSv2 registry | [`0xae3f40ff…6a00248d2e40`](https://sepolia.etherscan.io/tx/0xae3f40ffd46a1d97ee7ad844a37de2195714060f99711e7187296a00248d2e40) |
-| `bindNode` (agent 2, estate branch) | [`0x98499066…8ccd71c4c`](https://sepolia.etherscan.io/tx/0x984990660ce185925fcab8b7477a9d355575643c56c6af2f27a2fdb8ccd71c4c) |
+| Deploy of the *old* resolver | [`0xf0e3e0ca…702c7c03b`](https://sepolia.etherscan.io/tx/0xf0e3e0ca5387f885f2b043f8ec9e6ca64744ab8a23e5bc9d291a6c0702c7c03b) (block 11672671, created `0xa5a6d10E…`) |
+| `bindNode` (demo agent, old resolver) | [`0x43f85d8c…302e6576ea`](https://sepolia.etherscan.io/tx/0x43f85d8cc5847f1cc6fb04fd829ebbf928b6a24087e7f1d886e6ef302e6576ea) |
+| `setResolver` pointing the name at the old resolver | [`0xae3f40ff…6a00248d2e40`](https://sepolia.etherscan.io/tx/0xae3f40ffd46a1d97ee7ad844a37de2195714060f99711e7187296a00248d2e40) |
+| `bindNode` (agent 2, estate branch, old resolver) | [`0x98499066…8ccd71c4c`](https://sepolia.etherscan.io/tx/0x984990660ce185925fcab8b7477a9d355575643c56c6af2f27a2fdb8ccd71c4c) |
 
 ### The succession lock
 
@@ -216,7 +251,10 @@ bounded.
 > are **not** part of this claim. `ExecutorResolver.sol` is what the payment
 > path actually uses; these two remain only as dead code. They describe an invented registry surface
 > (`authorizeAddrRoles`, `revokeAdminRole`) that does not exist in ENSv2, they
-> were never deployed, and nothing in the running system calls them.
+> were never deployed, and neither the gateway nor the dashboard calls them at
+> runtime. `contracts/script/DeploySepolia.s.sol` and
+> `contracts/script/RegisterAgent.s.sol` do still reference `EnsAdapter`, so
+> "nothing calls them" would be too strong — nothing on the payment path does.
 
 ---
 
@@ -286,12 +324,33 @@ two addresses stored in the agent's plan.
 > existing artifacts honestly than quietly let them imply an address they
 > predate.
 >
-> **Update:** the Sepolia half of that is now done. `0x2946…9e39` has been
-> flipped for real — twice on agent 2 and once, there and back, on the demo
-> agent (see the lifecycle table in the root README). What is still outstanding
-> is a *fresh HBAR payment* made while the gateway reads `0x2946…9e39`, which
-> is what would let the Hedera table above stand on its own. It has not been
-> made, and the table is still labelled as belonging to the previous registry.
+> **Update — this gap is now closed.** `0x2946…9e39` has been flipped for real
+> (twice on agent 2, and once there-and-back on the demo agent — see the
+> lifecycle table in the root README), *and* the fresh HBAR payment has since
+> been made against the hosted gateway while it reads `0x2946…9e39`:
+>
+> | Hedera transaction ID | Destination | Amount | When |
+> |---|---|---|---|
+> | `0.0.7162784-1789015892-439309081` | `0.0.10423643` (treasury) | 0.01 HBAR | 2026-09-10 04:51 UTC |
+>
+> ```bash
+> curl "https://testnet.mirrornode.hedera.com/api/v1/transactions/0.0.7162784-1789015892-439309081"
+> # -> result SUCCESS, 0.0.10423620 -1000000 / 0.0.10423643 +1000000
+> ```
+>
+> The destination is the treasury because the demo agent was Active when it was
+> paid. Together with the live endpoint below, this stands on its own and does
+> not depend on the three older rows:
+>
+> ```bash
+> curl https://executor-gateway.vercel.app/payto
+> # -> executorRegistry 0x2946b46c…29e39, registryCrossCheck "passed",
+> #    hederaAccount 0.0.10423643
+> ```
+>
+> The three rows in the table above are kept because they are real and they
+> show one client account landing in two different destinations — but they are
+> no longer the evidence this track rests on.
 
 > `packages/agent-debtor/src/server-hedera.ts` used to sit next to `gateway.ts`
 > as a stub whose `startServer` only logged "would listen on…". It has been
@@ -470,9 +529,34 @@ displaced is gone from the read path.
 
 | | |
 |---|---|
-| Endpoint | `https://api.studio.thegraph.com/query/1760047/executor/v0.1.1` (public, no key) |
+| Endpoint | `https://api.studio.thegraph.com/query/1760047/executor/v0.1.2` (public, no key) |
 | Source | [`subgraph/`](../subgraph) — `schema.graphql`, `subgraph.yaml`, `src/registry.ts`, `src/estate.ts` |
 | Network | Sepolia, from the registry's deploy block 11669841 |
+| Event coverage | all 8 events `Estate.sol` declares, plus the registry's |
+
+### Complete event coverage, checkable
+
+An index that silently drops an event is worse than no index, because the gap
+looks like "it did not happen". Every event `Estate.sol` declares has a handler:
+`ClaimRegistered`, `PlanApproved`, `ClaimPaid`, `PayoutEscrowed`,
+`PayoutClaimed`, `PlanExecuted`, `SurplusSwept`, `ReturnedToTreasury`.
+
+`PlanApproved` matters most of those: it is the trustee approval that gates the
+whole waterfall, so approval and execution can be read as one sequence.
+
+```graphql
+{ planApprovals { planHash trustee blockNumber estate } }
+# -> 11672257  estate 0x83f447fab…  trustee 0xd09e929e…
+#    11672776  estate 0xd52b37ad9…  trustee 0x108efe09…
+```
+
+Match `planHash` against `planExecutions` to pair each approval with the
+distribution it authorised.
+
+> An earlier version of this subgraph (`v0.1.2`'s predecessor) handled only 5 of
+> the 8 Estate events. `PlanApproved` had fired twice on-chain and was invisible
+> to the index — found by auditing the manifest against the contract rather than
+> against itself, and fixed rather than reworded.
 
 ### Why an index and not an RPC call
 
@@ -519,7 +603,7 @@ the design does not have.
 ### Verify it
 
 ```bash
-curl -s https://api.studio.thegraph.com/query/1760047/executor/v0.1.1 \
+curl -s https://api.studio.thegraph.com/query/1760047/executor/v0.1.2 \
   -H 'content-type: application/json' \
   -d '{"query":"{ agent(id:\"0x96abf3c7f8f72fdf248e91137fb471a442dccf3fcece378b2065616cb68c36d4\"){ status heartbeatCount executions{ totalPaid shortfall } claims{ priorityClass allowedAmount amountPaid } statusChanges(orderBy:blockNumber){ from to caller } } }"}'
 ```

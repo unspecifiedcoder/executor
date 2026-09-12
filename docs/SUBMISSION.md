@@ -3,8 +3,7 @@
 Paste-ready text for the submission form. Every claim here is verifiable — the
 addresses and hashes resolve on Sepolia and HashScan, and the two URLs are live.
 
-**Partner prizes to select (3 max):** ENS · Hedera · and one more — see the note
-at the bottom.
+**Partner prizes to select (3 max):** ENS · Hedera · The Graph.
 
 ---
 
@@ -57,7 +56,10 @@ waterfall. That gate is the most important line in the project.
 
 **Live now:**
 - Dashboard — https://executor-dashboard.vercel.app
-- x402 gateway — https://executor-gateway.vercel.app/research
+- x402 gateway — https://executor-gateway.vercel.app/research?q=What%20is%20ENSv2%3F
+  (the `?q=` is required; without it the endpoint returns 400 and charges nothing)
+- Payment path, resolved live — https://executor-gateway.vercel.app/payto
+  (one GET: ENS name → resolver → payTo → registry cross-check → Hedera account)
 - ExecutorRegistry — `0x2946B46c2EB5Ec532093877223Ef043b13729e39` (Sepolia)
 - Estate with a settled waterfall — `0x83f447FAb4E1267Ca5fd6Ebe151a93b462EFfC7F`
 
@@ -143,7 +145,7 @@ lock is not permanent past name expiry, and that limit is documented.
 
 **The Graph — Best AI Tooling or AI Use Case.** The dashboard's history and
 liveness statistics come from `subgraph/`, live at
-`https://api.studio.thegraph.com/query/1760047/executor/v0.1.1` (public, no key).
+`https://api.studio.thegraph.com/query/1760047/executor/v0.1.2` (public, no key).
 This is a replacement, not an addition: the chunked `eth_getLogs` scan it
 displaced has no callers left. Two fields carry the weight —
 `Heartbeat.gapFromPrevious`, computed during ingestion, which the dashboard
@@ -162,8 +164,10 @@ rather than as a fourth filing.
 
 ## AI tool use
 
-Claude Code (Opus 5) wrote most of the source; 44 of 61 commits carry a
-`Co-Authored-By` trailer and `git log` confirms it. The protocol design, the
+Claude Code (Opus 5) wrote most of the source. Earlier commits carry a
+`Co-Authored-By` trailer and later ones do not — the convention changed
+mid-project, so the trailer count is not a measure of how much was AI-written
+and is deliberately not quoted here. The protocol design, the
 contract structs and variables, the adversarial review method, and every
 judgement about what to ship or withdraw were the team's.
 `docs/AI_ATTRIBUTION.md` documents this file by file, as the submission rules

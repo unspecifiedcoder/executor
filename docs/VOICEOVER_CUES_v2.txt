@@ -1,0 +1,209 @@
+EXECUTOR DEMO v2 — VOICEOVER CUE SHEET (re-timed)
+=========================================================
+
+This cue sheet is fitted to the EXISTING, UNCHANGED silent recording:
+  media/executor-demo-v2-silent.mp4   (190.72s, 1920x1080, no audio track)
+
+Do not re-record or re-time the video. This sheet re-times the VOICE
+to the video, not the other way around.
+
+WHY THE LINES START BEFORE THEIR MARKS
+----------------------------------------------
+The recorder clicks each transition AT the mark time, so every UI
+animation plays in the first ~2 seconds of its slot, then the screen
+is FROZEN (static) until the next mark. If narration started AT the
+mark, the payoff word would land 10-20s late, well after the picture
+had already resolved (this was the bug in an earlier attempt).
+
+Rule used here: for each beat, the KEY PHRASE lands within about 1
+second of the transition mark. In v2 the marks are much closer
+together than in the v1 cut (gaps of 10-24s instead of 12-32s), so
+almost every segment leads with its key phrase as the very first
+word or two of the clip (e.g. "Sealed.", "Liquidation.", "Runs.",
+"Resolves.") with only a fraction of a second of lead-in, then the
+rest of the sentence trails AFTER the cut, spoken over the next
+frozen frame. This still satisfies "lands within ~1s of the mark" —
+it just means almost no setup plays before the cut in the tightest
+windows. Where a window is wide (the deflection, 56→80s), there's
+room for the fuller sentence before the payoff and a long, unhurried
+tail after it.
+
+Measured transition marks used for this timing (seconds), from the
+recorder's own log:
+  0     overview at rest (destination = treasury)
+  10    step 03 - eighteen heartbeats
+  26    step 04 - payment lands in TREASURY
+  42    step 06 - window lapses, treasury SEALED
+  56    step 07 - THE DEFLECTION (peak)
+  80    step 08 - liquidation + heartbeat flatline
+  94    step 09 - executePlan waterfall pours
+  112   step 10 - resolved
+  130   /vitals - the live agent, still beating
+  142   /register - form starts being typed live
+  158   form fully filled; dwell on completed plan
+  190.72 end
+
+HOW TO USE THIS SHEET
+----------------------
+- IN / OUT are absolute seconds into the (unchanged) video.
+- "MARK" names which transition the KEY PHRASE (marked **like this**)
+  is timed to land on/near.
+- Read at a measured, unhurried pace. The AI guide track
+  (media/GUIDE-v2-aivoice-DO-NOT-SUBMIT.mp4) is a TIMING REFERENCE
+  ONLY, not for submission (ETHGlobal bans AI voiceover) — record
+  your own voice against it, matching where the bracketed key
+  phrases land.
+- Gaps between OUT and the next IN are intentional silence over a
+  frozen frame. Don't fill them — let the picture sit.
+
+CUE LIST
+========
+
+SEGMENT 1 — Problem (leads into mark 10; no mark of its own)
+IN  0:00.00   OUT 0:06.72
+  An agent earns money and owes money. Then it stops - and
+  **revenue keeps arriving, unclaimed.**
+
+SEGMENT 2 — Alive (MARK: 10 = eighteen heartbeats)
+IN  0:08.99   OUT 0:21.99
+  **Heartbeats.** Every ninety-six seconds, signed by a key that's
+  not the owner's, the trustee's, or the recovery authority's.
+  Every payment calls get payment destination. Alive means the
+  treasury.
+  [key phrase "Heartbeats" lands at 10.00]
+
+SEGMENT 3 — Payment (MARK: 26 = payment lands in TREASURY)
+IN  0:24.71   OUT 0:38.73
+  **Into the treasury.** The payer never chooses the destination -
+  it calls get payment destination, and sends whatever comes back
+  two hundred thousand units of real Circle USDC. The destination
+  isn't an argument you can pass it.
+  [key phrase "Into the treasury" lands at 26.00]
+
+SEGMENT 4 — Lapse (MARK: 42 = window lapses, treasury SEALED)
+IN  0:41.18   OUT 0:53.11
+  **Sealed.** Heartbeats stopped, the deadline expired, and enter
+  administration was called - by an address holding none of the
+  four roles. The contract checks the deadline, not the caller.
+  [key phrase "Sealed" lands at 42.00]
+
+SEGMENT 5 — DEFLECTION, the peak (MARK: 56; 24s hold to 80)
+IN  0:53.81   OUT 1:17.69
+  **The payment routes into the estate.** Same payer, same amount,
+  same script - aimed at the treasury, sealed, different answer.
+  Both receipts sit on screen together - same payer, thirty-seven
+  blocks apart, each linking to Etherscan. Nothing about the payer
+  changed - the agent's on-chain state did. A payment's destination
+  is late-bound, to whether the payee is still alive.
+  [key phrase "routes into the estate" lands at 56.00; this segment
+  gets the whole 24s window because it's the thematic peak - it's
+  the only one that unfolds AFTER its mark instead of racing to it]
+
+SEGMENT 6 — Liquidation (MARK: 80 = liquidation + heartbeat flatline)
+IN  1:18.95   OUT 1:31.52
+  **Liquidation.** In administration - no creditor paid yet:
+  recovery's still possible, and paying during recovery would be
+  this protocol's worst bug. Only the trustee can unlock payouts.
+  [key phrase "Liquidation" lands at 80.00]
+
+SEGMENT 7 — Waterfall (MARK: 94 = executePlan waterfall pours)
+IN  1:33.13   OUT 1:50.10
+  **Runs.** Anyone can run it. Two hundred thousand available,
+  against eight hundred fifty thousand owed - insolvent. Secured
+  is paid first, pro-rata within its class; administrative and
+  unsecured get nothing. Shortfall: six hundred fifty thousand.
+  [key phrase "Runs" lands at 94.00]
+
+SEGMENT 8 — Resolved (MARK: 112 = resolved)
+IN  1:50.95   OUT 2:00.95
+  **Resolves.** The trustee resolves it - terminal, but the estate
+  can still receive late revenue, and pay it out. Winding up must
+  not strand anyone.
+  [key phrase "Resolves" lands at 112.00]
+
+SEGMENT 9 — Vitals (MARK: 130 = /vitals, the live agent still beating)
+IN  2:04.62   OUT 2:11.34
+  That agent is finished. This one isn't. Same registry, same
+  contract - **beating**, right now.
+  [key phrase "beating" lands ~130.00]
+
+SEGMENT 10 — Register, live typing (MARK: 142; narration tracks the
+              typing through the 142-158 window)
+IN  2:20.49   OUT 2:36.81
+  **You can register your own.** Four authorities - owner, trustee,
+  recovery, oracle - and the page confirms: four of four, distinct.
+  The owner can't sign its own heartbeats. Your wallet, your keys -
+  no custody held by us.
+  [key phrase "register your own" lands at 142.00; the four-
+  authorities line and the "4 of 4 distinct" confirmation play
+  while the viewer watches the fields being typed and the form
+  validate, through ~156s]
+
+SEGMENT 11 — Close (over the 158-190.72 dwell on the completed form)
+IN  2:37.30   OUT 3:00.36
+  **What's real** - the registry, the flip, a paid x402 service on
+  Hedera, an ENS name that decides where money goes, a settled
+  estate, one hundred twenty-six tests. What's not: a human trustee
+  still verifies claims - a contract can't judge whether a debt is
+  real. Executor. When an agent fails, its obligations don't.
+  [key phrase "What's real" lands ~158.00; final line ends at
+  3:00.36, 10.4s before the 190.72s end of video]
+
+SUMMARY TABLE (seconds)
+========================
+Seg  Start     Duration   End        Mark    Landing word
+1    0.000      6.720      6.720      -      "revenue keeps arriving, unclaimed"
+2    8.985     13.008     21.993     10      "Heartbeats"
+3    24.711    14.016     38.727     26      "Into the treasury"
+4    41.180    11.928     53.108     42      "Sealed"
+5    53.813    23.880     77.693     56      "...routes into the estate"
+6    78.946    12.576     91.522     80      "Liquidation"
+7    93.128    16.968    110.096     94      "Runs"
+8   110.946    10.008    120.954    112      "Resolves"
+9   124.620     6.720    131.340    130      "beating"
+10  140.490    16.320    156.810    142      "register your own"
+11  157.300    23.064    180.364    158      "What's real"
+
+Final line ends at 180.364s, 10.356s before the 190.72s video end.
+
+TRIMS MADE FROM THE APPROVED SCRIPT (content preserved, wording
+tightened only for timing — no new technical claims added)
+--------------------------------------------------------------------------
+- Seg 1: cut down to the bare problem statement ("autonomous",
+  "and Executor decides where that money goes instead" moved out) -
+  the 0-10s window before mark 10 has to hold both Seg 1 and Seg 2's
+  lead-in, so Seg 1 had to shrink from an ~11.7s draft to 6.7s.
+- Seg 2: dropped "replayed from Sepolia" phrasing and "four separate
+  roles, on purpose" wording, and moved "get payment destination" up
+  earlier - the 10-26s window (16s) has to hold Seg 2's tail AND
+  Seg 3's lead-in.
+- Seg 3: restructured so "Into the treasury" leads the segment
+  (was previously the payoff at the END of a long setup clause,
+  which doesn't fit a 16s window) - the rest of the payment
+  explanation now trails after the mark-26 cut.
+- Seg 4: cut "The treasury is no longer the destination" entirely
+  (redundant with "Sealed" already landing on the cut) to fit the
+  42-56s window alongside Seg 5's setup.
+- Seg 5 (the peak): given the full 24s window since 56→80 is the
+  longest hold in the video and the thematic peak. Still had to trim
+  "Compare them yourself, without trusting us" and "two hundred
+  thousand" (redundant restatement of the amount, already said
+  "same amount") from the receipts-comparison sentence to keep the
+  segment from bleeding into Seg 6's 80-mark.
+- Seg 6: cut "declaring it" and shortened the "worst bug" clause -
+  the 80-94s window (14s) is tight and also has to hold Seg 7's
+  one-word lead-in ("Runs").
+- Seg 7: cut "the waterfall runs, and" (redundant - "Runs" already
+  led the segment) and "the normal case" - the 94-112s window (18s)
+  has to hold Seg 8's lead-in too.
+- Seg 9: kept close to the original script - the 112-130s window
+  (18s) had slack once Seg 8 was trimmed.
+- Seg 10: cut "entered one at a time" and "The trustee can't restore
+  it" (redundant with the four-distinct-roles point already made in
+  Seg 2 and re-confirmed by the on-screen "4 of 4 authorities
+  distinct" text) - the 142-158s window (16s) has to hold both the
+  live-typing narration and Seg 11's lead-in.
+- Seg 11: no cuts needed - the 158-190.72s window (32.7s) had the
+  most slack in the video, so the full closing pitch fits with room
+  to spare (10.4s of silence after the final line, over the dwell
+  on the completed form).
