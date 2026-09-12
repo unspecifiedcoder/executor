@@ -25,3 +25,6 @@ media/GUIDE-*.mp4
 out-final/
 out-v2/
 out-v3/
+
+# local permission grants — machine-specific, never ship
+.claude/settings.local.json
