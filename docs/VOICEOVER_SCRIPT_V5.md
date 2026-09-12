@@ -56,10 +56,13 @@ breathe but not enough to ramble.
 > a key that is not the owner's.
 
 ### 1:24 — where the money goes
-*(the rail, treasury lit)*
+*(the rail, treasury lit — the proof strip below it shows all three at once)*
 
-> Money arrives. The payer does not choose where it lands — it asks the
-> registry. Alive means treasury.
+> Money arrives. The payer never chooses where it lands — an **ENS** name
+> resolves it, cross-checked against the registry, and the bill settles on
+> **Hedera**.
+>
+> Alive means treasury.
 
 ### 1:36 — a real paid request
 *(terminal — the settlement block must land in silence)*
@@ -119,7 +122,8 @@ breathe but not enough to ramble.
 ### 3:36 — indexed
 *(the subgraph answering its own query)*
 
-> Every step is indexed — approval and execution joined by plan hash.
+> Every step is indexed by **The Graph** — approval and execution joined by
+> plan hash. The dashboard reads no RPC at all.
 
 ### 3:44 — close
 *(/register)*
@@ -129,6 +133,20 @@ breathe but not enough to ramble.
 > Executor. When an agent fails, its obligations don't.
 
 ---
+
+## Name the three partners out loud
+
+An earlier draft named **Hedera** twice and never said **ENS** or **The Graph**
+at all — ENS existed only as a 10px chip on screen, and the indexing line said
+"indexed" without saying by what. A track judge listening for their own
+technology would not have heard it.
+
+They are now named at 1:24, where the proof strip happens to show all three at
+once, and at 3:36. Do not trim those words for pace; trim somewhere else.
+
+"The dashboard reads no RPC at all" is doing specific work: The Graph's prize
+asks for the index to be *load-bearing*, and that clause is the difference
+between load-bearing and decorative.
 
 ## Words to avoid
 
