@@ -9,5 +9,8 @@
     "dev": "pnpm -r --parallel dev",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.63.0"
   }
 }

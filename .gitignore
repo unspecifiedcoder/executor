@@ -15,3 +15,12 @@ contracts/broadcast/*/*/dry-run/
 *.log
 .DS_Store
 apps/dashboard/tsconfig.tsbuildinfo
+
+# AI-voice timing guides — never submit, never commit (ETHGlobal bans AI
+# voiceover). Deliberately broad: these are scratch takes for pacing only, and
+# a narrower pattern already failed to catch GUIDE-v1/GUIDE-v2 once.
+media/GUIDE-*.mp4
+
+# Raw Playwright recording output — the kept cut is committed under media/.
+out-final/
+out-v2/
