@@ -63,6 +63,7 @@ templates:
         - Agent
         - Claim
         - Payout
+        - PlanApproval
         - PlanExecution
       abis:
         - name: Estate
@@ -70,6 +71,8 @@ templates:
       eventHandlers:
         - event: ClaimRegistered(indexed bytes32,indexed address,uint256,uint8)
           handler: handleClaimRegistered
+        - event: PlanApproved(indexed bytes32,indexed address)
+          handler: handlePlanApproved
         - event: ClaimPaid(indexed bytes32,indexed address,uint256)
           handler: handleClaimPaid
         - event: PayoutEscrowed(indexed bytes32,indexed address,uint256)
@@ -78,3 +81,7 @@ templates:
           handler: handlePayoutClaimed
         - event: PlanExecuted(indexed bytes32,uint256,uint256)
           handler: handlePlanExecuted
+        - event: SurplusSwept(indexed address,uint256)
+          handler: handleSurplusSwept
+        - event: ReturnedToTreasury(indexed address,uint256)
+          handler: handleReturnedToTreasury

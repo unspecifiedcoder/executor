@@ -3,7 +3,7 @@
 Indexes `ExecutorRegistry` on Sepolia and, through a dynamic data source
 template, every `Estate` any agent has ever pointed at.
 
-**Live:** `https://api.studio.thegraph.com/query/1760047/executor/v0.1.1`
+**Live:** `https://api.studio.thegraph.com/query/1760047/executor/v0.1.2`
 
 ## Why this exists
 

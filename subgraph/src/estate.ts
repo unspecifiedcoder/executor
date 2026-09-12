@@ -1,12 +1,15 @@
 import { BigInt, Bytes, dataSource, log } from "@graphprotocol/graph-ts";
 import {
   ClaimRegistered,
+  PlanApproved,
   ClaimPaid,
   PayoutEscrowed,
   PayoutClaimed,
   PlanExecuted,
+  SurplusSwept,
+  ReturnedToTreasury,
 } from "../generated/templates/Estate/Estate";
-import { Agent, Claim, Payout, PlanExecution } from "../generated/schema";
+import { Agent, Claim, Payout, PlanApproval, PlanExecution } from "../generated/schema";
 import { eventId, priorityClassName } from "./shared";
 
 /** The agent this estate belongs to, put into the template context when the
@@ -55,6 +58,25 @@ export function handleClaimRegistered(event: ClaimRegistered): void {
   claim.amountEscrowed = BigInt.zero();
   claim.registeredAtBlock = event.block.number;
   claim.save();
+}
+
+/** The trustee's commitment to the claim set that gates executePlan. Logged as
+ * its own append-only row rather than folded into PlanExecuted, because an
+ * approval can sit for a while - or forever, if the trustee stalls - before
+ * any execution follows it, and that gap is itself worth being able to see. */
+export function handlePlanApproved(event: PlanApproved): void {
+  let agent = markEstateIsContract();
+  if (agent == null) return;
+
+  let approval = new PlanApproval(eventId(event));
+  approval.agent = agent.id;
+  approval.estate = dataSource.address();
+  approval.planHash = event.params.planHash;
+  approval.trustee = event.params.trustee;
+  approval.blockNumber = event.block.number;
+  approval.blockTimestamp = event.block.timestamp;
+  approval.txHash = event.transaction.hash;
+  approval.save();
 }
 
 /** Distribution is a repeatable round, so a claim can be paid more than once as
@@ -143,4 +165,46 @@ export function handlePlanExecuted(event: PlanExecuted): void {
   execution.blockTimestamp = event.block.timestamp;
   execution.txHash = event.transaction.hash;
   execution.save();
+}
+
+/** Leftover balance once every claim is settled in full - late x402 revenue
+ * with no creditor left to owe it to. Recorded as a Payout, not a new entity,
+ * because it is the same shape as every other estate outflow; `creditor` here
+ * is just the address the trustee chose to sweep to, and `claim` stays null
+ * since nothing is owed against it. */
+export function handleSurplusSwept(event: SurplusSwept): void {
+  let agent = markEstateIsContract();
+  if (agent == null) return;
+
+  let payout = new Payout(eventId(event));
+  payout.agent = agent.id;
+  payout.estate = dataSource.address();
+  payout.claim = null;
+  payout.creditor = event.params.to;
+  payout.amount = event.params.amount;
+  payout.kind = "SWEPT";
+  payout.blockNumber = event.block.number;
+  payout.blockTimestamp = event.block.timestamp;
+  payout.txHash = event.transaction.hash;
+  payout.save();
+}
+
+/** The estate handing a recovered agent's balance back to its treasury. Also a
+ * Payout: the recipient is the treasury rather than a creditor, but it is the
+ * same "money left this estate" fact every other row here records. */
+export function handleReturnedToTreasury(event: ReturnedToTreasury): void {
+  let agent = markEstateIsContract();
+  if (agent == null) return;
+
+  let payout = new Payout(eventId(event));
+  payout.agent = agent.id;
+  payout.estate = dataSource.address();
+  payout.claim = null;
+  payout.creditor = event.params.treasury;
+  payout.amount = event.params.amount;
+  payout.kind = "RETURNED";
+  payout.blockNumber = event.block.number;
+  payout.blockTimestamp = event.block.timestamp;
+  payout.txHash = event.transaction.hash;
+  payout.save();
 }

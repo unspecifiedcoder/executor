@@ -41,6 +41,7 @@ type Agent @entity(immutable: false) {
   destinationChanges: [DestinationChange!]! @derivedFrom(field: "agent")
   claims: [Claim!]! @derivedFrom(field: "agent")
   payouts: [Payout!]! @derivedFrom(field: "agent")
+  approvals: [PlanApproval!]! @derivedFrom(field: "agent")
   executions: [PlanExecution!]! @derivedFrom(field: "agent")
 }
 
@@ -105,9 +106,29 @@ type Payout @entity(immutable: true) {
   creditor: Bytes!
   amount: BigInt!
   """
-  PAID when the token transfer landed, ESCROWED when it was refused and the creditor must pull it, CLAIMED when they did.
+  PAID when the token transfer landed, ESCROWED when it was refused and the creditor must pull it, CLAIMED when they did, SWEPT when the trustee pulled leftover surplus after every claim was settled, RETURNED when a recovered agent's balance went back to its treasury. For SWEPT and RETURNED, `creditor` holds the recipient address - a sweep target or the treasury, not a creditor with a claim - and `claim` is null.
   """
   kind: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  txHash: Bytes!
+}
+
+"""
+The trustee's commitment to a claim set, gating executePlan the way a lock
+gates a door. Kept as its own append-only log, not folded into PlanExecution,
+because an approval can be granted well before an execution follows it - or
+never, if the trustee stalls - and a judge auditing the waterfall needs to see
+that gap as clearly as the eventual execution. Match `planHash` against
+`PlanExecution.planHash` on the same estate to read approval-then-execution as
+one sequence.
+"""
+type PlanApproval @entity(immutable: true) {
+  id: Bytes!
+  agent: Agent!
+  estate: Bytes!
+  planHash: Bytes!
+  trustee: Bytes!
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   txHash: Bytes!
@@ -129,7 +150,10 @@ type PlanExecution @entity(immutable: true) {
 }
 
 """
-One row. Lets the dashboard show what the index actually covers rather than implying it has seen everything.
+One row, maintained by the registry handlers, holding running totals the
+mappings can read back cheaply. Note the dashboard shows index coverage from
+`_meta { block hasIndexingErrors }`, not from this entity, and `lastBlock` here
+advances only on registry events - not on Estate-only activity.
 """
 type IndexStatus @entity(immutable: false) {
   id: Bytes!
