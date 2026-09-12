@@ -101,9 +101,27 @@ export default function LifecycleReplay({
           </h1>
           <p className="thesis">
             It lands in a treasury nobody operates, while the people it owed get nothing.
-            Executor redirects that revenue to the creditors the agent committed to{" "}
-            <strong>while it was still alive</strong> — on-chain, and without anyone&rsquo;s
-            permission.
+          </p>
+
+          {/* The analogy does the explaining. Administration, liquidation and a
+              trustee paying creditors in strict order are not metaphors we
+              reached for - they are the states this contract implements, and
+              naming their origin makes every label downstream self-evident. */}
+          <dl className="analogy mono">
+            <div className="an-row">
+              <dt>When a company fails</dt>
+              <dd>administration → liquidation → creditors paid in order</dd>
+            </div>
+            <div className="an-row an-gap">
+              <dt>When an agent fails</dt>
+              <dd className="none">nothing. the revenue just keeps arriving.</dd>
+            </div>
+          </dl>
+
+          <p className="thesis close">
+            Executor is that process, for software — a resolution plan the agent commits to{" "}
+            <strong>while it is still alive</strong>, enforced on-chain, with no one&rsquo;s
+            permission required.
           </p>
         </div>
 

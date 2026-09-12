@@ -1086,6 +1086,20 @@ main {
 .overview .eyebrow{font-size:var(--t1);letter-spacing:.26em;text-transform:uppercase;
   color:var(--faint);margin:0 0 var(--s4)}
 .overview .thesis strong{color:var(--text);font-weight:500}
+/* The comparison is the comprehension device, so it is set as a pair of rows
+   rather than prose: the eye reads two lines and gets the whole argument. */
+.overview .analogy{display:flex;flex-direction:column;gap:var(--s2);margin:var(--s5) auto 0;
+  max-width:58ch;text-align:left;font-size:var(--t3)}
+.overview .an-row{display:grid;grid-template-columns:19ch 1fr;gap:var(--s4);align-items:baseline;
+  padding:var(--s3) 0;border-top:1px solid var(--border)}
+.overview .an-row dt{color:var(--faint);letter-spacing:.04em}
+.overview .an-row dd{margin:0;color:var(--dim)}
+.overview .an-row dd.none{color:var(--terminal)}
+.overview .an-gap{border-bottom:1px solid var(--border)}
+.overview .thesis.close{margin-top:var(--s5)}
+@media (max-width:620px){
+  .overview .an-row{grid-template-columns:1fr;gap:var(--s1)}
+}
 .overview .routeq{font-size:var(--t1);letter-spacing:.26em;text-transform:uppercase;
   color:var(--faint);text-align:center;margin:0 0 var(--s4)}
 .overview h1{font-family:var(--serif);font-weight:400;font-size:clamp(31px,4.4vw,50px);line-height:1.02;
