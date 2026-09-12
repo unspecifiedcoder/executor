@@ -31,7 +31,13 @@ compression.
 **4. Dismiss the cookie banners** on Etherscan and HashScan before recording.
 They sit directly over the evidence.
 
-**5. Check the agent is alive:**
+**5. An agent is already registered and ready** if you would rather not create
+one on camera — `0x22c4fc7e5e8db456657c12913446369e6634e186b65e01f4db19c4481cf782e3`,
+60s interval, 30s grace, currently `Active`. Its whole lifecycle has been
+round-tripped once already (flip and restore), so the commands in step 6 are
+known to work on it.
+
+**6. Check the live demo agent is alive:**
 
 ```bash
 curl -s -X POST https://api.studio.thegraph.com/query/1760047/executor/v0.1.2 \
@@ -153,25 +159,42 @@ pnpm --filter @executor/agent-debtor pay
 
 > — and a live model answers. That is the agent earning.
 
-### 6 · 1:50–2:20 — it stops
-**Screen:** overview, press **Replay the Sepolia proof**, let it run to the
-lapse. Or step with `›` to control the pace.
+### 6 · 1:50–2:20 — it stops, and anyone can act  ← **do this for real**
+**Screen:** your agent's page, `/agent/<id>`. It is not being heartbeaten, so
+its deadline has already passed.
 
 > Now the heartbeat stops. The interval passes. Then the grace period.
 >
-> And anyone can act on it — not a privileged operator. The contract checks the
-> deadline, not the caller.
+> And once that deadline is behind it, anyone can act — not a privileged
+> operator, not us. The contract checks the deadline, not the caller.
 
-*(when the seal stamps)*
+**Now flip it, live, from the terminal.** Paste this (the key is any funded
+Sepolia account — it holds none of the agent's four roles, which is the point):
 
-> The treasury is sealed.
+```bash
+cast send 0x2946B46c2EB5Ec532093877223Ef043b13729e39 \
+  "enterAdministration(bytes32)" <YOUR_AGENT_ID> \
+  --rpc-url https://ethereum-sepolia-rpc.publicnode.com \
+  --private-key $PRIVATE_KEY
+```
 
-### 7 · 2:20–2:40 — the deflection  ← **the shot**
-**Screen:** step to `Same command → estate`. Both receipts appear.
+> One call. No permission. No signature from the owner.
 
-> Same payer. Same amount. Same script.
-> It aims at the treasury. The treasury is sealed.
-> And the answer comes back different.
+### 7 · 2:20–2:45 — the destination changed  ← **the shot**
+**Screen:** reload `/agent/<id>`.
+
+Read the destination back on camera if you want it beyond doubt:
+
+```bash
+cast call 0x2946B46c2EB5Ec532093877223Ef043b13729e39 \
+  "getPaymentDestination(bytes32)(address)" <YOUR_AGENT_ID> \
+  --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+```
+
+Before: `0x7ea7f6e9…07330` — the treasury.
+After: `0xDE3207F4…12337` — the estate.
+
+> Same agent. Same registry. Same question.
 >
 > **Estate.**
 
@@ -179,7 +202,22 @@ lapse. Or step with `›` to control the pace.
 
 > Nothing about the payer changed. The agent's on-chain state did.
 
-### 8 · 2:40–3:05 — the receipts, on someone else's website
+*(If you would rather show the animation than the terminal, the overview's
+**Replay the Sepolia proof** tells the same story with agent 3's ten real
+transactions, and step 07 puts both USDC receipts on one frame. The live flip
+above is stronger; the replay is the safer take.)*
+
+**Afterwards**, put your agent back so the page reads Active again — this needs
+the recovery authority key, which is the only role that can undo it:
+
+```bash
+cast send 0x2946B46c2EB5Ec532093877223Ef043b13729e39 \
+  "restoreActive(bytes32)" <YOUR_AGENT_ID> \
+  --rpc-url https://ethereum-sepolia-rpc.publicnode.com \
+  --private-key $AGENT3_RECOVERY_KEY
+```
+
+### 8 · 2:45–3:05 — the receipts, on someone else's website
 **Screen:** window B — the two Etherscan tabs, then HashScan.
 
 > Two receipts. Same payer, same nought-point-two USDC, thirty-seven blocks
