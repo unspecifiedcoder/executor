@@ -106,9 +106,28 @@ Grace period        30
 **Then click REGISTER AGENT and sign it in MetaMask.** Do not talk over the
 signature — let the popup and the pending state play.
 
-> That is one transaction on Sepolia. The agent now exists.
+> That is one transaction on Sepolia.
 
-### 3 · 0:50–1:05 — alive means treasury
+### 3 · 0:50–1:08 — the agent you just made
+**Screen:** when the page offers it, **follow its own link to `/agent/<id>`.**
+Do not type a URL and do not jump to Etherscan here — the product's next step
+is this page, and taking it is what makes the registration mean something.
+
+You will see: `Status active` · `Plan locked yes` · interval `1m` · grace
+`30s` · the treasury lit, the estate on standby · and an on-chain history that
+already has a row in it.
+
+> And it exists. Every agent on this registry gets this page for free — a
+> public, live read of its plan and its history. Its treasury is receiving. Its
+> estate is armed and waiting.
+>
+> Nobody configured that. It is the plan, being read.
+
+*(Optional, if the take is running short: open the Etherscan link for the
+register transaction to show the receipt. Skip it if you are near time — the
+page above is the stronger shot.)*
+
+### 4 · 1:08–1:20 — alive means treasury
 **Screen:** back to the overview. Do not press Replay yet.
 
 > Money arrives. The payer does not choose where it lands — it asks the
@@ -118,7 +137,7 @@ signature — let the popup and the pending state play.
 
 > ENS. The registry cross-check. A live four-oh-two on Hedera. And the index.
 
-### 4 · 1:05–1:35 — a real paid request
+### 5 · 1:20–1:50 — a real paid request
 **Screen:** the terminal. Run it live.
 
 ```bash
@@ -134,7 +153,7 @@ pnpm --filter @executor/agent-debtor pay
 
 > — and a live model answers. That is the agent earning.
 
-### 5 · 1:35–2:10 — it stops
+### 6 · 1:50–2:20 — it stops
 **Screen:** overview, press **Replay the Sepolia proof**, let it run to the
 lapse. Or step with `›` to control the pace.
 
@@ -147,7 +166,7 @@ lapse. Or step with `›` to control the pace.
 
 > The treasury is sealed.
 
-### 6 · 2:10–2:30 — the deflection  ← **the shot**
+### 7 · 2:20–2:40 — the deflection  ← **the shot**
 **Screen:** step to `Same command → estate`. Both receipts appear.
 
 > Same payer. Same amount. Same script.
@@ -160,7 +179,7 @@ lapse. Or step with `›` to control the pace.
 
 > Nothing about the payer changed. The agent's on-chain state did.
 
-### 7 · 2:30–3:00 — the receipts, on someone else's website
+### 8 · 2:40–3:05 — the receipts, on someone else's website
 **Screen:** window B — the two Etherscan tabs, then HashScan.
 
 > Two receipts. Same payer, same nought-point-two USDC, thirty-seven blocks
@@ -168,7 +187,7 @@ lapse. Or step with `›` to control the pace.
 >
 > And on Hedera, the same settlement. Not our page saying so. Theirs.
 
-### 8 · 3:00–3:20 — creditors, in order
+### 9 · 3:05–3:25 — creditors, in order
 **Screen:** step the replay to the waterfall.
 
 > Then the creditors — and only now. An agent in administration might still
@@ -179,7 +198,7 @@ lapse. Or step with `›` to control the pace.
 > which is the normal case. Secured is paid. Administrative and unsecured get
 > nothing. That is what priority means.
 
-### 9 · 3:20–3:40 — indexed, and alive
+### 10 · 3:25–3:42 — indexed, and alive
 **Screen:** the subgraph query tab, then `/vitals`.
 
 > Every step is indexed — approval and execution joined by plan hash. The
@@ -187,7 +206,7 @@ lapse. Or step with `›` to control the pace.
 >
 > And that agent is finished. This one is not.
 
-### 10 · 3:40–3:58 — close
+### 11 · 3:42–3:58 — close
 **Screen:** `/register`.
 
 > You can register your own. Your wallet, your keys, your gas.
