@@ -24,3 +24,4 @@ media/GUIDE-*.mp4
 # Raw Playwright recording output — the kept cut is committed under media/.
 out-final/
 out-v2/
+out-v3/
