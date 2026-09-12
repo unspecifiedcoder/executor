@@ -18,6 +18,30 @@ was a stub and got deleted with the rest. It is filed now because a real
 subgraph was built, deployed and made load-bearing — not because the claim was
 softened.
 
+## Why the work is split across two chains
+
+Reviewers of these three filings will notice the registry is on Sepolia and the
+payment rail is on Hedera, and may read that as two half-integrations. It is
+one integration with a seam in a deliberate place.
+
+The registry answers *is this agent alive, and what did it commit to* — a
+single authority. The rail is wherever value moves. Welding them to one chain
+asserts that an agent can only be resolved on the chain it earns on; an agent
+earning across three venues has one death, not three. `getPaymentDestination`
+is therefore the only primitive crossing that seam, which is what makes a new
+venue cost a gateway rather than a redeploy — and what makes the Hedera filing
+a *demonstration* of the design rather than a second copy of it.
+
+The constraint behind it is also plain: **ENSv2 is a Sepolia-only beta**, and
+ENS is load-bearing here rather than decorative — the name resolves the payment
+destination. An all-Hedera build would contain no ENS.
+
+The cost is a cross-chain read on every request, and a Sepolia outage stopping
+quotes entirely. That is deliberate and fails closed: `resolvePayToAddress()`
+refuses to quote rather than falling back to a configured destination, because
+quoting a destination you could not verify is precisely how a dead agent's
+treasury gets paid.
+
 ---
 
 ## ENS

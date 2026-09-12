@@ -819,6 +819,40 @@ There is no deployed public URL for the dashboard — run it locally.
   waterfall. The consumer that does exist is `Estate.executePlan`, which refuses
   to run in Administration.
 
+## Why two chains and not one
+
+The most common question this design gets, so it is answered here rather than
+left to a guess.
+
+**Sepolia holds the registry. Hedera holds a payment rail.** They answer
+different questions, and collapsing them would lose the property the project
+exists to demonstrate.
+
+The registry is the authority on one thing: *is this agent alive, and what did
+it commit to?* That is a single source of truth. A payment rail is wherever the
+money happens to be — today HBAR over x402, tomorrow whatever a given client
+settles in. If the two are welded to one chain, you have quietly asserted that
+an agent can only be resolved on the chain it earns on. An agent earning on
+three venues has **one** death, not three, so liveness and the plan belong in
+one place and every rail should consult it.
+
+That is why `getPaymentDestination(agentId)` is the only primitive: it is the
+narrowest interface that lets a new venue cost a gateway rather than a
+redeploy.
+
+There is also a plain constraint, and it should not be dressed up: **ENSv2 is a
+beta deployed on Sepolia and nowhere else.** ENS is not decoration here — the
+name *is* the payment path, `executor-hackathon-demo.eth` → resolver →
+`addr()` → the registry's answer. An all-Hedera build would have no ENS in it.
+
+**The cost, stated plainly.** Every Hedera payment does a cross-chain read: the
+gateway calls Sepolia on every single request. That is latency, and it means a
+Sepolia outage stops prices being quoted at all. That failure is deliberate and
+it fails *closed* — `resolvePayToAddress()` refuses to quote rather than
+falling back to a cached or configured destination, because the alternative is
+quoting a price for a destination you could not verify, which is exactly how a
+dead agent's treasury gets paid.
+
 ## The pitch, and the questions it invites
 
 [`docs/PITCH.md`](docs/PITCH.md) — who the customer is (the creditor, not the
