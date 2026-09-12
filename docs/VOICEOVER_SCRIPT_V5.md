@@ -117,7 +117,14 @@ breathe but not enough to ramble.
 > which is the normal case.
 > Secured is paid. Administrative and unsecured get nothing.
 >
-> That is what priority means, and the contract enforces it.
+> ~~That is what priority means, and the contract enforces it.~~ *(cut this
+> first if you are running long — the line above already showed it)*
+
+> **This beat is where the AI guide and this script differ.** The guide drops
+> the "might still recover / worst bug" sentence to fit. Keep it if you can:
+> it is the reason liquidation gates payouts at all, and it is the most
+> sophisticated thing said in the video. The struck line above is the one to
+> lose instead.
 
 ### 3:36 — indexed
 *(the subgraph answering its own query)*

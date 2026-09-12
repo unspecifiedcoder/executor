@@ -28,3 +28,5 @@ out-v3/
 
 # local permission grants — machine-specific, never ship
 .claude/settings.local.json
+out-v4/
+out-v5/

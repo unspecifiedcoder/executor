@@ -1,0 +1,346 @@
+EXECUTOR DEMO v5 — VOICEOVER CUE SHEET (re-timed)
+=========================================================
+
+This cue sheet is fitted to the EXISTING, UNCHANGED silent recording:
+  media/executor-demo-v5-silent.mp4   (228.36s, 1920x1080, no audio track)
+
+Do not re-record or re-time the video. This sheet re-times the VOICE
+to the video, not the other way around.
+
+REVISION NOTE: this sheet was rebuilt after the video was trimmed
+mid-task (a 10s dwell cut from 0:37-0:47, everything after it moved
+earlier, and the whole video was tightened from 238.36s to 228.36s to
+clear ETHGlobal's 4:00 upload ceiling). The marks below are the FINAL
+ones, as given after that trim. An earlier internal draft of this
+sheet, built against the pre-trim 238.36s cut, has been fully
+discarded — nothing from it should be used.
+
+WHY THE LINES START BEFORE THEIR MARKS
+----------------------------------------------
+The recorder fires each transition AT its mark, so each animation
+plays in the first ~2s of a slot and the screen is then comparatively
+static. A segment therefore STARTS 2-4 seconds BEFORE its mark, so the
+setup words play over the outgoing frame and the payoff word lands on
+the cut. Starting a line at its mark puts the payoff 10-20s late — the
+defect this method avoids (see v1's first attempt, and v2/v3's notes).
+
+Method: generate each segment's TTS (edge-tts, en-US-AndrewNeural,
+rate=-4%), use `edge-tts --write-subtitles` to get per-clause
+timestamps, compute
+  start = mark - offset_of_key_phrase_within_the_clip
+then check for collisions against neighbouring segments and iterate
+(trim words, regenerate) wherever a tail collided with the next
+segment's lead-in.
+
+Picture marks used for this timing (seconds) — FINAL, post-trim:
+  0     hero (the bankruptcy analogy on screen)
+  14    /register, wallet connecting
+  24    the plan being typed, field by field
+  40    REGISTER AGENT clicked -> signature broadcast   [silence]
+  54    (waiting for the registration to be mined)
+  58    the agent's own page; three real heartbeats land over this stretch
+  84    back to the overview rail - alive means treasury
+  96    TERMINAL - the x402 paid request starts typing
+  118   the settlement block prints                     [~4s silence]
+  120   the agent's page again, deadline lapsing
+  138   reload: the page reads "administration", destination = estate
+        ["Estate." then 3s silence]
+  162   ETHERSCAN - the real USDC transfer
+  180   HASHSCAN - the real HBAR settlement
+  198   the creditor waterfall pours
+  216   the subgraph answering its own query
+  224   close, /register
+  228.36 end
+
+Note on 118/120 order: the settlement print (118) comes first and its
+~4s silence runs through the cut to the agent's page (120, deadline
+lapsing) — that cut happens to land inside the mandated silent
+window, so it needs no narration landing of its own; narration simply
+resumes once both beats have played out.
+
+THE SCRIPT NOW NAMES ALL THREE INTEGRATION PARTNERS
+----------------------------------------------
+VOICEOVER_SCRIPT_V5.md was revised alongside the marks to add ENS
+(at the 1:24/mark-84 treasury beat) and The Graph (at the 3:36/
+mark-216 indexed beat), with an explicit instruction not to trim
+those two words for pace. Both segments below carry the full,
+lengthened text — nothing was cut from either. The extra speech those
+two additions add is exactly why the endgame (segments 15-16, below)
+is the tightest stretch on the whole sheet: two mandatory,
+un-trimmable lines had to fit into an endgame that was already the
+shortest room in the video after the 10s cut.
+
+THREE BEATS WITH SPECIAL HANDLING (as specified)
+----------------------------------------------
+- Mark 40 (the signature): NOT narrated over. Segment 4 finishes at
+  40.066s ("...Sepolia.") and Segment 5 does not begin until 56.777s
+  — 16.7s of silence covering the click/broadcast (40) AND the
+  "waiting to be mined" beat (54), which has no narration of its own
+  because there is nothing to say while nothing happens on screen.
+- Mark ~118 (the settlement): script mandates ~4s of silence while
+  `settlement: success` prints, running through the 120 cut. Segment
+  9 does not begin until 121.900s; the previous line (Segment 8)
+  finished at 101.654s, so the full silent stretch is 101.654s to
+  121.900s (20.2s), with the specifically mandated ~4s of it sitting
+  right around 118-121.9 undisturbed.
+- Mark 138 (the flip reveal, the peak): Segment 10 ends on the single
+  word "Estate." (spoken word lands 137.72-138.00s), then Segment 11
+  does not begin until 141.061s — exactly a 3.0s hold of silence over
+  the peak frame, as specified.
+
+The final word ("don't") lands at 222.36s, 6.00s before the 228.36s
+end of video — inside the required 4-8s margin.
+
+TWO DELIBERATE DEVIATIONS (flagged, not hidden)
+----------------------------------------------
+1. Mark 24 (soft): "recovery" lands at 26.09s, ~2.1s after the mark.
+   The plan fields are still being typed for another ~14s after this
+   cut, so exact placement on 24.00 is not load-bearing — the form is
+   the same static shot for the whole 24-40s stretch.
+
+2. The endgame, marks 216 and 224 (the load-bearing one): the
+   coordinator's own instruction on the revised marks was explicit —
+   "216->228.36 is 12.4s for the subgraph line plus the close plus
+   the end buffer... if something has to give, protect the close and
+   the end buffer, and let the subgraph line be short or land early."
+   That is what this sheet does. Segment 15 (indexed, naming The
+   Graph, kept in full per the script's instruction not to trim it)
+   runs 205.164-213.780s — it finishes speaking 2.22s BEFORE mark
+   216, rather than landing on it. Segment 16 (register + close)
+   then runs 214.080-222.360s, finishing a full 6.0s before the
+   228.36s end — comfortably inside the required 4-8s buffer — but as
+   a consequence it also finishes 1.64s BEFORE mark 224 (the explicit
+   cut to /register), rather than landing "Register" on that cut.
+   Both of these were unavoidable together: the two mandatory lines
+   (indexed, 8.616s; close, 8.280s) sum to 16.9s of un-trimmable
+   speech, and cramming them both into the literal 216-228.36 window
+   (12.4s) was never arithmetically possible. The trade-off follows
+   the coordinator's stated priority order exactly: close and buffer
+   protected, subgraph line landed early instead of on-cut.
+
+HOW TO USE THIS SHEET
+----------------------
+- IN / OUT are absolute seconds into the (unchanged) video.
+- "MARK" names which transition the KEY PHRASE (marked **like this**)
+  is timed to land on/near.
+- Read at a measured, unhurried pace, flat delivery, short
+  declaratives, one idea each — the pauses carry the meaning, not
+  vocal emphasis. The AI guide track
+  (media/GUIDE-v5-aivoice-DO-NOT-SUBMIT.mp4) is a TIMING REFERENCE
+  ONLY, not for submission (ETHGlobal bans AI voiceover) — record your
+  own voice against it, matching where the bracketed key phrases land.
+- Gaps between OUT and the next IN are intentional silence over a
+  static, dwelling, or "nothing happening yet" frame. Don't fill
+  them — let the picture sit. This video's own script explicitly
+  asks for this: "read it flat and fast — the pauses do the work."
+
+CUE LIST
+========
+
+SEGMENT 1 — The hook (leads into mark 14; no hard target of its own —
+             hero frame is on screen at t=0)
+IN  0:00.00   OUT 0:14.90
+  A company goes bankrupt, and there is a process. Administration.
+  Liquidation. Creditors paid in order.
+  An agent goes bankrupt, and there is nothing. The money just keeps
+  arriving. **Executor is that process, for software.**
+  [closing clause "for software" ends at 14.83s, essentially on the
+  mark-14 cut into /register]
+
+SEGMENT 2 — Born (bridges toward mark 24; mark 14 is already covered
+             by Segment 1's natural close)
+IN  0:15.20   OUT 0:17.26
+  So here is an agent being **born.**
+
+SEGMENT 3 — Four keys (MARK: 24 = the plan fields being typed)
+IN  0:17.70   OUT 0:30.85
+  A plan it commits to before anything goes wrong. Four separate
+  keys — owner, heartbeat signer, trustee, **recovery.**
+  The owner cannot sign its own heartbeats. The trustee cannot
+  restore it.
+  [key phrase "recovery" lands at 26.09s — soft target, see
+  deviation note 1 above]
+
+SEGMENT 4 — Signed (MARK: 40 = REGISTER AGENT clicked; do not talk
+             over the click/broadcast)
+IN  0:37.93   OUT 0:40.07
+  One transaction on **Sepolia.**
+  [key phrase "Sepolia" lands at 40.00 exactly; then SILENT through
+  mark 54 ("waiting to be mined") until Segment 5 — nothing is said
+  from 40.07s to 56.78s]
+
+SEGMENT 5 — It exists (MARK: 58 = the agent's own page)
+IN  0:56.78   OUT 1:04.24
+  And it **exists.** Every agent on this registry gets that page for
+  free — a live read of its plan and its history.
+  [key phrase "exists" lands at 58.00 exactly]
+
+SEGMENT 6 — Alive, heartbeat (plays over the three real heartbeats
+             landing across the 58-84 stretch; no hard mark of its
+             own)
+IN  1:05.20   OUT 1:12.14
+  Now it has to prove it is alive. A heartbeat, on a fixed interval,
+  signed by a key that is not the owner's.
+
+SEGMENT 7 — Treasury, naming ENS and Hedera (MARK: 84 = overview
+             rail, the proof strip shows all three partners at once)
+IN  1:12.88   OUT 1:24.07
+  Money arrives. The payer never chooses where it lands — an ENS
+  name resolves it, cross-checked against the registry, and the bill
+  settles on Hedera.
+  Alive means **treasury.**
+  [key phrase "treasury" lands at 84.00 exactly; kept in full per the
+  script's instruction to name ENS here and not trim it for pace]
+
+SEGMENT 8 — The paywall (MARK: 96 = terminal, x402 request starts
+             typing; runs on through the typing)
+IN  1:33.11   OUT 1:41.65
+  And the money is real. A **paywall,** on Hedera.
+  Four-oh-two. Payment required. It signs, it pays one hundredth of
+  an HBAR.
+  [key phrase "paywall / on Hedera" lands at 96.00 exactly; the rest
+  of the sentence plays out over the typing that follows, well ahead
+  of the 118 settlement print]
+
+SEGMENT 9 — Earning, heartbeats stop, deadline (resumes right after
+             the mandated settlement-print silence; bridges toward
+             the mark-138 peak)
+IN  2:01.90   OUT 2:13.30
+  And a live model answers. That is the agent earning. Then the
+  heartbeats stop.
+  The interval passes, and now anyone can act on it, the contract
+  checks the deadline, not the caller.
+
+SEGMENT 10 — THE FLIP, the peak (MARK: 138; word, then a 3s hold)
+IN  2:13.72   OUT 2:18.06
+  Same agent. Same registry. Same question.
+  **Estate.**
+  [key phrase "Estate" lands at 138.00 exactly (word spans
+  ~137.72-138.00s); then hold silence to 141.061s — exactly the 3s
+  the peak needs to breathe]
+
+SEGMENT 11 — Nothing changed (right after the mandatory post-"Estate"
+              silence; no hard mark, bridges toward 162)
+IN  2:21.06   OUT 2:24.88
+  Nothing about the payer changed. The agent's on-chain state did.
+
+SEGMENT 12 — The receipts (MARK: 162 = cut to Etherscan)
+IN  2:33.82   OUT 2:42.06
+  Two receipts. Same payer, same nought-point-two USDC,
+  thirty-seven blocks apart, landing in two **different places.**
+  [key phrase "different places" lands at 162.00 exactly]
+
+SEGMENT 13 — Theirs (MARK: 180 = cut to HashScan)
+IN  2:53.45   OUT 3:00.05
+  And the HBAR settlement, on Hedera's own explorer. Not our page
+  saying so. **Theirs.**
+  [key phrase "Theirs" lands at 180.00 exactly]
+
+SEGMENT 14 — Creditors (MARK: 198 = waterfall pours)
+IN  3:05.66   OUT 3:18.07
+  Then the creditors, and only now. Nought-point-two available
+  against nought-point-eight-five owed. Insolvent, which is the
+  normal case. Secured is paid. Administrative and unsecured get
+  **nothing.**
+  [key phrase "nothing" lands at 198.00 exactly; "Secured is paid"
+  lands at 195.18, 2.8s ahead of it]
+
+SEGMENT 15 — Indexed, naming The Graph (soft target: MARK 216 = the
+              subgraph shot — see deviation note 2 above; kept in
+              full per the script's instruction not to trim these
+              words)
+IN  3:25.16   OUT 3:33.78
+  Every step is indexed by The Graph — approval and execution joined
+  by plan hash. The dashboard reads no RPC at all.
+  [finishes speaking at 213.78s, 2.22s ahead of mark 216 — see
+  deviation note 2]
+
+SEGMENT 16 — Register + close (final word must land 4-8s before the
+              228.36s end; see deviation note 2 for why this finishes
+              ahead of the explicit mark-224 /register cut)
+IN  3:34.08   OUT 3:42.36
+  **Register** your own. Your wallet, your keys, your gas.
+  Executor. When an agent fails, its obligations **don't.**
+  [final word "don't" lands at 222.36s, 6.00s before the video's
+  228.36s end]
+
+SUMMARY TABLE (seconds)
+========================
+Seg  Start      Duration   End        Mark    Landing word
+1      0.000     14.904     14.904      -     "for software" (~14.83, near mark 14)
+2     15.200      2.064     17.264      -     "born" (bridges toward 24)
+3     17.700     13.152     30.852     24*    "recovery" (~26.09, soft)
+4     37.930      2.136     40.066     40     "Sepolia" (silent to 56.78, covers mark 54)
+5     56.777      7.464     64.241     58     "exists"
+6     65.200      6.936     72.136      -     (plays over heartbeats landing)
+7     72.881     11.184     84.065     84     "treasury" (ENS/Hedera named in full)
+8     93.110      8.544    101.654     96     "paywall / on Hedera"
+9    121.900     11.400    133.300      -     (bridges settlement silence -> peak)
+10   133.717      4.344    138.061    138     "Estate" (then 3.0s silence)
+11   141.061      3.816    144.877      -     (right after the peak silence)
+12   153.823      8.232    162.055    162     "different places"
+13   173.451      6.600    180.051    180     "Theirs"
+14   185.657     12.408    198.065    198     "nothing" ("Secured is paid" at 195.18)
+15   205.164      8.616    213.780    216*    "...no RPC at all" (finishes 2.22s early)
+16   214.080      8.280    222.360    224*    "don't" (6.00s before 228.36; 1.64s ahead
+                                                of the 224 /register cut — see deviation 2)
+
+  * Marks 24, 216 and 224 are soft/early-landing targets — see the
+    two deviation notes above.
+
+Final word lands at 222.36s (spoken "don't" ends there), 6.00s
+before the video ends at 228.36s.
+
+TRIMS MADE FROM THE APPROVED SCRIPT (content preserved, wording
+tightened only for timing — no new technical claims added, no
+numbers changed, and ENS / The Graph kept verbatim per the script's
+explicit instruction not to trim them)
+--------------------------------------------------------------------------
+- Seg 1 (hook): used verbatim, unchanged.
+- Seg 2: cut down to the single clause "So here is an agent being
+  born" — the fuller register/plan explanation is carried by Seg 3.
+- Seg 3: kept the full four-keys paragraph verbatim.
+- Seg 4: kept verbatim ("One transaction on Sepolia.").
+- Seg 5/6: split the script's "0:58" paragraph in two so "exists"
+  could land exactly on mark 58, with the heartbeat-proof sentence
+  continuing to play (unforced) over the heartbeats landing
+  afterward; wording kept verbatim otherwise.
+- Seg 7: kept the new ENS/Hedera treasury paragraph in full, exactly
+  as revised in the script — this is one of the two lines the script
+  explicitly says not to trim.
+- Seg 8: kept the payment description verbatim (paywall, 402, signs,
+  pays one hundredth of an HBAR) so the HBAR amount stays intact and
+  on screen while spoken.
+- Seg 9: merged "and a live model answers... that is the agent
+  earning," "then the heartbeats stop," and "the interval passes...
+  the contract checks the deadline, not the caller" into one
+  segment, and cut "Then the grace period" (redundant with "the
+  interval passes") — the 121.9-133.3s runway, between the mandated
+  settlement silence and the peak's own required lead-in, could not
+  hold the full four-sentence version and still leave the ~4s of
+  silence the settlement print needs.
+- Seg 10 (the peak): kept verbatim ("Same agent. Same registry. Same
+  question. Estate.") — cut nothing, this is the money shot.
+- Seg 11: kept "Nothing about the payer changed. The agent's on-chain
+  state did." verbatim, placed right after the mandatory 3s silence.
+- Seg 12: kept the receipts sentence verbatim.
+- Seg 13: kept the HashScan sentence verbatim, including "Theirs."
+- Seg 14: kept every number from the creditor paragraph (0.2
+  available / 0.85 owed / insolvent / secured paid / others get
+  nothing) but cut the two framing sentences around it — "An agent in
+  administration might still recover, and paying its creditors while
+  that is possible would be the worst bug this protocol could have"
+  and "That is what priority means, and the contract enforces it" —
+  to make room for the two mandatory, un-trimmable brand-name lines
+  elsewhere in the sheet (ENS was already spoken at Seg 7; The Graph
+  needed its full room at Seg 15).
+- Seg 15: kept the full revised indexed line verbatim — "Every step
+  is indexed by The Graph — approval and execution joined by plan
+  hash. The dashboard reads no RPC at all." — per the script's
+  explicit instruction not to trim this for pace. Its landing was
+  moved instead (see deviation note 2).
+- Seg 16: kept the close verbatim — "Register your own. Your wallet,
+  your keys, your gas. Executor. When an agent fails, its
+  obligations don't." — protected in full per the coordinator's
+  explicit priority (protect the close and the end buffer above all
+  else in the endgame).
