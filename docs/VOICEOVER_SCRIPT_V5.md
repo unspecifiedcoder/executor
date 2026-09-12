@@ -8,8 +8,12 @@ can breathe naturally, not so you can perform. Read dramatically and it becomes
 a movie trailer; read plainly and it sounds like someone who knows what they
 built.
 
-**You should not need to watch the clock.** Every pause below is cued by
-something happening on screen. Watch the video, not the timer.
+**Watch the video, not the timer.** Every pause is cued by something happening
+on screen, so you can perform the whole thing without looking at a clock.
+
+The time on each heading is there as an **anchor, not a target** — if you lose
+your place, or want to pick up mid-way through a retake, that is what it is
+for. Drifting a second or two either side changes nothing.
 
 ---
 
@@ -18,11 +22,11 @@ something happening on screen. Watch the video, not the timer.
 They feel unbearable while recording. They are the best seconds in the video.
 Do not fill them.
 
-| After you say | How long | What is on screen | Why you stop |
+| After you say | At about | How long | What is on screen | Why you stop |
 |---|---|---|---|
-| "One transaction. Sepolia." | ~16s | the signature, then the transaction being mined | a real transaction confirming — talking over it is what people do when they are covering for something |
-| "One hundredth of an HBAR." | ~20s | the terminal printing the settlement | let `settlement: success` land on its own |
-| "Estate." | 3s | the page has flipped to the estate | this is the whole video; words would bury it |
+| "One transaction. Sepolia." | 0:40 | ~16s | the signature, then the transaction being mined | a real transaction confirming — talking over it is what people do when they are covering for something |
+| "One hundredth of an HBAR." | 1:42 | ~20s | the terminal printing the settlement | let `settlement: success` land on its own |
+| "Estate." | 2:18 | 3s | the page has flipped to the estate | this is the whole video; words would bury it |
 
 Everything else is a breath between fragments, not a pause.
 
@@ -30,7 +34,7 @@ Everything else is a breath between fragments, not a pause.
 
 # THE SCRIPT
 
-### 1 · THE HOOK
+### 1 · THE HOOK  ·  0:00
 *Hero on screen. Start immediately.*
 
 > Company fails? There's a process.
@@ -45,12 +49,12 @@ Everything else is a breath between fragments, not a pause.
 **→ finish around the cut to `/register`.** Still talking when the form
 appears? Fine. Keep going.
 
-### 2 · BORN
+### 2 · BORN  ·  0:15
 *Wallet connecting.*
 
 > So let's make one.
 
-### 3 · FOUR KEYS
+### 3 · FOUR KEYS  ·  0:18
 *The fields filling in.*
 
 > Before anything goes wrong, it commits to a plan.
@@ -68,7 +72,7 @@ appears? Fine. Keep going.
 **→ then stop.** The filled form sits for a moment. Nothing until the button
 is clicked.
 
-### 4 · SIGNED
+### 4 · SIGNED  ·  0:38
 *The moment REGISTER AGENT is clicked.*
 
 > One transaction. Sepolia.
@@ -77,7 +81,7 @@ is clicked.
 *The signature goes out, then it is mined. Say nothing. Resume when the
 agent's own page appears.*
 
-### 5 · IT EXISTS
+### 5 · IT EXISTS  ·  0:57
 *The agent's page.*
 
 > And now it exists.
@@ -89,7 +93,7 @@ agent's own page appears.*
 >
 > Live.
 
-### 6 · ALIVE / HEARTBEAT
+### 6 · ALIVE / HEARTBEAT  ·  1:05
 *Heartbeats landing.*
 
 > Now prove it's alive.
@@ -102,7 +106,7 @@ agent's own page appears.*
 
 **→ then wait** for the cut back to the rail.
 
-### 7 · MONEY → TREASURY
+### 7 · MONEY → TREASURY  ·  1:13
 *The rail. The green proof strip is on screen — all three partners at once.*
 
 > Now money arrives.
@@ -117,7 +121,7 @@ agent's own page appears.*
 >
 > Treasury.
 
-### 8 · THE PAYWALL
+### 8 · THE PAYWALL  ·  1:33
 *The terminal starts typing.*
 
 > And this isn't a mock.
@@ -136,7 +140,7 @@ agent's own page appears.*
 *The settlement block prints itself out. Watch it with them. Resume once
 `settlement: success` is fully on screen.*
 
-### 9 · EARNING → FAILURE
+### 9 · EARNING → FAILURE  ·  2:02
 
 > The model answers.
 >
@@ -152,7 +156,7 @@ agent's own page appears.*
 >
 > The contract checks the deadline. Not the caller.
 
-### 10 · THE FLIP  ← the shot
+### 10 · THE FLIP  ·  2:14  ← the shot
 *The page reloads. It reads administration.*
 
 > Same agent. Same registry. Same question.
@@ -162,7 +166,7 @@ agent's own page appears.*
 # SILENCE — 3 seconds
 *Count it. One. Two. Three. You will want to talk over this. Don't.*
 
-### 11 · NOTHING CHANGED
+### 11 · NOTHING CHANGED  ·  2:21
 
 > The payer didn't change.
 >
@@ -170,7 +174,7 @@ agent's own page appears.*
 
 **→ then wait** for Etherscan.
 
-### 12 · THE RECEIPTS
+### 12 · THE RECEIPTS  ·  2:34
 *Etherscan.*
 
 > Two receipts.
@@ -181,7 +185,7 @@ agent's own page appears.*
 >
 > Different destinations.
 
-### 13 · THEIRS
+### 13 · THEIRS  ·  2:53
 *HashScan.*
 
 > And the HBAR settlement?
@@ -192,7 +196,7 @@ agent's own page appears.*
 >
 > Theirs.
 
-### 14 · CREDITORS
+### 14 · CREDITORS  ·  3:06
 *The waterfall pours. This beat has room — do not rush it.*
 
 > Now the creditors.
@@ -213,7 +217,7 @@ agent's own page appears.*
 >
 > Nothing.
 
-### 15 · THE GRAPH
+### 15 · THE GRAPH  ·  3:25
 *The subgraph answering its own query.*
 
 > Every step is indexed.
@@ -224,7 +228,7 @@ agent's own page appears.*
 >
 > No RPC in the dashboard.
 
-### 16 · REGISTER + CLOSE
+### 16 · REGISTER + CLOSE  ·  3:34
 *Back on `/register`.*
 
 > Register your own.
