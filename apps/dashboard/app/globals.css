@@ -505,10 +505,10 @@ main {
    and sockets rather than cards, because this is a rack of instruments and not
    a set of tiles. */
 .rack {
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 12px;
-  background: var(--raised);
-  padding: 18px;
+  background: transparent;
+  padding: 18px 0 0;
 }
 
 .rack-node {
@@ -1075,19 +1075,32 @@ main {
   14%{transform:scale(1.3)}28%{transform:scale(1)}70%,100%{box-shadow:0 0 0 13px rgba(53,240,192,0)}}
 @keyframes pilotwarn{0%,49%{opacity:1}50%,100%{opacity:.28}}
 
-.overview .hero{display:grid;grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr);
-  gap:var(--s8);align-items:center;padding:var(--s8) 0 var(--s7)}
-.overview h1{font-family:var(--serif);font-weight:400;font-size:var(--t8);line-height:.96;
-  letter-spacing:-.018em;margin:0 0 var(--s5);text-wrap:balance;color:var(--text)}
+/* One composition, not a headline beside a panel. The page's subject is a
+   routing decision, so the routing decision owns the first viewport and the
+   thesis line becomes its caption. Splitting them made neither win: the
+   destination - the actual product - sat in a corner at panel scale. */
+.overview .hero{display:block;padding:var(--s7) 0 var(--s6)}
+.overview .heroline{max-width:56ch;margin:0 auto var(--s6);text-align:center}
+/* Names the category before the claim: a reader who does not yet know what
+   kind of thing this is cannot evaluate the sentence under it. */
+.overview .eyebrow{font-size:var(--t1);letter-spacing:.26em;text-transform:uppercase;
+  color:var(--faint);margin:0 0 var(--s4)}
+.overview .thesis strong{color:var(--text);font-weight:500}
+.overview .routeq{font-size:var(--t1);letter-spacing:.26em;text-transform:uppercase;
+  color:var(--faint);text-align:center;margin:0 0 var(--s4)}
+.overview h1{font-family:var(--serif);font-weight:400;font-size:clamp(31px,4.4vw,50px);line-height:1.02;
+  letter-spacing:-.018em;margin:0 0 var(--s3);text-wrap:balance;color:var(--text)}
 .overview h1 em{font-style:italic;color:var(--alive)}
-.overview .thesis{font-size:var(--t4);line-height:1.75;color:var(--dim);margin:0 0 var(--s6);max-width:38ch}
+.overview .thesis{font-size:var(--t4);line-height:1.7;color:var(--dim);margin:var(--s4) auto 0;max-width:56ch}
+.overview .ctas{display:flex;gap:var(--s3);justify-content:center;flex-wrap:wrap;
+  margin-top:var(--s6)}
 .overview .cta{display:inline-flex;align-items:center;gap:var(--s2);background:var(--alive);
   color:var(--bg);border:0;border-radius:var(--s2);font-family:var(--mono);font-weight:600;
   font-size:var(--t3);letter-spacing:.06em;padding:var(--s3) var(--s5);cursor:pointer}
 .overview .cta:focus-visible{outline:2px solid var(--text);outline-offset:3px}
 
 .rack .q{font-size:var(--t3);color:var(--dim);margin-bottom:var(--s1)}
-.rack .answer{font-size:var(--t8);margin:0;line-height:1;transition:color .45s}
+.rack .answer{font-size:var(--t6);margin:0;line-height:1;transition:color .45s}
 .rack .answer b{font-weight:600}
 .rack .answer.t{color:var(--alive)} .rack .answer.e{color:var(--lapsed)}
 .rack .agentid{font-size:var(--t2);color:var(--faint);margin-top:var(--s3)}
@@ -1100,19 +1113,38 @@ main {
 .vaults{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4);margin-top:var(--s7)}
 .vault{position:relative;border:1px solid var(--border);border-radius:var(--s3);padding:var(--s5);
   transition:border-color .45s,background .45s;overflow:hidden}
-.vault h3{font-size:var(--t2);font-weight:600;letter-spacing:.2em;margin:0 0 var(--s3);
-  color:var(--dim);text-transform:uppercase;transition:color .45s}
-.vault .addr{font-size:var(--t5);color:var(--text)}
-.vault .state{display:block;font-size:var(--t2);letter-spacing:.1em;margin-top:var(--s3);
+.vault h3{font-size:var(--t1);font-weight:600;letter-spacing:.22em;margin:0 0 var(--s2);
+  color:var(--faint);text-transform:uppercase;transition:color .45s}
+/* The state at headline scale. Treasury and Estate hold addresses that differ
+   only at the ends, so the *word* has to carry the state change - it is the
+   only thing legible at a glance or at video bitrate. */
+.vault .vword{font-family:var(--serif);font-size:var(--t7);line-height:1.02;
+  letter-spacing:-.015em;color:var(--faint);transition:color .45s}
+.vault .addr{font-size:var(--t3);color:var(--faint);margin-top:var(--s3);transition:color .45s}
+.vault .state{display:block;font-size:var(--t2);letter-spacing:.08em;margin-top:var(--s2);
   color:var(--faint);transition:color .45s}
 .vault .bal{font-size:var(--t3);margin-top:var(--s2);opacity:0;transition:opacity .45s}
 .vault .bal.on{opacity:1}
-.vault.on.t{border-color:var(--alive);background:radial-gradient(130% 150% at 50% 0%,rgba(53,240,192,.12),transparent 74%)}
+/* The dormant route is dashed, not merely dim: a solid low-opacity box reads as
+   something that failed to load, a dashed one reads as a route that is armed
+   and waiting. */
+.vault:not(.on){border-style:dashed}
+.vault.on{border-style:solid}
+.vault.on.t{border-color:var(--alive);
+  background:radial-gradient(130% 150% at 50% 0%,rgba(53,240,192,.12),transparent 74%);
+  box-shadow:0 0 46px rgba(53,240,192,.10)}
 .vault.on.t h3,.vault.on.t .state,.vault.on.t .bal{color:var(--alive)}
-.vault.on.e{border-color:var(--lapsed);background:radial-gradient(130% 150% at 50% 0%,rgba(255,181,69,.15),transparent 74%)}
+.vault.on.t .vword{color:var(--alive)}
+.vault.on.t .addr{color:var(--dim)}
+.vault.on.e{border-color:var(--lapsed);
+  background:radial-gradient(130% 150% at 50% 0%,rgba(255,181,69,.15),transparent 74%);
+  box-shadow:0 0 46px rgba(255,181,69,.10)}
 .vault.on.e h3,.vault.on.e .state,.vault.on.e .bal{color:var(--lapsed)}
-.vault.shut{border-color:var(--terminal);opacity:.6}
+.vault.on.e .vword{color:var(--lapsed)}
+.vault.on.e .addr{color:var(--dim)}
+.vault.shut{border-color:var(--terminal);border-style:solid;opacity:.72}
 .vault.shut h3,.vault.shut .state{color:var(--terminal)}
+.vault.shut .vword{color:var(--terminal)}
 .vault.shut:after{content:"SEALED";position:absolute;top:15px;right:-32px;transform:rotate(38deg);
   background:var(--terminal);color:var(--bg);font-size:var(--t1);font-weight:600;
   letter-spacing:.2em;padding:3px var(--s6)}
@@ -1249,7 +1281,7 @@ main {
 .overview .controls button{padding:var(--s2) var(--s3);min-width:34px;text-align:center}
 
 /* tighter hero rhythm — the holes were between related things */
-.overview .hero{padding:var(--s7) 0 var(--s6);gap:var(--s7)}
+.overview .hero{padding:var(--s6) 0 var(--s5)}
 .rack .agentid{margin-top:var(--s2)}
 .rack .stage{margin-top:var(--s4)}
 .vaults{margin-top:var(--s5)}
@@ -1264,8 +1296,14 @@ main {
 .lockbars{display:flex;flex-direction:column;gap:var(--s3)}
 .lockbar{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:var(--s4)}
 .lockbar span{font-size:var(--t1);letter-spacing:.16em;color:var(--faint)}
-.lockbar .tank{height:12px;border-radius:3px;background:rgba(150,190,235,.07);
-  border:1px dashed rgba(150,190,235,.14)}
+.lockbar{grid-template-columns:150px 1fr auto}
+.lockbar .tank{height:12px;border-radius:3px;
+  border:1px solid color-mix(in srgb,var(--administration) 22%,transparent);
+  background:repeating-linear-gradient(135deg,
+    color-mix(in srgb,var(--administration) 13%,transparent) 0 5px,
+    transparent 5px 10px)}
+.lockbar .seal{font-size:var(--t1);letter-spacing:.14em;
+  color:color-mix(in srgb,var(--administration) 80%,transparent);white-space:nowrap}
 
 /* proof mode: the strip says what the page is showing, not what is live */
 .live-strip.proofmode b{color:var(--lapsed)}
@@ -1287,7 +1325,7 @@ main {
 /* Two actions: watch the proof, or drive the protocol yourself. The second is
    the answer to "is this usable by anyone but you?" and it should not be a nav
    link nobody clicks. */
-.overview .ctas{display:flex;gap:var(--s3);flex-wrap:wrap;align-items:center}
+.overview .ctas{display:flex;gap:var(--s3);flex-wrap:wrap;align-items:center;justify-content:center}
 .overview .cta-2{background:transparent;color:var(--text);border:1px solid var(--border-strong);
   text-decoration:none}
 .overview .cta-2:hover{border-color:var(--alive);color:var(--alive)}
@@ -1387,3 +1425,24 @@ main {
 .register .cmd{margin:var(--s1) 0 0;padding:var(--s3) var(--s4);border-radius:var(--s2);
   background:rgba(150,190,235,.05);border:1px solid var(--border);
   font-size:var(--t2);line-height:1.8;color:var(--text);overflow-x:auto;white-space:pre}
+
+/* Two receipts on one frame — the peak step of the replay.
+   Flex, not grid, so the row wraps instead of overflowing on a phone; the
+   hash stays first because it is the thing a judge clicks. */
+.overview .receipts{margin-top:var(--s3);display:flex;flex-direction:column;
+  gap:3px;max-width:68ch}
+.overview .rrow{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--s3);
+  font-size:var(--t2);text-decoration:none;padding:4px var(--s2);
+  border:1px solid transparent;border-radius:4px}
+.overview .rrow .h{color:var(--succession)}
+.overview .rrow:hover .h{text-decoration:underline}
+.overview .rrow .ar,.overview .rrow .blk{color:var(--faint)}
+.overview .rrow .dst{color:var(--dim)}
+.overview .rrow .lbl{letter-spacing:.09em;text-transform:uppercase}
+.overview .rrow.past{opacity:.62}
+.overview .rrow.past .lbl{color:var(--liquidation)}
+.overview .rrow.now{border-color:var(--border-strong);background:var(--raised);
+  animation:arrive .7s cubic-bezier(.16,1,.3,1)}
+.overview .rrow.now .lbl{color:var(--administration)}
+.overview .receipts .same{font-size:var(--t2);color:var(--dim);
+  padding:3px var(--s2);letter-spacing:.03em}

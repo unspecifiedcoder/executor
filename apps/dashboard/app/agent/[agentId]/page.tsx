@@ -21,7 +21,7 @@ async function AgentHistory({ id }: { id: Hex }) {
       <div className="agent-read-error mono">
         <strong>Could not load on-chain history.</strong>
         <span>{err instanceof Error ? err.message : String(err)}</span>
-        <span>This is an RPC failure, not an empty history.</span>
+        <span>The index is unreachable — this is a read failure, not an empty history.</span>
       </div>
     );
   }

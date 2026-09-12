@@ -23,7 +23,7 @@ import type { AgentEvent } from "./ens";
  */
 const SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_SUBGRAPH_URL ??
-  "https://api.studio.thegraph.com/query/1760047/executor/v0.1.1";
+  "https://api.studio.thegraph.com/query/1760047/executor/v0.1.2";
 
 async function query<T>(document: string, variables: Record<string, unknown>): Promise<T> {
   const response = await fetch(SUBGRAPH_URL, {

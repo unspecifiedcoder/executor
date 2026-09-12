@@ -5,6 +5,7 @@ import { getNameState, getAgentPlan, getPaymentDestination, type AgentPlan } fro
 import FlowPanel from "../components/FlowPanel";
 import SelfServeFlip from "../components/SelfServeFlip";
 import BootSequence from "./BootSequence";
+import DestinationBoard from "../components/DestinationBoard";
 
 const DEMO_LABEL = "executor-hackathon-demo";
 
@@ -445,6 +446,12 @@ export default function VitalsPage() {
           )}
         </div>
       </div>
+
+      {/* The panels above are this app reading the chain. The board below is
+          the same question answered by systems we do not run - the hosted
+          gateway, a live 402, and Hedera's mirror node - which is the only
+          form of proof a sceptical reader can accept from us. */}
+      <DestinationBoard />
 
       <style>{`
         .vitals {
