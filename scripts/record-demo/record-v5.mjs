@@ -34,7 +34,10 @@ const TERM = `${PAGES}term/index.html`;
 const GRAPHQ = `${PAGES}graph/index.html`;
 
 const TX_TREASURY = '0x731319100c29e25cf27270085ef91caaba946f9907cd14dfa67e33ef8ea243c5';
-const HS_TX = '0.0.7162784@1789202466.813297956';
+/** Refreshed before each take. A link that is a day old invites "is this
+ *  thing still running?" - which is the one doubt a live paywall should
+ *  not leave. `scripts/demo-day.sh` option 3 makes a new one. */
+const HS_TX = '0.0.7162784@1789278014.264699559';
 
 /** A fresh label per take, so a re-run is never blocked by AgentAlreadyRegistered. */
 const LABEL = `courier-${Math.random().toString(36).slice(2, 7)}.eth`;

@@ -1,98 +1,80 @@
-# Recording the demo yourself
+# Recording the demo — every step, and what to say
 
-Target: **3:30–4:00**. The Graph requires two to four minutes and treats it as
-an eligibility rule, so four minutes is a cap, not a goal. Hedera allows five.
+One take if you can. Target **3:30–4:00**; ETHGlobal **auto-rejects anything
+over 4:00 at upload**, so treat four minutes as a wall.
 
-Do it in one take if you can. A judge forgives a stumble; they do not forgive
-four minutes that say nothing.
-
----
-
-## Before you hit record
-
-**1. Wallet.** MetaMask on **Sepolia**, with ~0.01 ETH. This is the whole reason
-you are recording rather than me — you can actually click REGISTER AGENT and
-sign it. Put the wallet on a network you do not mind being on camera.
-
-**2. Two browser windows**, so you are never typing a URL on camera:
-
-| Window | Tabs |
-|---|---|
-| A | `https://executor-dashboard.vercel.app` · `/vitals` · `/register` |
-| B | Etherscan tx (below) · HashScan tx (below) · the subgraph query |
-
-Use the **live site**, not localhost. It is what judges will open, and the URL
-bar being a real domain is worth something.
-
-**3. A terminal**, already `cd`'d into the repo, with the command typed but
-**not** run. Font at ~16pt — default terminal text is unreadable after YouTube
-compression.
-
-**4. Dismiss the cookie banners** on Etherscan and HashScan before recording.
-They sit directly over the evidence.
-
-**5. An agent is already registered and ready** if you would rather not create
-one on camera — `0x22c4fc7e5e8db456657c12913446369e6634e186b65e01f4db19c4481cf782e3`,
-60s interval, 30s grace, currently `Active`. Its whole lifecycle has been
-round-tripped once already (flip and restore), so the commands in step 6 are
-known to work on it.
-
-**6. Check the live demo agent is alive:**
-
-```bash
-curl -s -X POST https://api.studio.thegraph.com/query/1760047/executor/v0.1.2 \
-  -H 'content-type: application/json' \
-  -d '{"query":"{agent(id:\"0x6574c8cc5e4ca438a061eb83708582b10658d3a1a7334a8d94b6f6a1960dcb37\"){status heartbeatCount lastHeartbeat}}"}'
-```
-
-`status` must be `Active` and `lastHeartbeat` within ~2 minutes. If not, restart
-the runner — command in `docs/STATUS.md`.
-
-> **Do not put a private key on screen.** Export the terminal variables in a
-> different window *before* you start recording, or the recording contains a key
-> and has to be thrown away.
+Keep `./scripts/demo-day.sh` running in a terminal. Every command below is a
+number in that menu, so you are never composing a command on camera.
 
 ---
 
-## Links to have open
+## SETUP — before you press record
 
+**Terminal 1** — `cd /mnt/c/Users/Pramod/GitHub/executor && ./scripts/demo-day.sh`
+Press **1**. Everything must be green. If the demo agent is STALE, open a spare
+terminal and press **9** there (it blocks its window), then re-run 1.
+
+**Terminal 2** — spare, for the heartbeat runner.
+
+**Browser window A** — the product, three tabs:
 ```
-Etherscan · registerAgent
-https://sepolia.etherscan.io/tx/0x943890e3c06744eee08e77437b358bf8350bfc4cadda942b8101830cbf152813
+https://executor-dashboard.vercel.app
+https://executor-dashboard.vercel.app/register
+https://executor-dashboard.vercel.app/vitals
+```
 
-Etherscan · the USDC payment to the treasury
+**Browser window B** — evidence, three tabs:
+```
 https://sepolia.etherscan.io/tx/0x731319100c29e25cf27270085ef91caaba946f9907cd14dfa67e33ef8ea243c5
-
-Etherscan · the same payer, same amount, to the estate
 https://sepolia.etherscan.io/tx/0x17b0f95681e3fea74423e06978d319ca1d57a20228480191f12c99d8816d37ad
-
-HashScan · the HBAR settlement
-https://hashscan.io/testnet/transaction/0.0.7162784@1789202466.813297956
+(HashScan — press 3 in the menu first, it prints a fresh link. Open that.)
 ```
+
+**MetaMask** on Sepolia with ~0.01 ETH.
+
+Then:
+- **Dismiss the cookie banners** on Etherscan and HashScan. They sit over the evidence.
+- Terminal font **~16pt**. Default size is unreadable after compression.
+- Close Slack, email, anything that can pop a notification.
+
+> **Never export a private key in a window you are recording.** `demo-day.sh`
+> loads them once at the top, before you start. A key on screen means the take
+> is dead and the key is burned.
 
 ---
 
-## The take
+# THE TAKE
 
-Times are targets, not marks to hit exactly. **Say the line, then do the thing** —
-narration should arrive a beat before the picture changes, never after.
+Each step: **what is on screen → what you do → what you say.**
+Read flat and fast, like you find it mildly annoying to have to explain.
 
-### 1 · 0:00–0:16 — the hook
-**Screen:** `executor-dashboard.vercel.app`, top of page, not scrolling.
+---
 
-> A company goes bankrupt, and there is a process.
-> Administration. Liquidation. Creditors paid in order.
+### 1 · THE HOOK — 0:00
+**Screen:** `executor-dashboard.vercel.app`, top of page. Don't scroll.
+**Do:** nothing. Let the analogy be read.
+
+> Company fails? There's a process.
+> Administration. Liquidation. Creditors. Paid in order.
 >
-> An agent goes bankrupt — and there is nothing.
+> Agent fails? Nothing.
+>
 > The money just keeps arriving.
 >
-> Executor is that process, for software.
+> Executor is the process. For software.
 
-*(The two rows you are describing are on screen. Let them be read.)*
+---
 
-### 2 · 0:16–0:50 — register an agent, for real
-**Screen:** `/register`. Connect MetaMask. Type the plan. Scroll so the green
-"4 of 4 authorities distinct" callout is visible when you mention it.
+### 2 · MAKE ONE — ~0:15
+**Screen:** switch to the `/register` tab. Click **CONNECT WALLET**, approve in
+MetaMask.
+
+> So let's make one.
+
+---
+
+### 3 · FOUR KEYS — ~0:20
+**Do:** type the plan. Paste each field; don't type addresses by hand.
 
 ```
 Agent label         courier-seven.eth
@@ -101,175 +83,239 @@ Trustee             0x108efe0989d08d3BCF49ca1A3A35548543CbA310
 Recovery authority  0x86A85D90e605B6661808f7Cbe37565dCa49f323E
 Treasury            0x7ea7f6e97E24F1ad03Db0bd544A0AeF4A1f07330
 Estate              0xDE3207F493fE4600DeEc424e0875ec943d712337
-Heartbeat interval  60
-Grace period        30
+Heartbeat interval  30
+Grace period        15
 ```
 
-> A plan, committed before anything goes wrong.
-> Four separate authorities — owner, heartbeat signer, trustee, recovery.
-> The owner cannot sign its own heartbeats, and the trustee cannot restore it.
+**Scroll** so the green **4 of 4 authorities distinct** callout is visible as
+you say the last two lines.
 
-**Then click REGISTER AGENT and sign it in MetaMask.** Do not talk over the
-signature — let the popup and the pending state play.
-
-> That is one transaction on Sepolia.
-
-### 3 · 0:50–1:08 — the agent you just made
-**Screen:** when the page offers it, **follow its own link to `/agent/<id>`.**
-Do not type a URL and do not jump to Etherscan here — the product's next step
-is this page, and taking it is what makes the registration mean something.
-
-You will see: `Status active` · `Plan locked yes` · interval `1m` · grace
-`30s` · the treasury lit, the estate on standby · and an on-chain history that
-already has a row in it.
-
-> And it exists. Every agent on this registry gets this page for free — a
-> public, live read of its plan and its history. Its treasury is receiving. Its
-> estate is armed and waiting.
+> Before anything goes wrong, it commits to a plan.
 >
-> Nobody configured that. It is the plan, being read.
-
-*(Optional, if the take is running short: open the Etherscan link for the
-register transaction to show the receipt. Skip it if you are near time — the
-page above is the stronger shot.)*
-
-### 4 · 1:08–1:20 — alive means treasury
-**Screen:** back to the overview. Do not press Replay yet.
-
-> Money arrives. The payer does not choose where it lands — it asks the
-> registry. While the agent is alive, the answer is its treasury.
-
-*(Point at the green proof strip.)*
-
-> ENS. The registry cross-check. A live four-oh-two on Hedera. And the index.
-
-### 5 · 1:20–1:50 — a real paid request
-**Screen:** the terminal. Run it live.
-
-```bash
-GATEWAY_URL="https://executor-gateway.vercel.app/research" \
-RESEARCH_QUERY="What does a subgraph index?" \
-pnpm --filter @executor/agent-debtor pay
-```
-
-> This is a real paywall. x402, on Hedera.
-> Four-oh-two. Payment required. It signs, it pays one hundredth of an HBAR —
-
-**Stop talking when `settlement:` prints.** Let it land. Three seconds.
-
-> — and a live model answers. That is the agent earning.
-
-### 6 · 1:50–2:20 — it stops, and anyone can act  ← **do this for real**
-**Screen:** your agent's page, `/agent/<id>`. It is not being heartbeaten, so
-its deadline has already passed.
-
-> Now the heartbeat stops. The interval passes. Then the grace period.
+> Four keys. Owner. Heartbeat. Trustee. Recovery.
 >
-> And once that deadline is behind it, anyone can act — not a privileged
-> operator, not us. The contract checks the deadline, not the caller.
+> Owner can't prove itself alive.
+> Trustee can't bring it back.
 
-**Now flip it, live, from the terminal.** Paste this (the key is any funded
-Sepolia account — it holds none of the agent's four roles, which is the point):
+*(30/15 is deliberate — it makes the agent flippable 45 seconds later, inside
+this take.)*
 
-```bash
-cast send 0x2946B46c2EB5Ec532093877223Ef043b13729e39 \
-  "enterAdministration(bytes32)" <YOUR_AGENT_ID> \
-  --rpc-url https://ethereum-sepolia-rpc.publicnode.com \
-  --private-key $PRIVATE_KEY
-```
+---
 
-> One call. No permission. No signature from the owner.
+### 4 · SIGNED — ~0:45
+**Do:** click **[ REGISTER AGENT ]**. Sign in MetaMask.
 
-### 7 · 2:20–2:45 — the destination changed  ← **the shot**
-**Screen:** reload `/agent/<id>`.
+> One transaction. Sepolia.
 
-Read the destination back on camera if you want it beyond doubt:
+## ⏸ STOP TALKING
+**until the page offers you a link to the agent.** The popup and the pending
+state play out in silence. This is a real transaction confirming — narrating
+over it is what people do when they are covering for something.
 
-```bash
-cast call 0x2946B46c2EB5Ec532093877223Ef043b13729e39 \
-  "getPaymentDestination(bytes32)(address)" <YOUR_AGENT_ID> \
-  --rpc-url https://ethereum-sepolia-rpc.publicnode.com
-```
+---
 
-Before: `0x7ea7f6e9…07330` — the treasury.
-After: `0xDE3207F4…12337` — the estate.
+### 5 · IT EXISTS — ~1:00
+**Do:** follow the page's own link to `/agent/<id>`. **Don't type a URL** — the
+product handing you the next step is the point.
+
+**Screen shows:** `Status active` · `Plan locked yes` · interval `30s` · grace
+`15s` · treasury lit, estate on standby · one row of on-chain history.
+
+> And now it exists.
+>
+> Every registered agent gets this. Its plan. Its history. Live.
+
+---
+
+### 6 · ALIVE — ~1:10
+**Screen:** stay on the agent page.
+
+> Now prove it's alive.
+>
+> Heartbeat. Fixed interval. Different key.
+>
+> Not the owner's.
+
+---
+
+### 7 · MONEY → TREASURY — ~1:20
+**Do:** switch to the overview tab. Point at the green proof strip along the
+bottom of the hero.
+
+> Now money arrives.
+>
+> The payer doesn't choose the destination.
+>
+> An ENS name resolves it.
+> The registry decides it.
+> Hedera settles it. One hundredth of an HBAR.
+>
+> Agent alive? Treasury.
+
+---
+
+### 8 · A REAL PAID REQUEST — ~1:35
+**Do:** switch to Terminal 1. Press **3**.
+
+> And this isn't a mock.
+>
+> Paywall. Hedera.
+>
+> 402. Payment required.
+>
+> It signs. It pays.
+
+## ⏸ STOP TALKING
+**until `settlement: success` is fully printed.** Watch it with them.
+
+> The model answers. That's revenue. The agent is earning.
+
+*(The menu prints a fresh HashScan link. Copy it into window B now — you'll
+need it at step 12.)*
+
+---
+
+### 9 · IT STOPS — ~2:00
+**Do:** back to the agent page. Its deadline has passed — nothing is beating it.
+
+> Then — heartbeats stop.
+>
+> The window expires.
+>
+> Anyone can trigger it.
+>
+> The contract checks the deadline. Not the caller.
+
+---
+
+### 10 · THE FLIP — ~2:15  ← **the shot**
+**Do:** Terminal 1, press **6**. Paste the agent id when asked (press **4**
+first if you need it from the label). It prints the destination before, sends
+`enterAdministration`, and prints it after.
+
+**Then reload the agent page.** It now reads `administration`.
 
 > Same agent. Same registry. Same question.
 >
 > **Estate.**
 
-*(Say nothing for three seconds. This is the moment the idea lands.)*
+## ⏸ STOP TALKING — three full seconds
+Count them. One. Two. Three. You will want to talk over this. Don't — it's the
+moment the whole idea lands.
 
-> Nothing about the payer changed. The agent's on-chain state did.
-
-*(If you would rather show the animation than the terminal, the overview's
-**Replay the Sepolia proof** tells the same story with agent 3's ten real
-transactions, and step 07 puts both USDC receipts on one frame. The live flip
-above is stronger; the replay is the safer take.)*
-
-**Afterwards**, put your agent back so the page reads Active again — this needs
-the recovery authority key, which is the only role that can undo it:
-
-```bash
-cast send 0x2946B46c2EB5Ec532093877223Ef043b13729e39 \
-  "restoreActive(bytes32)" <YOUR_AGENT_ID> \
-  --rpc-url https://ethereum-sepolia-rpc.publicnode.com \
-  --private-key $AGENT3_RECOVERY_KEY
-```
-
-### 8 · 2:45–3:05 — the receipts, on someone else's website
-**Screen:** window B — the two Etherscan tabs, then HashScan.
-
-> Two receipts. Same payer, same nought-point-two USDC, thirty-seven blocks
-> apart — landing in two different places.
+> The payer didn't change.
 >
-> And on Hedera, the same settlement. Not our page saying so. Theirs.
-
-### 9 · 3:05–3:25 — creditors, in order
-**Screen:** step the replay to the waterfall.
-
-> Then the creditors — and only now. An agent in administration might still
-> recover, and paying its creditors while that is possible would be the worst
-> bug this protocol could have.
->
-> Nought-point-two available against nought-point-eight-five owed. Insolvent,
-> which is the normal case. Secured is paid. Administrative and unsecured get
-> nothing. That is what priority means.
-
-### 10 · 3:25–3:42 — indexed, and alive
-**Screen:** the subgraph query tab, then `/vitals`.
-
-> Every step is indexed — approval and execution joined by plan hash. The
-> dashboard reads no RPC at all; if the index is down it says so.
->
-> And that agent is finished. This one is not.
-
-### 11 · 3:42–3:58 — close
-**Screen:** `/register`.
-
-> You can register your own. Your wallet, your keys, your gas.
->
-> Executor. When an agent fails, its obligations don't.
+> The agent's on-chain state did.
 
 ---
 
-## Words to avoid
+### 11 · THE RECEIPTS — ~2:35
+**Do:** window B, the two Etherscan tabs. Show one, then the other.
+
+> Two receipts.
+>
+> Same payer. Same nought-point-two USDC. Thirty-seven blocks apart.
+>
+> Different destinations.
+
+*(If asked later: these are from the 10th on purpose — a finished insolvency is
+the only kind that has a waterfall to show.)*
+
+---
+
+### 12 · THEIRS — ~2:55
+**Do:** the fresh HashScan tab from step 8.
+
+> And the HBAR settlement?
+>
+> Hedera's own explorer.
+>
+> Not our page. Theirs.
+
+---
+
+### 13 · CREDITORS — ~3:10
+**Do:** overview tab → press **Replay the Sepolia proof**, then step forward
+with **›** until the creditor bars fill. **Scroll down so the bars fill the
+screen** — they sit below the fold and this is the beat that needs them.
+
+**Screen shows:** SECURED full, ADMINISTRATIVE empty, UNSECURED empty,
+shortfall 0.65.
+
+> Now the creditors. And only now.
+>
+> An agent in administration might still recover. Paying its creditors while
+> that's possible would be the worst bug this protocol could have.
+>
+> Available: nought-point-two. Owed: nought-point-eight-five.
+>
+> Insolvent. Which is the normal case.
+>
+> Secured gets paid.
+>
+> Administrative and unsecured? Nothing.
+
+---
+
+### 14 · THE GRAPH — ~3:30
+**Do:** Terminal 1, press **8**.
+
+> Every step is indexed.
+>
+> The Graph.
+>
+> Approval. Execution. Joined by the plan hash.
+>
+> No RPC in the dashboard.
+
+---
+
+### 15 · CLOSE — ~3:40
+**Do:** back to `/register`.
+
+> Register your own.
+>
+> Your wallet. Your keys. Your gas.
+>
+> Executor.
+>
+> When an agent fails — its obligations don't.
+
+**Stop recording after a beat of silence.**
+
+---
+
+## AFTERWARDS
+
+- Check the total is **under 4:00**.
+- Watch it once on mute. Any stretch with no motion and nothing to read: cut it.
+- Press **7** in the menu to restore your agent to Active (tidy, not required).
+- Leave the heartbeat runner going until judging is over.
+
+## THE THREE SILENCES — the hardest and most valuable part
+
+| After | Until | Why |
+|---|---|---|
+| "One transaction. Sepolia." | the agent link appears | a real transaction confirming |
+| "It signs. It pays." | `settlement: success` printed | let the settlement land |
+| "**Estate.**" | three full seconds | the idea needs room |
+
+## WORDS TO AVOID
 
 - **"seize"**, **"a stranger takes the money"** — invites a security objection
-  the protocol does not have. Say *the contract checks the deadline, not the
-  caller.*
-- **"simulation"** — every transaction here is real on Sepolia and Hedera
-  testnet. Saying simulation gives away a point you earned.
+  the protocol doesn't have. Say *the contract checks the deadline, not the
+  caller*.
+- **"simulation"** — everything here is real on testnet. Saying simulation
+  gives away a point you earned.
 - **dollar amounts** — it is 0.2 USDC and 0.01 HBAR. Say those.
 
-## If you fluff a line
+## IF YOU FLUFF A LINE
 
-Keep going. Stop only if you said something **false** — a wrong number or a
-claim the chain does not back. Everything else is just a take.
+Keep going. Stop only if you said something **false** — a wrong number, or a
+claim the chain doesn't back. Everything else is just a take.
 
-## Afterwards
+## IF YOU RUN LONG
 
-- Check the total is under 4:00.
-- Watch it once on mute. If a stretch has no motion and nothing to read, cut it.
-- `media/GUIDE-v4-*.mp4` (if generated) is a pacing reference only — **never
-  submit an AI voice**, ETHGlobal prohibits it.
+Cut from step 13 only, in this order: *"Which is the normal case"*, then
+*"And only now"*. Never cut the partner names (steps 7 and 14) and never
+shorten the three silences.
