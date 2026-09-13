@@ -7,6 +7,8 @@
 #
 #   cd /mnt/c/Users/Pramod/GitHub/executor && ./scripts/demo-day.sh
 #
+# On Windows without WSL, use scripts/demo-day.ps1 - same nine options.
+#
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
 
