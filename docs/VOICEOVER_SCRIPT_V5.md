@@ -79,8 +79,8 @@ appears? Fine. Keep going.
 **→ then stop.** The filled form sits for a moment. Nothing until the button
 is clicked.
 
-### 4 · SIGNED  ·  0:38
-*The moment REGISTER AGENT is clicked.*
+### 4 · SIGNED  ·  say from 0:46  ·  the click lands 0:50
+*The plan is fully typed and the button is about to be pressed.*
 
 > One transaction. Sepolia.
 
@@ -89,7 +89,7 @@ is clicked.
 page appears. (This was a 16s hold in an earlier cut; the dwell was trimmed to
 get the video under the four-minute limit.)*
 
-### 5 · IT EXISTS  ·  0:56
+### 5 · IT EXISTS  ·  say from 0:53  ·  the agent's page appears 0:56
 *The agent's page.*
 
 > And now it exists.
