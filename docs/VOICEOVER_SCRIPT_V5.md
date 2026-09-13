@@ -1,6 +1,6 @@
 # Executor — what to say, and when to stop talking
 
-For **`media/executor-demo-v5-silent.mp4`** — 3:48 (228.36s).
+For **`media/executor-demo-v5-silent.mp4`** — **3:51** (231.0s).
 
 Read it **flat and fast**, like you find it mildly annoying to have to explain.
 Do NOT put a dramatic pause after every fragment — the short lines exist so you
@@ -31,9 +31,9 @@ Do not fill them.
 
 | After you say | At about | How long | What is on screen | Why you stop |
 |---|---|---|---|---|
-| "One transaction. Sepolia." | 0:40 | ~16s | the signature, then the transaction being mined | a real transaction confirming — talking over it is what people do when they are covering for something |
-| "It signs. It pays." | 1:42 | ~20s | the terminal printing the settlement | let `settlement: success` land on its own |
-| "Estate." | 2:18 | 3s | the page has flipped to the estate | this is the whole video; words would bury it |
+| "One transaction. Sepolia." | 0:50 | ~5s | the signature, then the transaction being mined | a real transaction confirming — talking over it is what people do when they are covering for something |
+| "It signs. It pays." | 1:40 | ~14s | the terminal printing the settlement | let `settlement: success` land on its own |
+| "Estate." | 2:16 | 3s | the page has flipped to the estate | this is the whole video; words would bury it |
 
 Everything else is a breath between fragments, not a pause.
 
@@ -84,11 +84,12 @@ is clicked.
 
 > One transaction. Sepolia.
 
-# SILENCE — about 16 seconds
-*The signature goes out, then it is mined. Say nothing. Resume when the
-agent's own page appears.*
+# SILENCE — about 5 seconds
+*The signature goes out and is mined. Say nothing. Resume when the agent's own
+page appears. (This was a 16s hold in an earlier cut; the dwell was trimmed to
+get the video under the four-minute limit.)*
 
-### 5 · IT EXISTS  ·  0:57
+### 5 · IT EXISTS  ·  0:56
 *The agent's page.*
 
 > And now it exists.
@@ -100,7 +101,7 @@ agent's own page appears.*
 >
 > Live.
 
-### 6 · ALIVE / HEARTBEAT  ·  1:05
+### 6 · ALIVE / HEARTBEAT  ·  1:02
 *Heartbeats landing.*
 
 > Now prove it's alive.
@@ -113,7 +114,7 @@ agent's own page appears.*
 
 **→ then wait** for the cut back to the rail.
 
-### 7 · MONEY → TREASURY  ·  1:13
+### 7 · MONEY → TREASURY  ·  1:20
 *The rail. The green proof strip is on screen — all three partners at once.*
 
 > Now money arrives.
@@ -131,7 +132,7 @@ agent's own page appears.*
 *(The `0.01 HBAR` is in the REVENUE bar at the top of this shot — that is why
 the amount is said here and not over the terminal, where it never appears.)*
 
-### 8 · THE PAYWALL  ·  1:33
+### 8 · THE PAYWALL  ·  1:32
 *The terminal starts typing.*
 
 > And this isn't a mock.
@@ -144,11 +145,11 @@ the amount is said here and not over the terminal, where it never appears.)*
 > It signs.
 > It pays.
 
-# SILENCE — about 20 seconds
+# SILENCE — about 14 seconds
 *After "It pays." — the settlement block prints itself out. Watch it with them.
 Resume once `settlement: success` is fully on screen.*
 
-### 9 · EARNING → FAILURE  ·  2:02
+### 9 · EARNING → FAILURE  ·  1:54
 
 > The model answers.
 >
@@ -164,7 +165,7 @@ Resume once `settlement: success` is fully on screen.*
 >
 > The contract checks the deadline. Not the caller.
 
-### 10 · THE FLIP  ·  say from 2:14  ·  page flips ~2:18  ← the shot
+### 10 · THE FLIP  ·  say from 2:12  ·  page flips ~2:16  ← the shot
 *The page reloads. It reads administration.*
 
 > Same agent. Same registry. Same question.
@@ -174,7 +175,7 @@ Resume once `settlement: success` is fully on screen.*
 # SILENCE — 3 seconds
 *Count it. One. Two. Three. You will want to talk over this. Don't.*
 
-### 11 · NOTHING CHANGED  ·  2:21
+### 11 · NOTHING CHANGED  ·  2:19
 
 > The payer didn't change.
 >
@@ -182,7 +183,7 @@ Resume once `settlement: success` is fully on screen.*
 
 **→ then wait** for Etherscan.
 
-### 12 · THE RECEIPTS  ·  say from 2:34  ·  Etherscan appears ~2:42
+### 12 · THE RECEIPTS  ·  say from 2:32  ·  Etherscan appears ~2:40
 *Etherscan.*
 
 > Two receipts.
@@ -193,7 +194,7 @@ Resume once `settlement: success` is fully on screen.*
 >
 > Different destinations.
 
-### 13 · THEIRS  ·  say from 2:53  ·  HashScan appears ~3:00
+### 13 · THEIRS  ·  say from 2:52  ·  HashScan appears ~2:58
 *HashScan.*
 
 > And the HBAR settlement?
@@ -204,8 +205,9 @@ Resume once `settlement: success` is fully on screen.*
 >
 > Theirs.
 
-### 14 · CREDITORS  ·  say from 3:06  ·  waterfall pours ~3:18
-*The waterfall pours. This beat has room — do not rush it.*
+### 14 · CREDITORS  ·  say from 3:08  ·  the waterfall bars fill ~3:16
+*The creditor bars fill: SECURED paid in full, ADMINISTRATIVE and UNSECURED
+empty. This beat has room — do not rush it.*
 
 > Now the creditors.
 >
@@ -225,7 +227,7 @@ Resume once `settlement: success` is fully on screen.*
 >
 > Nothing.
 
-### 15 · THE GRAPH  ·  say from 3:25  ·  subgraph appears ~3:36
+### 15 · THE GRAPH  ·  say from 3:28  ·  subgraph appears ~3:36
 *The subgraph answering its own query.*
 
 > Every step is indexed.
@@ -236,7 +238,7 @@ Resume once `settlement: success` is fully on screen.*
 >
 > No RPC in the dashboard.
 
-### 16 · REGISTER + CLOSE  ·  3:34
+### 16 · REGISTER + CLOSE  ·  3:44
 *Back on `/register`.*
 
 > Register your own.
@@ -251,7 +253,7 @@ Resume once `settlement: success` is fully on screen.*
 >
 > its obligations don't.
 
-*Stop. About six seconds of video remain. Let it run out.*
+*Stop. A few seconds of video remain. Let it run out.*
 
 ---
 

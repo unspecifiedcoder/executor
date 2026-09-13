@@ -24,9 +24,14 @@ import fs from 'node:fs';
 const RPC = 'https://ethereum-sepolia-rpc.publicnode.com';
 const DASH = process.env.DASH_URL ?? 'http://localhost:3100';
 const REGISTRY = '0x2946B46c2EB5Ec532093877223Ef043b13729e39';
-const SCRATCH = 'file:///tmp/claude-0/-mnt-c-Users-Pramod-GitHub-ai-research/c467eb2f-5e81-4c44-8abd-feab16531f5c/scratchpad';
-const TERM = `${SCRATCH}/term/index.html`;
-const GRAPHQ = `${SCRATCH}/graph/index.html`;
+/**
+ * These two pages live in the repo, not a temp directory. An earlier take died
+ * mid-recording because they had been written to the session scratchpad, which
+ * is wiped between sessions - the video depends on them, so they are versioned.
+ */
+const PAGES = new URL('./pages/', import.meta.url).href;
+const TERM = `${PAGES}term/index.html`;
+const GRAPHQ = `${PAGES}graph/index.html`;
 
 const TX_TREASURY = '0x731319100c29e25cf27270085ef91caaba946f9907cd14dfa67e33ef8ea243c5';
 const HS_TX = '0.0.7162784@1789202466.813297956';
@@ -78,24 +83,24 @@ const beater = createWalletClient({ account: signer, chain: sepolia, transport: 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const MARK = {
-  // Gaps at the tail must exceed what a navigation actually costs. An earlier
-  // take gave the last three segments 16s/8s/4s; a goto plus a cookie dismiss
-  // is ~8-11s on its own, so hold() returned immediately and the whole tail
-  // slid - Etherscan was still on screen where creditors should have been.
+  // On-chain waits (mining, three heartbeats, the eligibility poll) are
+  // variable, and everything after them slides when they run long - one take
+  // ran 253s and left Etherscan on screen through two later segments. The
+  // tail therefore carries deliberate slack rather than tight gaps.
   hook:      14,
   connect:   24,
   filled:    50,
   signed:    64,
-  agentpage: 94,   // mined, then three heartbeats (variable, watch this)
+  agentpage: 94,
   alive:    106,
   terminal: 130,
   flip:     148,
   flipped:  172,
-  ether:    190,   // 18s
-  hash:     208,   // 18s
-  waterfall:226,   // 18s - the analogy's payoff
-  graph:    234,   //  8s
-  end:      238,
+  ether:    190,
+  hash:     208,
+  waterfall:228,   // 20s - the creditor bars, scrolled into view
+  graph:    240,
+  end:      246,
 };
 
 const browser = await chromium.launch({
@@ -307,6 +312,12 @@ try {
   await page.goto(DASH, { waitUntil:'domcontentloaded', timeout:120000 });
   await sleep(1400);
   await next(8); // step 09 — executePlan pours
+  // The waterfall lives below the fold. Without this the segment narrating
+  // "secured is paid, the rest get nothing" showed the page header instead,
+  // and the creditor bars - the payoff the hook promises - never appeared.
+  await page.locator('.fall').scrollIntoViewIfNeeded({ timeout: 8000 }).catch(() =>
+    page.evaluate(() => window.scrollBy({ top: 900 })).catch(()=>{}));
+  await sleep(700);
   await hold(MARK.waterfall);
 
   mark(MARK.waterfall, 'the subgraph — approval and execution joined by planHash');

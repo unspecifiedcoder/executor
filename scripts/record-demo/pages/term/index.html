@@ -1,0 +1,77 @@
+<title>Terminal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#04060b;--text:#e6edf7;--dim:#7c8ba3;--faint:#4b5a72;
+  --alive:#35f0c0;--lapsed:#ffb545;--succession:#6ea8ff;
+  --mono:"IBM Plex Mono","SF Mono",Consolas,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--mono);
+  padding:54px 60px;font-size:17px;line-height:1.75}
+.head{display:flex;align-items:center;gap:12px;margin-bottom:26px;
+  font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+.head .d{width:8px;height:8px;border-radius:50%;background:var(--alive);box-shadow:0 0 10px var(--alive)}
+.head b{color:var(--dim);font-weight:500;letter-spacing:.06em;text-transform:none}
+pre{margin:0;white-space:pre-wrap;word-break:break-word}
+.l{opacity:1}
+.c{color:var(--faint)} .k{color:var(--dim)} .v{color:var(--text)}
+.hot{color:var(--lapsed);font-weight:600} .ok{color:var(--alive);font-weight:600}
+.cursor{display:inline-block;width:9px;height:19px;background:var(--alive);
+  vertical-align:-3px;animation:bl 1s steps(1,end) infinite}
+@keyframes bl{0%,50%{opacity:1}51%,100%{opacity:0}}
+</style>
+
+<div class="head"><span class="d"></span>live · hedera testnet <b>pnpm --filter @executor/agent-debtor pay</b></div>
+<pre id="out"></pre>
+
+<script>
+const LINES = [
+ ['c','$ GATEWAY_URL=https://executor-gateway.vercel.app/research \\'],
+ ['c','    RESEARCH_QUERY="What does a subgraph index?" pnpm pay'],
+ ['',''],
+ ['k','[client] GET https://executor-gateway.vercel.app/research?q=What+does+a+subgraph+index%3F'],
+ ['k','[client] query: What does a subgraph index?'],
+ ['hot','[client] got 402 Payment Required, building payment…'],
+ ['k','[client] payment signed, retrying with X-PAYMENT header…'],
+ ['',''],
+ ['ok','[client] settlement: {'],
+ ['ok','  success: true,'],
+ ['ok',"  payer: '0.0.10423620',"],
+ ['ok',"  transaction: '0.0.7162784@1789202466.813297956',"],
+ ['ok',"  network: 'hedera:testnet'"],
+ ['ok','}'],
+ ['',''],
+ ['k','[client] response body: {'],
+ ['v',"  answer: 'A subgraph index is a data structure that organizes and"],
+ ['v',"           stores information about specific subgraphs within a larger"],
+ ['v',"           graph to enable rapid retrieval and analysis…',"],
+ ['v',"  model: 'qwen/qwen3.8-27b',"],
+ ['v','  tokens: 169,'],
+ ['v','  latencyMs: 319,'],
+ ['v',"  agent: 'executor-hackathon-demo.eth'"],
+ ['k','}'],
+];
+const out = document.getElementById('out');
+LINES.forEach(([cls,text])=>{
+  const s=document.createElement('span');
+  s.className='l '+(cls||'');
+  s.dataset.full=text+'\n';
+  out.appendChild(s);
+});
+const cur=document.createElement('span'); cur.className='cursor'; out.appendChild(cur);
+// One character per tick: a block that appears whole finishes in six seconds
+// and leaves the rest of the slot frozen, which reads as a screenshot.
+const nodes=[...document.querySelectorAll('.l')];
+let i=0,c=0;
+function tick(){
+  if(i>=nodes.length) return;
+  const full=nodes[i].dataset.full;
+  if(c<full.length){
+    nodes[i].textContent = full.slice(0, c+1); c += 1;
+    setTimeout(tick, nodes[i].className.includes('ok') ? 46 : 30);
+  } else {
+    nodes[i].textContent = full; i++; c=0;
+    setTimeout(tick, full.trim()==='' ? 90 : nodes[i-1].className.includes('ok') ? 420 : 200);
+  }
+}
+setTimeout(tick,600);
+</script>

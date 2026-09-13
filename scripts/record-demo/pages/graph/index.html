@@ -1,0 +1,92 @@
+<title>Subgraph</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#04060b;--text:#e6edf7;--dim:#7c8ba3;--faint:#4b5a72;
+  --alive:#35f0c0;--lapsed:#ffb545;--succession:#6ea8ff;
+  --mono:"IBM Plex Mono","SF Mono",Consolas,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--mono);
+  padding:48px 60px;font-size:16px;line-height:1.72}
+.head{display:flex;align-items:center;gap:12px;margin-bottom:22px;font-size:12px;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+.head .d{width:8px;height:8px;border-radius:50%;background:var(--alive);box-shadow:0 0 10px var(--alive)}
+.head b{color:var(--dim);font-weight:500;letter-spacing:.04em;text-transform:none}
+.cols{display:grid;grid-template-columns:0.82fr 1.18fr;gap:40px;align-items:start}
+.lbl{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);
+  margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(150,190,235,.12)}
+pre{margin:0;white-space:pre-wrap;word-break:break-word}
+.q{color:var(--succession)} .k{color:var(--dim)} .v{color:var(--text)}
+.hot{color:var(--lapsed)} .ok{color:var(--alive)} .c{color:var(--faint)}
+.cursor{display:inline-block;width:8px;height:17px;background:var(--alive);
+  vertical-align:-3px;animation:bl 1s steps(1,end) infinite}
+@keyframes bl{0%,50%{opacity:1}51%,100%{opacity:0}}
+.note{margin-top:26px;font-size:12.5px;color:var(--faint);line-height:1.7;
+  border-top:1px solid rgba(150,190,235,.12);padding-top:14px}
+.note b{color:var(--dim);font-weight:500}
+</style>
+
+<div class="head"><span class="d"></span>the graph · subgraph studio
+  <b>api.studio.thegraph.com/query/1760047/executor/v0.1.2</b></div>
+
+<div class="cols">
+  <div><div class="lbl">query</div><pre id="q"></pre></div>
+  <div><div class="lbl">response</div><pre id="r"></pre></div>
+</div>
+
+<p class="note"><b>planHash joins them.</b> The trustee approval that gates the waterfall, and the
+distribution it authorised — read as one sequence, from the index the dashboard uses as its only
+source of history.</p>
+
+<script>
+const Q = [
+ ['c','{'],
+ ['q','  planApprovals(orderBy: blockNumber) {'],
+ ['k','    planHash'],['k','    trustee'],['k','    blockNumber'],['k','    estate'],
+ ['q','  }'],
+ ['q','  planExecutions {'],
+ ['k','    planHash'],['k','    totalPaid'],['k','    shortfall'],
+ ['q','  }'],
+ ['c','}'],
+];
+const R = [
+ ['c','{ "data": {'],
+ ['k','  "planApprovals": ['],
+ ['v','    { "planHash":    "0x66306925…959e7",'],
+ ['v','      "trustee":     "0xd09e929e…fed8c",'],
+ ['ok','      "blockNumber": "11672257",'],
+ ['v','      "estate":      "0x83f447fa…fc7f" },'],
+ ['v','    { "planHash":    "0xfe464783…06f1",'],
+ ['v','      "trustee":     "0x108efe09…a310",'],
+ ['ok','      "blockNumber": "11672776",'],
+ ['v','      "estate":      "0xd52b37ad…7c5f" }'],
+ ['k','  ],'],
+ ['k','  "planExecutions": ['],
+ ['v','    { "planHash":  "0xfe464783…06f1",'],
+ ['hot','      "totalPaid": "200000",'],
+ ['hot','      "shortfall": "650000" }'],
+ ['k','  ]'],
+ ['c','} }'],
+];
+function mount(el, rows){
+  const frag=document.createDocumentFragment();
+  rows.forEach(([cls,t])=>{const s=document.createElement('span');
+    s.className='l '+cls; s.dataset.full=t+'\n'; frag.appendChild(s);});
+  el.appendChild(frag);
+  const c=document.createElement('span'); c.className='cursor'; el.appendChild(c);
+  return [...el.querySelectorAll('.l')];
+}
+const qn=mount(document.getElementById('q'),Q);
+const rn=mount(document.getElementById('r'),R);
+// Query types first, then the response answers it - a response that appears
+// alongside its query reads as a screenshot.
+function type(nodes, done){
+  let i=0,c=0;
+  (function tick(){
+    if(i>=nodes.length){ done&&done(); return; }
+    const full=nodes[i].dataset.full;
+    if(c<full.length){ nodes[i].textContent=full.slice(0,c+2); c+=2; setTimeout(tick,11); }
+    else { nodes[i].textContent=full; i++; c=0; setTimeout(tick,70); }
+  })();
+}
+setTimeout(()=>type(qn,()=>setTimeout(()=>type(rn),420)),500);
+</script>
