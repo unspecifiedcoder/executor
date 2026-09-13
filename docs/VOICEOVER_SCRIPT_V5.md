@@ -11,9 +11,16 @@ built.
 **Watch the video, not the timer.** Every pause is cued by something happening
 on screen, so you can perform the whole thing without looking at a clock.
 
-The time on each heading is there as an **anchor, not a target** — if you lose
-your place, or want to pick up mid-way through a retake, that is what it is
-for. Drifting a second or two either side changes nothing.
+The time on each heading is **when you start speaking, not when the picture
+cuts.** Narration deliberately leads each cut by a few seconds so the payoff
+word lands *on* it — so at segment 12 you begin at 2:34 and Etherscan appears
+at about 2:42. That gap is correct, not drift.
+
+Treat the times as **anchors, not targets**: they are for finding your place
+after a fumble or picking up mid-retake. A second or two either way changes
+nothing.
+
+Where a cut matters, the heading names both.
 
 ---
 
@@ -25,7 +32,7 @@ Do not fill them.
 | After you say | At about | How long | What is on screen | Why you stop |
 |---|---|---|---|---|
 | "One transaction. Sepolia." | 0:40 | ~16s | the signature, then the transaction being mined | a real transaction confirming — talking over it is what people do when they are covering for something |
-| "One hundredth of an HBAR." | 1:42 | ~20s | the terminal printing the settlement | let `settlement: success` land on its own |
+| "It signs. It pays." | 1:42 | ~20s | the terminal printing the settlement | let `settlement: success` land on its own |
 | "Estate." | 2:18 | 3s | the page has flipped to the estate | this is the whole video; words would bury it |
 
 Everything else is a breath between fragments, not a pause.
@@ -115,11 +122,14 @@ agent's own page appears.*
 >
 > An ENS name resolves it.
 > The registry decides it.
-> Hedera settles it.
+> Hedera settles it. One hundredth of an HBAR.
 >
 > Agent alive?
 >
 > Treasury.
+
+*(The `0.01 HBAR` is in the REVENUE bar at the top of this shot — that is why
+the amount is said here and not over the terminal, where it never appears.)*
 
 ### 8 · THE PAYWALL  ·  1:33
 *The terminal starts typing.*
@@ -133,12 +143,10 @@ agent's own page appears.*
 >
 > It signs.
 > It pays.
->
-> One hundredth of an HBAR.
 
 # SILENCE — about 20 seconds
-*The settlement block prints itself out. Watch it with them. Resume once
-`settlement: success` is fully on screen.*
+*After "It pays." — the settlement block prints itself out. Watch it with them.
+Resume once `settlement: success` is fully on screen.*
 
 ### 9 · EARNING → FAILURE  ·  2:02
 
@@ -156,7 +164,7 @@ agent's own page appears.*
 >
 > The contract checks the deadline. Not the caller.
 
-### 10 · THE FLIP  ·  2:14  ← the shot
+### 10 · THE FLIP  ·  say from 2:14  ·  page flips ~2:18  ← the shot
 *The page reloads. It reads administration.*
 
 > Same agent. Same registry. Same question.
@@ -174,7 +182,7 @@ agent's own page appears.*
 
 **→ then wait** for Etherscan.
 
-### 12 · THE RECEIPTS  ·  2:34
+### 12 · THE RECEIPTS  ·  say from 2:34  ·  Etherscan appears ~2:42
 *Etherscan.*
 
 > Two receipts.
@@ -185,7 +193,7 @@ agent's own page appears.*
 >
 > Different destinations.
 
-### 13 · THEIRS  ·  2:53
+### 13 · THEIRS  ·  say from 2:53  ·  HashScan appears ~3:00
 *HashScan.*
 
 > And the HBAR settlement?
@@ -196,7 +204,7 @@ agent's own page appears.*
 >
 > Theirs.
 
-### 14 · CREDITORS  ·  3:06
+### 14 · CREDITORS  ·  say from 3:06  ·  waterfall pours ~3:18
 *The waterfall pours. This beat has room — do not rush it.*
 
 > Now the creditors.
@@ -217,7 +225,7 @@ agent's own page appears.*
 >
 > Nothing.
 
-### 15 · THE GRAPH  ·  3:25
+### 15 · THE GRAPH  ·  say from 3:25  ·  subgraph appears ~3:36
 *The subgraph answering its own query.*
 
 > Every step is indexed.
@@ -288,7 +296,7 @@ hedging.
 | Spoken | On screen | Source |
 |---|---|---|
 | four keys | the register form | `registerAgent` arguments |
-| one hundredth of an HBAR | 1,000,000 tinybars | the live 402 challenge |
+| one hundredth of an HBAR | `0.01 HBAR` in the REVENUE bar, seg 7 | the live 402 challenge quotes 1,000,000 tinybars |
 | nought-point-two USDC | 0.2 USDC | `usdc(200000)`, matches Etherscan |
 | nought-point-eight-five owed | 0.85 USDC | `AGENT3_TOTALS.owed` |
 | thirty-seven blocks apart | 37 | computed from the two receipts |
