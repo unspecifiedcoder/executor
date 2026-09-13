@@ -37,7 +37,7 @@ const TX_TREASURY = '0x731319100c29e25cf27270085ef91caaba946f9907cd14dfa67e33ef8
 /** Refreshed before each take. A link that is a day old invites "is this
  *  thing still running?" - which is the one doubt a live paywall should
  *  not leave. `scripts/demo-day.sh` option 3 makes a new one. */
-const HS_TX = '0.0.7162784@1789278014.264699559';
+const HS_TX = '0.0.7162784@1789281994.609981819';
 
 /** A fresh label per take, so a re-run is never blocked by AgentAlreadyRegistered. */
 const LABEL = `courier-${Math.random().toString(36).slice(2, 7)}.eth`;
@@ -153,6 +153,17 @@ await page.addInitScript((addr) => {
   };
 }, account.address);
 
+// Warm the overview BEFORE the clock starts. /api/rail fetches three external
+// services on a cold render, and a take opened on fourteen seconds of blank
+// page because the hero had not painted yet when t0 began.
+console.log('  warming the overview…');
+await page.goto(DASH, { waitUntil: 'domcontentloaded', timeout: 120000 });
+await page.waitForSelector('.stackproof .sp', { timeout: 90000 }).catch(() =>
+  console.log('    !! proof strip never appeared — the hero may be bare'));
+await page.waitForSelector('.vault', { timeout: 30000 }).catch(()=>{});
+await sleep(2500);
+console.log('  warm, starting the clock');
+
 const t0 = Date.now();
 const at = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
 const hold = async s => { while (Date.now()-t0 < s*1000) await sleep(40); };
@@ -161,11 +172,26 @@ const next = n => page.evaluate(k => {
   const b = [...document.querySelectorAll('.controls button')];
   for (let i=0;i<k;i++) b[2]?.click();
 }, n);
+/**
+ * Both explorers put a cookie modal over exactly the rows this video exists to
+ * show, and HashScan raises its one a beat AFTER the page settles - a single
+ * early click misses it, and a take shipped with the modal covering the Hbar
+ * transfers. So: try repeatedly, and confirm it is actually gone.
+ */
 const dismiss = async () => {
-  for (const sel of ['button:has-text("Got it")','button:has-text("ACCEPT")','button:has-text("Accept")']) {
-    const b = page.locator(sel).first();
-    if (await b.count().catch(()=>0)) { await b.click().catch(()=>{}); await sleep(400); }
+  for (let attempt = 0; attempt < 6; attempt++) {
+    for (const sel of ['button:has-text("ACCEPT")', 'button:has-text("Accept")',
+                       'button:has-text("Got it")', 'button:has-text("I agree")']) {
+      const b = page.locator(sel).first();
+      if (await b.count().catch(() => 0)) await b.click({ timeout: 2000 }).catch(() => {});
+    }
+    await sleep(900);
+    const stillThere = await page
+      .locator('text=/Accept Cookies|uses cookies/i').first()
+      .isVisible({ timeout: 700 }).catch(() => false);
+    if (!stillThere) return;
   }
+  console.log('    !! a cookie modal is still on screen');
 };
 const destination = () => pub.readContract({
   address: REGISTRY, abi: DEST_ABI, functionName:'getPaymentDestination', args:[AGENT_ID] });
@@ -174,16 +200,31 @@ console.log(`  label   ${LABEL}\n  agentId ${AGENT_ID}\n  owner   ${account.addr
 
 try {
   mark(0, 'hero — a company fails and there is a process; an agent fails and there is nothing');
-  await page.goto(DASH, { waitUntil:'domcontentloaded', timeout:120000 });
-  await page.waitForSelector('.stackproof .sp', { timeout:60000 }).catch(()=>{});
-  await sleep(1200);
-  await hold(MARK.hook);
+  await hold(MARK.hook);   // already on screen and painted, from the warm-up
 
   mark(MARK.hook, '/register — connecting the wallet');
   await page.goto(`${DASH}/register`, { waitUntil:'domcontentloaded', timeout:120000 });
   await sleep(1600);
-  const connect = page.locator('button:has-text("CONNECT WALLET")');
-  if (await connect.count()) { await connect.click(); await sleep(1800); }
+  // Connect, then PROVE the form appeared. A take failed silently when the
+  // click did not land: every field lookup missed, registration never
+  // happened, and the heartbeats and flip reverted one after another - four
+  // minutes of footage wasted because nothing checked this one thing.
+  let connected = false;
+  for (let attempt = 1; attempt <= 3 && !connected; attempt++) {
+    const connect = page.locator('button:has-text("CONNECT WALLET")');
+    if (await connect.count()) {
+      await connect.click().catch(() => {});
+    }
+    connected = await page
+      .locator('label', { hasText: 'Agent label' })
+      .first()
+      .waitFor({ state: 'visible', timeout: 8000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!connected) console.log(`    connect attempt ${attempt} did not reveal the form`);
+  }
+  if (!connected) throw new Error('register form never appeared — aborting rather than recording a broken take');
+  console.log('    wallet connected, form is up');
   await hold(MARK.connect);
 
   mark(MARK.connect, 'typing the plan — four distinct authorities');
@@ -209,7 +250,8 @@ try {
 
   mark(MARK.filled, 'REGISTER AGENT — signing and broadcasting');
   const submit = page.locator('button:has-text("REGISTER AGENT")').first();
-  if (await submit.count()) await submit.click().catch(e => console.log('    click:', e.message));
+  if (!(await submit.count())) throw new Error('REGISTER AGENT button not found — aborting');
+  await submit.click().catch(e => console.log('    click:', e.message));
   await hold(MARK.signed);
 
   // Wait for the registration to be MINED before navigating. Going early
@@ -271,9 +313,14 @@ try {
       const pl = await pub.readContract({
         address: REGISTRY, abi: PLAN_ABI, functionName:'plans', args:[AGENT_ID] });
       const eligibleAt = Number(pl[8]) + Number(pl[6]) + Number(pl[7]);
-      const now = Math.floor(Date.now() / 1000);
-      if (now >= eligibleAt) { console.log('    eligible now'); break; }
-      if (i === 0) console.log(`    waiting ${eligibleAt - now}s for the window to lapse`);
+      // Compare against the CHAIN's clock, not this machine's. block.timestamp
+      // lags wall-clock by a few seconds, so local time reports "eligible"
+      // before the next block agrees - and enterAdministration reverts
+      // TooEarly. The margin is the fix; the skew is not ours to control.
+      const head = await pub.getBlock();
+      const chainNow = Number(head.timestamp);
+      if (chainNow >= eligibleAt + 3) { console.log('    eligible on chain'); break; }
+      if (i === 0) console.log(`    waiting ${eligibleAt - chainNow + 3}s for the chain to pass the deadline`);
       await sleep(3000);
     }
     const h = await wallet.writeContract({
@@ -299,12 +346,12 @@ try {
 
   mark(MARK.flipped, 'Etherscan — the USDC transfer');
   await page.goto(`https://sepolia.etherscan.io/tx/${TX_TREASURY}`, { waitUntil:'domcontentloaded', timeout:90000 });
-  await sleep(2600); await dismiss();
+  await sleep(2600); await dismiss(); await sleep(600);
   await hold(MARK.ether);
 
   mark(MARK.ether, 'HashScan — the HBAR settlement');
   await page.goto(`https://hashscan.io/testnet/transaction/${HS_TX}`, { waitUntil:'domcontentloaded', timeout:90000 });
-  await sleep(4000); await dismiss();
+  await sleep(3000); await dismiss(); await sleep(600);
   await hold(MARK.hash);
 
   // The hook promises "administration, liquidation, creditors paid in order".
